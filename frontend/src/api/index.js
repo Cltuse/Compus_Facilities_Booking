@@ -13,20 +13,20 @@ export const userAPI = {
 };
 
 // 设备相关API
-export const equipmentAPI = {
-    list: () => request.get('/equipment/list'),
-    available: () => request.get('/equipment/available'),
-    getById: (id) => request.get(`/equipment/${id}`),
-    search: (keyword) => request.get('/equipment/search', { params: { keyword } }),
+export const facilityAPI = {
+    list: () => request.get('/facility/list'),
+    available: () => request.get('/facility/available'),
+    getById: (id) => request.get(`/facility/${id}`),
+    search: (keyword) => request.get('/facility/search', { params: { keyword } }),
     // 分页接口
-    listPage: (params) => request.get('/equipment/listPage', { params }),
-    searchPage: (keyword, params) => request.get('/equipment/searchPage', {
+    listPage: (params) => request.get('/facility/listPage', { params }),
+    searchPage: (keyword, params) => request.get('/facility/searchPage', {
         params: { keyword, ...params }
     }),
-    create: (data) => request.post('/equipment', data),
-    update: (id, data) => request.put(`/equipment/${id}`, data),
-    updateStatus: (id, status) => request.put(`/equipment/${id}/status`, { status }),
-    delete: (id) => request.delete(`/equipment/${id}`)
+    create: (data) => request.post('/facility', data),
+    update: (id, data) => request.put(`/facility/${id}`, data),
+    updateStatus: (id, status) => request.put(`/facility/${id}/status`, { status }),
+    delete: (id) => request.delete(`/facility/${id}`)
 };
 
 // 预约相关API
@@ -47,7 +47,7 @@ export const reservationAPI = {
 // 维护相关API
 export const maintenanceAPI = {
     list: () => request.get('/maintenance/list'),
-    getByEquipmentId: (equipmentId) => request.get(`/maintenance/equipment/${equipmentId}`),
+    getByfacilityId: (facilityId) => request.get(`/maintenance/facility/${facilityId}`),
     getById: (id) => request.get(`/maintenance/${id}`),
     create: (data) => request.post('/maintenance', data),
     update: (id, data) => request.put(`/maintenance/${id}`, data),
@@ -65,26 +65,26 @@ export const noticeAPI = {
 };
 
 // 设备类别相关API
-export const equipmentCategoryAPI = {
-    list: () => request.get('/equipment-category/list'),
-    active: () => request.get('/equipment-category/active'),
-    getById: (id) => request.get(`/equipment-category/${id}`),
-    create: (data) => request.post('/equipment-category', data),
-    update: (id, data) => request.put(`/equipment-category/${id}`, data),
-    delete: (id) => request.delete(`/equipment-category/${id}`),
-    toggleStatus: (id) => request.put(`/equipment-category/${id}/toggle-status`),
+export const facilityCategoryAPI = {
+    list: () => request.get('/facility-category/list'),
+    active: () => request.get('/facility-category/active'),
+    getById: (id) => request.get(`/facility-category/${id}`),
+    create: (data) => request.post('/facility-category', data),
+    update: (id, data) => request.put(`/facility-category/${id}`, data),
+    delete: (id) => request.delete(`/facility-category/${id}`),
+    toggleStatus: (id) => request.put(`/facility-category/${id}/toggle-status`),
     // 搜索接口
-    search: (keyword) => request.get('/equipment-category/search', { params: { keyword } }),
-    searchByName: (keyword) => request.get('/equipment-category/search/name', { params: { keyword } }),
+    search: (keyword) => request.get('/facility-category/search', { params: { keyword } }),
+    searchByName: (keyword) => request.get('/facility-category/search/name', { params: { keyword } }),
     // 分页接口
-    listPage: (params) => request.get('/equipment-category/page', { params }),
-    searchPage: (keyword, params) => request.get('/equipment-category/search/page', {
+    listPage: (params) => request.get('/facility-category/page', { params }),
+    searchPage: (keyword, params) => request.get('/facility-category/search/page', {
         params: { keyword, ...params }
     }),
-    searchByNamePage: (keyword, params) => request.get('/equipment-category/search/name/page', {
+    searchByNamePage: (keyword, params) => request.get('/facility-category/search/name/page', {
         params: { keyword, ...params }
     }),
-    listByStatusPage: (status, params) => request.get('/equipment-category/status/page', {
+    listByStatusPage: (status, params) => request.get('/facility-category/status/page', {
         params: { status, ...params }
     })
 };

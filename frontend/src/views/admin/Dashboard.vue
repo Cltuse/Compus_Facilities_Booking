@@ -19,13 +19,13 @@
     <!-- 统计卡片 -->
     <el-row :gutter="24" class="stats-row">
       <el-col :span="6">
-        <el-card class="stat-card equipment-card">
+        <el-card class="stat-card facility-card">
           <div class="stat-content">
             <div class="stat-icon-wrapper">
               <el-icon class="stat-icon"><Box /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.totalEquipment }}</div>
+              <div class="stat-value">{{ stats.totalFacility }}</div>
               <div class="stat-label">设施总数</div>
             </div>
           </div>
@@ -38,7 +38,7 @@
               <el-icon class="stat-icon"><SuccessFilled /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.availableEquipment }}</div>
+              <div class="stat-value">{{ stats.availableFacility }}</div>
               <div class="stat-label">可用设施</div>
             </div>
           </div>
@@ -117,11 +117,11 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
 import * as echarts from 'echarts';
-import { equipmentAPI, reservationAPI, userAPI } from '../../api';
+import { facilityAPI, reservationAPI, userAPI } from '../../api';
 
 const stats = ref({
-  totalEquipment: 0,
-  availableEquipment: 0,
+  totalFacility: 0,
+  availableFacility: 0,
   totalReservations: 0,
   totalUser: 0
 });
@@ -140,16 +140,16 @@ onMounted(async () => {
 
 const loadStats = async () => {
   try {
-    const [equipmentRes, availableRes, reservationRes, userRes] = await Promise.all([
-      equipmentAPI.list(),
-      equipmentAPI.available(),
+    const [facilityRes, availableRes, reservationRes, userRes] = await Promise.all([
+      facilityAPI.list(),
+      facilityAPI.available(),
       reservationAPI.list(),
       userAPI.list()
     ]);
 
     stats.value = {
-      totalEquipment: equipmentRes.data.length,
-      availableEquipment: availableRes.data.length,
+      totalFacility: facilityRes.data.length,
+      availableFacility: availableRes.data.length,
       totalReservations: reservationRes.data.length,
       totalUser: userRes.data.length
     };
@@ -160,19 +160,19 @@ const loadStats = async () => {
 
 const loadChartData = async () => {
   try {
-    const [equipmentRes] = await Promise.all([
-      equipmentAPI.list()
+    const [facilityRes] = await Promise.all([
+      facilityAPI.list()
     ]);
 
     // 处理设施类别数据
-    const equipmentCategoryData = processEquipmentCategoryData(equipmentRes.data);
+    const facilityCategoryData = processFacilityCategoryData(facilityRes.data);
 
     // 处理设施状态数据
-    const equipmentStatusData = processEquipmentStatusData(equipmentRes.data);
+    const facilityStatusData = processFacilityStatusData(facilityRes.data);
 
     return {
-      equipmentCategoryData,
-      equipmentStatusData
+      facilityCategoryData,
+      facilityStatusData
     };
   } catch (error) {
     console.error('加载图表数据失败:', error);
@@ -181,12 +181,12 @@ const loadChartData = async () => {
 };
 
 // 处理设施类别数据
-const processEquipmentCategoryData = (equipments) => {
+const processFacilityCategoryData = (facilitys) => {
   const categoryCount = {};
 
   // 统计各类别设施数量
-  equipments.forEach(equipment => {
-    const category = equipment.category || '未分类';
+  facilitys.forEach(facility => {
+    const category = facility.category || '未分类';
     if (categoryCount[category]) {
       categoryCount[category]++;
     } else {
@@ -206,7 +206,7 @@ const processEquipmentCategoryData = (equipments) => {
 };
 
 // 处理设施状态数据
-const processEquipmentStatusData = (equipments) => {
+const processFacilityStatusData = (facilitys) => {
   const statusCount = {
     AVAILABLE: 0,
     IN_USE: 0,
@@ -214,8 +214,8 @@ const processEquipmentStatusData = (equipments) => {
     DISABLED: 0
   };
 
-  equipments.forEach(equipment => {
-    const status = equipment.status || 'UNKNOWN';
+  facilitys.forEach(facility => {
+    const status = facility.status || 'UNKNOWN';
     if (statusCount.hasOwnProperty(status)) {
       statusCount[status]++;
     }
@@ -235,10 +235,10 @@ const initCharts = async () => {
   if (!chartData) return;
 
   // 初始化柱形图
-  initBarChart(chartData.equipmentCategoryData);
+  initBarChart(chartData.facilityCategoryData);
 
   // 初始化饼形图
-  initPieChart(chartData.equipmentStatusData);
+  initPieChart(chartData.facilityStatusData);
 };
 
 // 初始化柱形图
@@ -496,7 +496,7 @@ const initPieChart = (data) => {
   background: linear-gradient(90deg, var(--card-color) 0%, var(--card-color-light) 100%);
 }
 
-.equipment-card {
+.facility-card {
   --card-color: #409eff;
   --card-color-light: #66b1ff;
 }

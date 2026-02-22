@@ -23,14 +23,14 @@ const routes = [
                 component: () => import('../views/admin/Dashboard.vue')
             },
             {
-                path: 'equipment',
-                name: 'AdminEquipment',
-                component: () => import('../views/admin/Equipment.vue')
+                path: 'facility',
+                name: 'AdminFacility',
+                component: () => import('../views/admin/Facility.vue')
             },
             {
-                path: 'equipment-category',
-                name: 'AdminEquipmentCategory',
-                component: () => import('../views/admin/EquipmentCategory.vue')
+                path: 'facility-category',
+                name: 'AdminFacilityCategory',
+                component: () => import('../views/admin/FacilityCategory.vue')
             },
             {
                 path: 'reservation',
@@ -76,9 +76,9 @@ const routes = [
                 component: () => import('../views/user/Welcome.vue')
             },
             {
-                path: 'equipment',
-                name: 'UserEquipment',
-                component: () => import('../views/user/Equipment.vue')
+                path: 'facility',
+                name: 'UserFacility',
+                component: () => import('../views/user/Facility.vue')
             },
             {
                 path: 'my-reservation',

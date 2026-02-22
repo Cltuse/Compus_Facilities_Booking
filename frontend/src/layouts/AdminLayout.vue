@@ -18,14 +18,14 @@
             </template>
           </el-menu-item>
 
-          <el-menu-item index="/admin/equipment" class="menu-item">
+          <el-menu-item index="/admin/facility" class="menu-item">
             <el-icon class="menu-icon-item"><Box /></el-icon>
             <template #title>
               <span class="menu-text">设备管理</span>
             </template>
           </el-menu-item>
 
-          <el-menu-item index="/admin/equipment-category" class="menu-item">
+          <el-menu-item index="/admin/facility-category" class="menu-item">
             <el-icon class="menu-icon-item"><Collection /></el-icon>
             <template #title>
               <span class="menu-text">设备类别</span>
@@ -161,10 +161,11 @@ const handleMenuSelect = (index) => {
   opacity: 0;
   transition: opacity 0.3s ease;
   border-radius: 12px;
+  z-index: -1; /* 将伪元素置于文本下方 */
 }
 
 .side-menu :deep(.el-menu-item:hover) {
-  color: #409eff;
+  color: #252b47;
   transform: translateX(4px);
   background: linear-gradient(135deg, #f8fafc 0%, #e6f7ff 100%);
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);

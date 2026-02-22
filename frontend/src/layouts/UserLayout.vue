@@ -18,7 +18,7 @@
             </template>
           </el-menu-item>
 
-          <el-menu-item index="/user/equipment" class="menu-item">
+          <el-menu-item index="/user/facility" class="menu-item">
             <el-icon class="menu-icon-item"><Box /></el-icon>
             <template #title>
               <span class="menu-text">设备浏览</span>

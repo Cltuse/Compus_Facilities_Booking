@@ -20,7 +20,7 @@
     <div class="toolbar">
       <div class="search-container">
         <el-input
-          v-model="searchEquipmentName"
+          v-model="searchFacilityName"
           placeholder="请输入设施名称进行搜索"
           class="search-input"
           clearable
@@ -42,10 +42,10 @@
         :cell-style="cellStyle"
         @row-click="handleRowClick"
       >
-        <el-table-column prop="equipmentName" label="设施名称" min-width="180">
+        <el-table-column prop="facilityName" label="设施名称" min-width="180">
           <template #default="{ row }">
-            <div class="equipment-details">
-              <div class="equipment-name">{{ row.equipmentName }}</div>
+            <div class="facility-details">
+              <div class="facility-name">{{ row.facilityName }}</div>
             </div>
           </template>
         </el-table-column>
@@ -167,7 +167,7 @@
       <div class="dialog-content">
         <el-descriptions :column="1" border class="reservation-descriptions">
           <el-descriptions-item label="设施名称">
-            <div class="description-value">{{ currentRow.equipmentName }}</div>
+            <div class="description-value">{{ currentRow.facilityName }}</div>
           </el-descriptions-item>
           <el-descriptions-item label="开始时间">
             <div class="description-value time-value">
@@ -221,7 +221,7 @@ const reservationList = ref([]);
 const viewDialogVisible = ref(false);
 const currentRow = ref({});
 const userInfo = ref({});
-const searchEquipmentName = ref('');
+const searchFacilityName = ref('');
 
 // 分页相关
 const currentPage = ref(1);
@@ -248,10 +248,10 @@ const loadMyReservations = async () => {
 const filteredReservationList = computed(() => {
   let filtered = reservationList.value;
 
-  if (searchEquipmentName.value) {
-    const searchTerm = searchEquipmentName.value.toLowerCase();
+  if (searchFacilityName.value) {
+    const searchTerm = searchFacilityName.value.toLowerCase();
     filtered = filtered.filter(item =>
-      item.equipmentName && item.equipmentName.toLowerCase().includes(searchTerm)
+      item.facilityName && item.facilityName.toLowerCase().includes(searchTerm)
     );
   }
 
@@ -564,11 +564,11 @@ const getStatusText = (status) => {
 }
 
 /* 表格单元格内容样式 */
-.equipment-details {
+.facility-details {
   min-width: 0;
 }
 
-.equipment-name {
+.facility-name {
   font-size: 14px;
   font-weight: 600;
   color: #1a202c;
@@ -896,7 +896,7 @@ const getStatusText = (status) => {
     padding: 12px 8px;
   }
 
-  .equipment-name {
+  .facility-name {
     font-size: 13px;
   }
 

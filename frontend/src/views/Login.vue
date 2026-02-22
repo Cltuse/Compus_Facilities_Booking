@@ -20,7 +20,7 @@
             <path d="M2 12L12 17L22 12" stroke="#409eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h1 class="title">实验室设备预约与维护管理系统</h1>
+        <h1 class="title">校园公共设施预约管理系统</h1>
         <p class="subtitle">Campus Public Facility Booking System</p>
       </div>
 

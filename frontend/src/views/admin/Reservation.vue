@@ -37,10 +37,10 @@
         v-loading="loading"
         stripe
       >
-        <el-table-column prop="equipmentName" label="设施名称" min-width="150">
+        <el-table-column prop="facilityName" label="设施名称" min-width="150">
           <template #default="{ row }">
-            <div class="equipment-info">
-              <div class="equipment-name">{{ row.equipmentName }}</div>
+            <div class="facility-info">
+              <div class="facility-name">{{ row.facilityName }}</div>
             </div>
           </template>
         </el-table-column>
@@ -152,7 +152,7 @@
         >
           <el-form-item label="设施名称">
             <el-input
-              v-model="currentRow.equipmentName"
+              v-model="currentRow.facilityName"
               disabled
               class="readonly-input"
             />
@@ -212,7 +212,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { reservationAPI, equipmentAPI } from '../../api';
+import { reservationAPI, facilityAPI } from '../../api';
 import { Clock, CircleCheck, CircleClose, Check } from '@element-plus/icons-vue';
 
 const activeTab = ref('PENDING');
@@ -291,7 +291,7 @@ const handleSubmit = async () => {
       await reservationAPI.approve(currentRow.value.id, form.value);
 
       // 同时更新设施状态为使用中
-      await updateEquipmentStatus(currentRow.value.equipmentId, 'IN_USE');
+      await updateFacilityStatus(currentRow.value.facilityId, 'IN_USE');
 
       ElMessage.success('审核通过，设施状态已更新为使用中');
     } else {
@@ -310,9 +310,9 @@ const handleSubmit = async () => {
 };
 
 // 更新设施状态
-const updateEquipmentStatus = async (equipmentId, status) => {
+const updateFacilityStatus = async (facilityId, status) => {
   try {
-    await equipmentAPI.updateStatus(equipmentId, status);
+    await facilityAPI.updateStatus(facilityId, status);
   } catch (error) {
     console.error('更新设施状态失败:', error);
     // 即使设施状态更新失败，也不影响预约审核的结果
@@ -555,11 +555,11 @@ const getStatusText = (status) => {
 }
 
 /* 表格单元格内容样式 */
-.equipment-info {
+.facility-info {
   min-width: 0;
 }
 
-.equipment-name {
+.facility-name {
   font-size: 14px;
   font-weight: 600;
   color: #1a202c;

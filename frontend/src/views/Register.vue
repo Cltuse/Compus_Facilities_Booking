@@ -187,7 +187,7 @@ const handleRegister = async () => {
 
     // 注册用户默认跳转到用户设备页面
     setTimeout(() => {
-      router.push('/user/equipment');
+      router.push('/user/facility');
     }, 1000);
 
   } catch (error) {

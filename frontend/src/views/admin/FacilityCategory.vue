@@ -1,5 +1,5 @@
 <template>
-  <div class="maintenance-page">
+  <div class="facility-category-page">
     <!-- 页面标题区域 -->
     <div class="page-header">
       <div class="header-decoration"></div>
@@ -7,12 +7,13 @@
         <h1 class="page-title">
           <div class="title-icon">
             <svg viewBox="0 0 24 24" fill="none">
-              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="7" y1="7" x2="7.01" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          设施维护管理
+          设施类别
         </h1>
-        <p class="page-subtitle">管理设施维护记录，跟踪设施维护状态和历史</p>
+        <p class="page-subtitle">管理设施分类信息，支持添加、编辑和删除设施类别</p>
       </div>
     </div>
 
@@ -21,7 +22,7 @@
       <div class="search-section">
         <el-input
           v-model="searchKeyword"
-          placeholder="搜索设施名称或维护人员..."
+          placeholder="搜索类别名称或描述..."
           size="large"
           class="search-input"
           clearable
@@ -41,67 +42,58 @@
       <div class="button-section">
         <el-button type="primary" size="large" class="add-button" @click="handleAdd">
           <el-icon><Plus /></el-icon>
-          添加维护记录
+          添加类别
         </el-button>
       </div>
     </div>
 
-    <!-- 维护记录表格 -->
+    <!-- 设施类别表格 -->
     <div class="table-container">
       <el-table
-        :data="maintenanceList"
-        class="maintenance-table"
+        :data="categoryList"
+        class="category-table"
         :header-cell-style="headerCellStyle"
         :cell-style="cellStyle"
         @row-click="handleRowClick"
         v-loading="loading"
         stripe
       >
-        <el-table-column prop="facilityName" label="设施名称" min-width="180">
+        <el-table-column prop="categoryName" label="类别名称" min-width="150">
           <template #default="{ row }">
-            <div class="facility-name">
-              <div class="name">{{ row.facilityName }}</div>
-              <div class="type">维护类型: {{ getMaintenanceTypeText(row.maintenanceType) }}</div>
+            <div class="category-name">
+              <div class="name">{{ row.categoryName }}</div>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="maintenanceType" label="维护类型" width="120">
+        <el-table-column prop="description" label="描述" min-width="200">
           <template #default="{ row }">
-            <el-tag class="type-tag" effect="light">
-              {{ getMaintenanceTypeText(row.maintenanceType) }}
-            </el-tag>
+            <span class="description">{{ row.description || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="maintainer" label="维护人员" width="150">
+        <el-table-column prop="sortOrder" label="排序" width="80" align="center">
           <template #default="{ row }">
-            <span class="maintainer">{{ row.maintainer || '-' }}</span>
+            <span class="sort-order">{{ row.sortOrder || 0 }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="110" align="center">
+        <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag
-              :type="getStatusType(row.status)"
+              :type="row.status === 'ACTIVE' ? 'success' : 'info'"
               class="status-tag"
               effect="light"
             >
-              <el-icon><CircleCheck v-if="row.status === 'COMPLETED'" /><Tools v-else /></el-icon>
-              {{ getStatusText(row.status) }}
+              <el-icon><CircleCheck v-if="row.status === 'ACTIVE'" /><CircleClose v-else /></el-icon>
+              {{ row.status === 'ACTIVE' ? '启用' : '停用' }}
             </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="cost" label="费用" width="130" align="center">
+        <el-table-column prop="createdTime" label="创建时间" width="160" align="center">
           <template #default="{ row }">
-            <span class="cost">¥{{ row.cost ? row.cost.toLocaleString() : '-' }}</span>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="startTime" label="开始时间" width="160">
-          <template #default="{ row }">
-            <span class="time">{{ row.startTime || '-' }}</span>
+            <span class="time">{{ formatDateTime(row.createdTime) }}</span>
           </template>
         </el-table-column>
 
@@ -150,71 +142,67 @@
 
     <!-- 添加/编辑对话框 -->
     <el-dialog
-      :title="dialogTitle"
       v-model="dialogVisible"
-      width="600px"
-      class="maintenance-dialog"
+      :title="isEdit ? '编辑设施类别' : '添加设施类别'"
+      width="500px"
+      class="category-dialog"
       :close-on-click-modal="false"
     >
-      <el-form :model="form" :rules="rules" ref="formRef" class="maintenance-form" label-width="100px">
-        <el-form-item label="设施" prop="facilityId">
-          <el-select v-model="form.facilityId" style="width: 100%;" placeholder="请选择设施">
-            <el-option
-              v-for="item in facilityOptions"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="维护类型" prop="maintenanceType">
-          <el-select v-model="form.maintenanceType" style="width: 100%;" placeholder="请选择维护类型">
-            <el-option label="定期维护" value="ROUTINE" />
-            <el-option label="维修" value="REPAIR" />
-            <el-option label="升级" value="UPGRADE" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="维护人员" prop="maintainer">
-          <el-input v-model="form.maintainer" placeholder="请输入维护人员姓名" clearable />
-        </el-form-item>
-        <el-form-item label="费用" prop="cost">
-          <el-input-number v-model="form.cost" :min="0" :precision="2" style="width: 100%;" placeholder="请输入维护费用" />
-        </el-form-item>
-        <el-form-item label="开始时间" prop="startTime">
-          <el-date-picker
-            v-model="form.startTime"
-            type="datetime"
-            placeholder="选择开始时间"
-            style="width: 100%;"
-            value-format="YYYY-MM-DD HH:mm:ss"
+      <el-form
+        :model="formData"
+        :rules="rules"
+        ref="formRef"
+        class="category-form"
+        label-width="80px"
+      >
+        <el-form-item label="类别名称" prop="categoryName">
+          <el-input
+            v-model="formData.categoryName"
+            placeholder="请输入类别名称"
+            clearable
           />
         </el-form-item>
-        <el-form-item label="结束时间" prop="endTime">
-          <el-date-picker
-            v-model="form.endTime"
-            type="datetime"
-            placeholder="选择结束时间"
-            style="width: 100%;"
-            value-format="YYYY-MM-DD HH:mm:ss"
+
+        
+        <el-form-item label="描述信息" prop="description">
+          <el-input
+            v-model="formData.description"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入类别描述信息"
+            maxlength="200"
+            show-word-limit
           />
         </el-form-item>
+
+        <el-form-item label="排序顺序" prop="sortOrder">
+          <el-input-number
+            v-model="formData.sortOrder"
+            :min="0"
+            :max="9999"
+            placeholder="排序顺序"
+            style="width: 100%;"
+          />
+        </el-form-item>
+
         <el-form-item label="状态" prop="status">
-          <el-select v-model="form.status" style="width: 100%;" placeholder="请选择状态">
-            <el-option label="进行中" value="IN_PROGRESS" />
-            <el-option label="已完成" value="COMPLETED" />
+          <el-select
+            v-model="formData.status"
+            placeholder="请选择状态"
+            style="width: 100%;"
+          >
+            <el-option label="启用" value="ACTIVE" />
+            <el-option label="停用" value="INACTIVE" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="维护描述" prop="description">
-          <el-input type="textarea" v-model="form.description" :rows="3" placeholder="请输入维护描述信息" maxlength="200" show-word-limit />
-        </el-form-item>
-        <el-form-item label="维护结果" prop="result">
-          <el-input type="textarea" v-model="form.result" :rows="3" placeholder="请输入维护结果信息" maxlength="200" show-word-limit />
         </el-form-item>
       </el-form>
+
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit">{{ isEdit ? '更新' : '创建' }}</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="handleSubmit">
+            {{ isEdit ? '更新' : '创建' }}
+          </el-button>
         </div>
       </template>
     </el-dialog>
@@ -224,44 +212,45 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { maintenanceAPI, facilityAPI } from '../../api';
+import { facilityCategoryAPI } from '../../api';
 
+// 数据
 const loading = ref(false);
-const maintenanceList = ref([]);
-const facilityOptions = ref([]);
-const searchKeyword = ref('');
-const isSearchMode = ref(false);
 const dialogVisible = ref(false);
-const dialogTitle = ref('添加维护记录');
-const formRef = ref(null);
+const submitLoading = ref(false);
 const isEdit = ref(false);
+const categoryList = ref([]);
+const formRef = ref(null);
 
 // 搜索和分页
+const searchKeyword = ref('');
+const isSearchMode = ref(false);
 const total = ref(0);
 const pagination = reactive({
   page: 1,
   size: 10,
-  sortBy: 'id',
-  sortDir: 'desc'
+  sortBy: 'sortOrder',
+  sortDir: 'asc'
 });
 
-const form = ref({
+// 表单数据
+const formData = reactive({
   id: null,
-  facilityId: null,
-  maintenanceType: 'ROUTINE',
-  maintainer: '',
-  cost: 0,
-  startTime: '',
-  endTime: '',
-  status: 'IN_PROGRESS',
+  categoryName: '',
   description: '',
-  result: ''
+  sortOrder: 0,
+  status: 'ACTIVE'
 });
 
+// 表单验证规则
 const rules = {
-  facilityId: [{ required: true, message: '请选择设施', trigger: 'change' }],
-  maintenanceType: [{ required: true, message: '请选择维护类型', trigger: 'change' }],
-  maintainer: [{ required: true, message: '请输入维护人员', trigger: 'blur' }]
+  categoryName: [
+    { required: true, message: '请输入类别名称', trigger: 'blur' },
+    { min: 2, max: 50, message: '类别名称长度在 2 到 50 个字符', trigger: 'blur' }
+  ],
+  status: [
+    { required: true, message: '请选择状态', trigger: 'change' }
+  ]
 };
 
 // 表格样式
@@ -277,62 +266,57 @@ const cellStyle = {
   padding: '16px 12px'
 };
 
-onMounted(() => {
-  loadMaintenanceList();
-  loadFacilityOptions();
-});
+// 格式化日期时间
+const formatDateTime = (dateTime) => {
+  if (!dateTime) return '-';
+  const date = new Date(dateTime);
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
-const loadMaintenanceList = async () => {
+// 获取设施类别列表
+const fetchCategories = async () => {
   try {
     loading.value = true;
 
-    const result = await maintenanceAPI.list();
+    let result;
+    const params = {
+      page: pagination.page - 1,
+      size: pagination.size,
+      sortBy: pagination.sortBy,
+      sortDir: pagination.sortDir
+    };
+
+    if (isSearchMode.value && searchKeyword.value.trim()) {
+      result = await facilityCategoryAPI.searchPage(searchKeyword.value.trim(), params);
+    } else {
+      result = await facilityCategoryAPI.listPage(params);
+    }
 
     if (result.code === 200) {
-      let filteredData = result.data || [];
-
-      // 如果有搜索关键词，进行前端过滤
-      if (isSearchMode.value && searchKeyword.value.trim()) {
-        const keyword = searchKeyword.value.trim().toLowerCase();
-        filteredData = filteredData.filter(item =>
-          (item.facilityName && item.facilityName.toLowerCase().includes(keyword)) ||
-          (item.maintainer && item.maintainer.toLowerCase().includes(keyword))
-        );
-      }
-
-      // 前端分页处理
-      total.value = filteredData.length;
-      const startIndex = (pagination.page - 1) * pagination.size;
-      const endIndex = startIndex + pagination.size;
-      maintenanceList.value = filteredData.slice(startIndex, endIndex);
+      categoryList.value = result.data.content || [];
+      total.value = result.data.totalElements || 0;
     } else {
-      ElMessage.error(result.message || '获取维护记录列表失败');
+      ElMessage.error(result.message || '获取设施类别列表失败');
     }
   } catch (error) {
-    console.error('加载维护记录列表失败:', error);
+    console.error('获取设施类别列表失败:', error);
     ElMessage.error('网络错误，请重试');
   } finally {
     loading.value = false;
   }
 };
 
-const loadFacilityOptions = async () => {
-  try {
-    const res = await facilityAPI.list();
-    facilityOptions.value = res.data;
-  } catch (error) {
-    console.error('加载设施列表失败:', error);
-  }
-};
-
-const handleSearch = async () => {
+// 搜索处理
+const handleSearch = () => {
   pagination.page = 1;
-  if (searchKeyword.value.trim()) {
-    isSearchMode.value = true;
-  } else {
-    isSearchMode.value = false;
-  }
-  loadMaintenanceList();
+  isSearchMode.value = true;
+  fetchCategories();
 };
 
 // 清除搜索
@@ -340,19 +324,53 @@ const handleClearSearch = () => {
   searchKeyword.value = '';
   isSearchMode.value = false;
   pagination.page = 1;
-  loadMaintenanceList();
+  fetchCategories();
 };
 
 // 分页处理
 const handleSizeChange = (size) => {
   pagination.size = size;
   pagination.page = 1;
-  loadMaintenanceList();
+  fetchCategories();
 };
 
 const handleCurrentChange = (page) => {
   pagination.page = page;
-  loadMaintenanceList();
+  fetchCategories();
+};
+
+// 重置表单
+const resetForm = () => {
+  Object.assign(formData, {
+    id: null,
+    categoryName: '',
+    description: '',
+    sortOrder: 0,
+    status: 'ACTIVE'
+  });
+  if (formRef.value) {
+    formRef.value.resetFields();
+  }
+};
+
+// 处理添加
+const handleAdd = () => {
+  isEdit.value = false;
+  resetForm();
+  dialogVisible.value = true;
+};
+
+// 处理编辑
+const handleEdit = (row) => {
+  isEdit.value = true;
+  Object.assign(formData, {
+    id: row.id,
+    categoryName: row.categoryName,
+    description: row.description || '',
+    sortOrder: row.sortOrder || 0,
+    status: row.status
+  });
+  dialogVisible.value = true;
 };
 
 // 处理行点击
@@ -360,94 +378,68 @@ const handleRowClick = (row) => {
   handleEdit(row);
 };
 
-const handleAdd = () => {
-  isEdit.value = false;
-  dialogTitle.value = '添加维护记录';
-  form.value = {
-    id: null,
-    facilityId: null,
-    maintenanceType: 'ROUTINE',
-    maintainer: '',
-    cost: 0,
-    startTime: '',
-    endTime: '',
-    status: 'IN_PROGRESS',
-    description: '',
-    result: ''
-  };
-  dialogVisible.value = true;
-};
-
-const handleEdit = (row) => {
-  isEdit.value = true;
-  dialogTitle.value = '编辑维护记录';
-  form.value = { ...row };
-  dialogVisible.value = true;
-};
-
-const handleSubmit = async () => {
+// 处理删除
+const handleDelete = async (row) => {
   try {
-    await formRef.value.validate();
+    await ElMessageBox.confirm(
+      `确定要删除设施类别 "${row.categoryName}" 吗？此操作不可撤销。`,
+      '确认删除',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    );
 
-    if (isEdit.value) {
-      await maintenanceAPI.update(form.value.id, form.value);
-      ElMessage.success('更新成功');
+    const result = await facilityCategoryAPI.delete(row.id);
+
+    if (result.code === 200) {
+      ElMessage.success('删除成功');
+      await fetchCategories();
     } else {
-      await maintenanceAPI.create(form.value);
-      ElMessage.success('添加成功');
+      ElMessage.error(result.message || '删除失败');
     }
-
-    dialogVisible.value = false;
-    loadMaintenanceList();
   } catch (error) {
-    console.error('提交失败:', error);
+    if (error !== 'cancel') {
+      console.error('删除失败:', error);
+      ElMessage.error('删除失败，请重试');
+    }
   }
 };
 
-const handleDelete = (row) => {
-  ElMessageBox.confirm('确认删除该维护记录？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    try {
-      await maintenanceAPI.delete(row.id);
-      ElMessage.success('删除成功');
-      loadMaintenanceList();
-    } catch (error) {
-      console.error('删除失败:', error);
+// 处理表单提交
+const handleSubmit = async () => {
+  try {
+    await formRef.value.validate();
+    submitLoading.value = true;
+
+    const result = isEdit.value
+      ? await facilityCategoryAPI.update(formData.id, formData)
+      : await facilityCategoryAPI.create(formData);
+
+    if (result.code === 200) {
+      ElMessage.success(isEdit.value ? '更新成功' : '创建成功');
+      dialogVisible.value = false;
+      await fetchCategories();
+    } else {
+      ElMessage.error(result.message || (isEdit.value ? '更新失败' : '创建失败'));
     }
-  }).catch(() => {});
+  } catch (error) {
+    console.error('提交失败:', error);
+    ElMessage.error('提交失败，请重试');
+  } finally {
+    submitLoading.value = false;
+  }
 };
 
-const getMaintenanceTypeText = (type) => {
-  const map = {
-    'ROUTINE': '定期维护',
-    'REPAIR': '维修',
-    'UPGRADE': '升级'
-  };
-  return map[type] || type;
-};
-
-const getStatusType = (status) => {
-  const map = {
-    'IN_PROGRESS': 'warning',
-    'COMPLETED': 'success'
-  };
-  return map[status] || '';
-};
-
-const getStatusText = (status) => {
-  const map = {
-    'IN_PROGRESS': '进行中',
-    'COMPLETED': '已完成'
-  };
-  return map[status] || status;
-};
+// 页面加载时获取数据
+onMounted(() => {
+  fetchCategories();
+});
 </script>
 
 <style scoped>
-.maintenance-page {
+.facility-category-page {
   padding: 0;
   background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 25%, #e6f7ff 50%, #f8fafc 100%);
   min-height: calc(100vh - 88px);
@@ -587,69 +579,38 @@ const getStatusText = (status) => {
   border-radius: 0;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+}
+
+.category-table {
   width: 100%;
 }
 
-.maintenance-table {
-  width: 100%;
-}
-
-.maintenance-table :deep(.el-table) {
-  width: 100% !important;
-}
-
-.maintenance-table :deep(.el-table__header-wrapper) {
-  width: 100% !important;
-}
-
-.maintenance-table :deep(.el-table__body-wrapper) {
-  width: 100% !important;
-}
-
-.maintenance-table :deep(.el-table__header) {
-  width: 100% !important;
-}
-
-.maintenance-table :deep(.el-table__body) {
-  width: 100% !important;
-}
-
-.facility-name .name {
+.category-name .name {
   font-weight: 600;
   color: #2d3748;
   font-size: 14px;
 }
 
-.facility-name .type {
+.category-name .code {
   font-size: 12px;
   color: #718096;
   margin-top: 2px;
 }
 
-.type-tag {
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 12px;
-  padding: 4px 8px;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border: 1px solid #bae6fd;
-  color: #0369a1;
-}
-
-.maintainer {
+.description {
   color: #4a5568;
   font-size: 14px;
+  line-height: 1.5;
 }
 
-.cost {
-  color: #059669;
+.sort-order {
+  color: #4a5568;
   font-weight: 600;
-  font-size: 14px;
 }
 
 .time {
-  color: #4a5568;
-  font-size: 14px;
+  color: #718096;
+  font-size: 13px;
 }
 
 /* 状态标签 */
@@ -751,66 +712,66 @@ const getStatusText = (status) => {
 }
 
 /* 对话框样式 */
-.maintenance-dialog :deep(.el-dialog) {
+.category-dialog :deep(.el-dialog) {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-.maintenance-dialog :deep(.el-dialog__header) {
+.category-dialog :deep(.el-dialog__header) {
   background: linear-gradient(135deg, #f8fafc 0%, #e6f7ff 100%);
   padding: 24px 24px 16px;
   border-bottom: 1px solid #e2e8f0;
 }
 
-.maintenance-dialog :deep(.el-dialog__title) {
+.category-dialog :deep(.el-dialog__title) {
   color: #1a202c;
   font-weight: 600;
   font-size: 18px;
 }
 
-.maintenance-dialog :deep(.el-dialog__body) {
+.category-dialog :deep(.el-dialog__body) {
   padding: 24px;
 }
 
-.maintenance-form :deep(.el-form-item__label) {
+.category-form :deep(.el-form-item__label) {
   color: #4a5568;
   font-weight: 600;
 }
 
-.maintenance-form :deep(.el-input__wrapper) {
+.category-form :deep(.el-input__wrapper) {
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
-.maintenance-form :deep(.el-input__wrapper:hover) {
+.category-form :deep(.el-input__wrapper:hover) {
   border-color: #cbd5e0;
 }
 
-.maintenance-form :deep(.el-input__wrapper.is-focus) {
+.category-form :deep(.el-input__wrapper.is-focus) {
   border-color: #409eff;
   box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
 }
 
-.maintenance-form :deep(.el-textarea__inner) {
+.category-form :deep(.el-textarea__inner) {
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
-.maintenance-form :deep(.el-textarea__inner:hover) {
+.category-form :deep(.el-textarea__inner:hover) {
   border-color: #cbd5e0;
 }
 
-.maintenance-form :deep(.el-textarea__inner:focus) {
+.category-form :deep(.el-textarea__inner:focus) {
   border-color: #409eff;
   box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
 }
 
-.maintenance-form :deep(.el-select .el-input__wrapper) {
+.category-form :deep(.el-select .el-input__wrapper) {
   cursor: pointer;
 }
 

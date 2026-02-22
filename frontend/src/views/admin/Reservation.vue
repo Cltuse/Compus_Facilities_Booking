@@ -16,26 +16,74 @@
       </div>
     </div>
 
+    <!-- 搜索和筛选区域 -->
+    <div class="search-container">
+      <el-row :gutter="20" align="middle">
+        <el-col :span="8">
+          <el-input
+              v-model="searchKeyword"
+              placeholder="搜索设施名称、申请人或使用目的"
+              clearable
+              @clear="handleSearchClear"
+              @keyup.enter="handleSearch"
+              class="search-input"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </el-col>
+        <el-col :span="4">
+          <el-button type="primary" @click="handleSearch" :icon="Search">搜索</el-button>
+        </el-col>
+        <el-col :span="12" class="text-right">
+          <el-pagination
+              v-model:current-page="currentPage"
+              v-model:page-size="pageSize"
+              :page-sizes="[10, 20, 50, 100]"
+              :total="total"
+              layout="total, sizes, prev, pager, next, jumper"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+              class="pagination"
+          />
+        </el-col>
+      </el-row>
+    </div>
+
     <!-- 状态标签页 -->
     <div class="tabs-container">
       <el-tabs v-model="activeTab" @tab-change="handleTabChange" class="status-tabs">
         <el-tab-pane label="待审核" name="PENDING" />
-        <el-tab-pane label="已通过" name="APPROVED" />
-        <el-tab-pane label="已拒绝" name="REJECTED" />
-        <el-tab-pane label="全部" name="ALL" />
+        </el-table-column><!--!!!!!!!!!!!!!!!!!!!!!!!!!!-->
+        <el-table-column prop="userName" label="申请人" min-width="120">
+          <template #default="{ row }">
+            <div class="user-info">
+              <span>{{ row.userName || '未知用户' }}</span>
+              <el-tag size="small" :type="getUserRoleType(row.userRole)" class="role-tag">
+                {{ getUserRoleText(row.userRole) }}
+              </el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="startTime" label="开始时间" width="160">
+          <el-tab-pane label="已通过" name="APPROVED" />
+          <el-tab-pane label="已拒绝" name="REJECTED" />
+          <el-tab-pane label="全部" name="ALL" />
+        </el-table-column>
       </el-tabs>
     </div>
 
     <!-- 预约表格 -->
     <div class="table-container">
       <el-table
-        :data="reservationList"
-        class="reservation-table"
-        :header-cell-style="headerCellStyle"
-        :cell-style="cellStyle"
-        @row-click="handleRowClick"
-        v-loading="loading"
-        stripe
+          :data="reservationList"
+          class="reservation-table"
+          :header-cell-style="headerCellStyle"
+          :cell-style="cellStyle"
+          @row-click="handleRowClick"
+          v-loading="loading"
+          stripe
       >
         <el-table-column prop="facilityName" label="设施名称" min-width="150">
           <template #default="{ row }">
@@ -78,9 +126,9 @@
         <el-table-column prop="status" label="状态" width="120" align="center">
           <template #default="{ row }">
             <el-tag
-              :type="getStatusType(row.status)"
-              class="status-tag"
-              effect="light"
+                :type="getStatusType(row.status)"
+                class="status-tag"
+                effect="light"
             >
               <el-icon>
                 <CircleCheck v-if="row.status === 'APPROVED'" />
@@ -98,23 +146,23 @@
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
-                v-if="row.status === 'PENDING'"
-                size="small"
-                type="success"
-                :plain="true"
-                class="action-btn approve-btn"
-                @click.stop="handleApprove(row)"
+                  v-if="row.status === 'PENDING'"
+                  size="small"
+                  type="success"
+                  :plain="true"
+                  class="action-btn approve-btn"
+                  @click.stop="handleApprove(row)"
               >
                 <el-icon><CircleCheck /></el-icon>
                 通过
               </el-button>
               <el-button
-                v-if="row.status === 'PENDING'"
-                size="small"
-                type="danger"
-                :plain="true"
-                class="action-btn reject-btn"
-                @click.stop="handleReject(row)"
+                  v-if="row.status === 'PENDING'"
+                  size="small"
+                  type="danger"
+                  :plain="true"
+                  class="action-btn reject-btn"
+                  @click.stop="handleReject(row)"
               >
                 <el-icon><CircleClose /></el-icon>
                 拒绝
@@ -127,11 +175,11 @@
 
     <!-- 审核对话框 -->
     <el-dialog
-      v-model="dialogVisible"
-      :title="dialogTitle"
-      width="600px"
-      class="reservation-dialog"
-      :close-on-click-modal="false"
+        v-model="dialogVisible"
+        :title="dialogTitle"
+        width="600px"
+        class="reservation-dialog"
+        :close-on-click-modal="false"
     >
       <div class="dialog-header">
         <div class="dialog-title-icon">
@@ -144,46 +192,46 @@
 
       <div class="dialog-content">
         <el-form
-          :model="form"
-          :rules="rules"
-          ref="formRef"
-          class="audit-form"
-          label-width="100px"
+            :model="form"
+            :rules="rules"
+            ref="formRef"
+            class="audit-form"
+            label-width="100px"
         >
           <el-form-item label="设施名称">
             <el-input
-              v-model="currentRow.facilityName"
-              disabled
-              class="readonly-input"
+                v-model="currentRow.facilityName"
+                disabled
+                class="readonly-input"
             />
           </el-form-item>
 
           <el-form-item label="申请人">
             <el-input
-              v-model="currentRow.userName"
-              disabled
-              class="readonly-input"
+                v-model="currentRow.userName"
+                disabled
+                class="readonly-input"
             />
           </el-form-item>
 
           <el-form-item label="使用目的">
             <el-input
-              v-model="currentRow.purpose"
-              disabled
-              type="textarea"
-              :rows="2"
-              class="readonly-input"
+                v-model="currentRow.purpose"
+                disabled
+                type="textarea"
+                :rows="2"
+                class="readonly-input"
             />
           </el-form-item>
 
           <el-form-item label="管理员备注" prop="adminRemark">
             <el-input
-              type="textarea"
-              v-model="form.adminRemark"
-              :rows="4"
-              placeholder="请输入审核意见或备注信息..."
-              maxlength="200"
-              show-word-limit
+                type="textarea"
+                v-model="form.adminRemark"
+                :rows="4"
+                placeholder="请输入审核意见或备注信息..."
+                maxlength="200"
+                show-word-limit
             />
           </el-form-item>
         </el-form>
@@ -195,11 +243,11 @@
             取消
           </el-button>
           <el-button
-            type="primary"
-            size="large"
-            :loading="submitLoading"
-            @click="handleSubmit"
-            class="submit-btn"
+              type="primary"
+              size="large"
+              :loading="submitLoading"
+              @click="handleSubmit"
+              class="submit-btn"
           >
             确定
           </el-button>
@@ -214,6 +262,7 @@ import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { reservationAPI, facilityAPI } from '../../api';
 import { Clock, CircleCheck, CircleClose, Check } from '@element-plus/icons-vue';
+import { Clock, CircleCheck, CircleClose, Check, Search } from '@element-plus/icons-vue';
 
 const activeTab = ref('PENDING');
 const reservationList = ref([]);
@@ -224,6 +273,11 @@ const loading = ref(false);
 const submitLoading = ref(false);
 const formRef = ref(null);
 
+// 搜索和分页相关
+const searchKeyword = ref('');
+const currentPage = ref(1);
+const pageSize = ref(10);
+const total = ref(0);
 const currentRow = ref({});
 const form = ref({
   adminRemark: ''
@@ -262,7 +316,60 @@ const loadReservationList = async () => {
 };
 
 const handleTabChange = () => {
+  currentPage.value = 1; // 切换标签时回到第一页
   loadReservationList();
+};
+
+// 搜索功能
+const handleSearch = () => {
+  currentPage.value = 1; // 搜索时回到第一页
+  loadReservationList();
+};
+const handleSearchClear = () => {
+  searchKeyword.value = '';
+  currentPage.value = 1;
+  loadReservationList();
+};
+// 分页相关函数
+const handleSizeChange = (size) => {
+  pageSize.value = size;
+  currentPage.value = 1;
+  loadReservationList();
+};
+const handleCurrentChange = (page) => {
+  currentPage.value = page;
+  loadReservationList();
+};
+// 用户角色相关函数
+const getUserRoleType = (role) => {
+  switch (role) {
+    case 'TEACHER':
+      return 'warning';
+    case 'STUDENT':
+      return 'success';
+    case 'ADMIN':
+      return 'danger';
+    case 'MAINTAINER':
+      return 'info';
+    default:
+      return 'primary';
+  }
+};
+const getUserRoleText = (role) => {
+  switch (role) {
+    case 'TEACHER':
+      return '教师';
+    case 'STUDENT':
+      return '学生';
+    case 'ADMIN':
+      return '管理员';
+    case 'MAINTAINER':
+      return '维护员';
+    case 'USER':
+      return '普通用户';
+    default:
+      return role || '未知';
+  }
 };
 
 const handleApprove = (row) => {

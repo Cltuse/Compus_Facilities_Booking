@@ -175,6 +175,25 @@ public class ReservationController {
     }
 
     /**
+     * 搜索预约记录
+     * @param keyword 搜索关键词
+     * @return 符合条件的预约记录列表
+     */
+    @GetMapping("/search")
+    public Result<List<Reservation>> search(@RequestParam(required = false) String keyword) {
+        List<Reservation> reservations;
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            reservations = reservationRepository.findAll();
+        } else {
+            reservations = reservationRepository.findByKeyword(keyword.trim());
+        }
+
+        enrichReservations(reservations);
+        return Result.success(reservations);
+    }
+
+    /**
      * 完成预约
      * @param id 预约记录ID
      * @return 完成后的预约记录信息

@@ -32,6 +32,7 @@ export const facilityAPI = {
 // 预约相关API
 export const reservationAPI = {
     list: () => request.get('/reservation/list'),
+    search: (keyword) => request.get('/reservation/search', { params: { keyword } }),
     getByUserId: (userId) => request.get(`/reservation/user/${userId}`),
     getPending: () => request.get('/reservation/pending'),
     getById: (id) => request.get(`/reservation/${id}`),
@@ -88,4 +89,3 @@ export const facilityCategoryAPI = {
         params: { status, ...params }
     })
 };
-

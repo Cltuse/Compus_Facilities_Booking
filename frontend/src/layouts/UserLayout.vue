@@ -21,7 +21,7 @@
           <el-menu-item index="/user/facility" class="menu-item">
             <el-icon class="menu-icon-item"><Box /></el-icon>
             <template #title>
-              <span class="menu-text">设备浏览</span>
+              <span class="menu-text">设施浏览</span>
             </template>
           </el-menu-item>
 

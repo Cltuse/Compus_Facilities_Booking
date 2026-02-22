@@ -110,11 +110,15 @@ const handleLogin = async () => {
     // 根据角色跳转到不同页面
     if (res.data.role === 'ADMIN') {
       router.push('/admin/dashboard');
+    } else if (res.data.role === 'MAINTAINER') {
+      router.push('/maintainer/dashboard');
     } else {
+      // 对于 TEACHER, STUDENT 或其他 USER 角色，跳转到用户欢迎页面
       router.push('/user/welcome');
     }
   } catch (error) {
     console.error('登录失败:', error);
+
   } finally {
     loading.value = false;
   }

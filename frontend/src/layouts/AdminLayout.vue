@@ -21,14 +21,14 @@
           <el-menu-item index="/admin/facility" class="menu-item">
             <el-icon class="menu-icon-item"><Box /></el-icon>
             <template #title>
-              <span class="menu-text">设备管理</span>
+              <span class="menu-text">设施管理</span>
             </template>
           </el-menu-item>
 
           <el-menu-item index="/admin/facility-category" class="menu-item">
             <el-icon class="menu-icon-item"><Collection /></el-icon>
             <template #title>
-              <span class="menu-text">设备类别</span>
+              <span class="menu-text">设施类别</span>
             </template>
           </el-menu-item>
 

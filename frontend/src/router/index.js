@@ -98,6 +98,34 @@ const routes = [
         ]
     },
     {
+        path: '/maintainer',
+        name: 'MaintainerLayout',
+        component: () => import('../layouts/MaintainerLayout.vue'),
+        redirect: '/maintainer/dashboard',
+        children: [
+            {
+                path: 'dashboard',
+                name: 'MaintainerDashboard',
+                component: () => import('../views/maintainer/Dashboard.vue')
+            },
+            {
+                path: 'maintenance',
+                name: 'MaintainerMaintenance',
+                component: () => import('../views/maintainer/maintenance.vue')
+            },
+            {
+                path: 'facility',
+                name: 'MaintainerFacility',
+                component: () => import('../views/maintainer/Facility.vue')
+            },
+            {
+                path: 'profile',
+                name: 'MaintainerProfile',
+                component: () => import('../views/maintainer/Profile.vue')
+            }
+        ]
+    },
+    {
         path: '/',
         redirect: '/login'
     }
@@ -118,10 +146,34 @@ router.beforeEach((to, from, next) => {
         next('/login');
     } else {
         const user = JSON.parse(userInfo);
+
+        // 管理员访问控制
         if (to.path.startsWith('/admin') && user.role !== 'ADMIN') {
-            next('/user/welcome');
-        } else if (to.path.startsWith('/user') && user.role !== 'USER') {
-            next('/admin/dashboard');
+            if (['TEACHER', 'STUDENT'].includes(user.role)) {
+                next('/user/welcome');
+            } else if (user.role === 'MAINTAINER') {
+                next('/maintainer/dashboard');
+            } else {
+                next('/user/welcome');
+            }
+        }
+        // 普通用户访问控制
+        else if (to.path.startsWith('/user') && !['USER', 'TEACHER', 'STUDENT'].includes(user.role)) {
+            if (user.role === 'ADMIN') {
+                next('/admin/dashboard');
+            } else if (user.role === 'MAINTAINER') {
+                next('/maintainer/dashboard');
+            } else {
+                next('/user/welcome');
+            }
+        }
+        // 维护员访问控制
+        else if (to.path.startsWith('/maintainer') && user.role !== 'MAINTAINER') {
+            if (user.role === 'ADMIN') {
+                next('/admin/dashboard');
+            } else {
+                next('/user/welcome');
+            }
         } else {
             next();
         }

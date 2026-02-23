@@ -49,6 +49,9 @@ public class Reservation {
     @Transient
     private String userName;
 
+    @Transient
+    private String userRole;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

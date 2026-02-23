@@ -33,6 +33,9 @@ export const facilityAPI = {
 export const reservationAPI = {
     list: () => request.get('/reservation/list'),
     search: (keyword) => request.get('/reservation/search', { params: { keyword } }),
+    searchPage: (keyword, params) => request.get('/reservation/search/page', {
+        params: { keyword, ...params }
+    }),
     getByUserId: (userId) => request.get(`/reservation/user/${userId}`),
     getPending: () => request.get('/reservation/pending'),
     getById: (id) => request.get(`/reservation/${id}`),

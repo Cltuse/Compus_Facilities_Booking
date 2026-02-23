@@ -16,61 +16,13 @@
       </div>
     </div>
 
-    <!-- 搜索和筛选区域 -->
-    <div class="search-container">
-      <el-row :gutter="20" align="middle">
-        <el-col :span="8">
-          <el-input
-              v-model="searchKeyword"
-              placeholder="搜索设施名称、申请人或使用目的"
-              clearable
-              @clear="handleSearchClear"
-              @keyup.enter="handleSearch"
-              class="search-input"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-        </el-col>
-        <el-col :span="4">
-          <el-button type="primary" @click="handleSearch" :icon="Search">搜索</el-button>
-        </el-col>
-        <el-col :span="12" class="text-right">
-          <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :page-sizes="[10, 20, 50, 100]"
-              :total="total"
-              layout="total, sizes, prev, pager, next, jumper"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-              class="pagination"
-          />
-        </el-col>
-      </el-row>
-    </div>
-
     <!-- 状态标签页 -->
     <div class="tabs-container">
       <el-tabs v-model="activeTab" @tab-change="handleTabChange" class="status-tabs">
         <el-tab-pane label="待审核" name="PENDING" />
-        </el-table-column><!--!!!!!!!!!!!!!!!!!!!!!!!!!!-->
-        <el-table-column prop="userName" label="申请人" min-width="120">
-          <template #default="{ row }">
-            <div class="user-info">
-              <span>{{ row.userName || '未知用户' }}</span>
-              <el-tag size="small" :type="getUserRoleType(row.userRole)" class="role-tag">
-                {{ getUserRoleText(row.userRole) }}
-              </el-tag>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="startTime" label="开始时间" width="160">
-          <el-tab-pane label="已通过" name="APPROVED" />
-          <el-tab-pane label="已拒绝" name="REJECTED" />
-          <el-tab-pane label="全部" name="ALL" />
-        </el-table-column>
+        <el-tab-pane label="已通过" name="APPROVED" />
+        <el-tab-pane label="已拒绝" name="REJECTED" />
+        <el-tab-pane label="全部" name="ALL" />
       </el-tabs>
     </div>
 
@@ -87,8 +39,8 @@
       >
         <el-table-column prop="facilityName" label="设施名称" min-width="150">
           <template #default="{ row }">
-            <div class="facility-info">
-              <div class="facility-name">{{ row.facilityName }}</div>
+            <div class="faciltyment-info">
+              <div class="faciltyment-name">{{ row.facilityName }}</div>
             </div>
           </template>
         </el-table-column>
@@ -200,7 +152,7 @@
         >
           <el-form-item label="设施名称">
             <el-input
-                v-model="currentRow.facilityName"
+                v-model="currentRow.faciltymentName"
                 disabled
                 class="readonly-input"
             />
@@ -260,8 +212,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { reservationAPI, facilityAPI } from '../../api';
-import { Clock, CircleCheck, CircleClose, Check } from '@element-plus/icons-vue';
+import { reservationAPI, facilityAPI, userAPI } from '../../api';
 import { Clock, CircleCheck, CircleClose, Check, Search } from '@element-plus/icons-vue';
 
 const activeTab = ref('PENDING');
@@ -273,11 +224,6 @@ const loading = ref(false);
 const submitLoading = ref(false);
 const formRef = ref(null);
 
-// 搜索和分页相关
-const searchKeyword = ref('');
-const currentPage = ref(1);
-const pageSize = ref(10);
-const total = ref(0);
 const currentRow = ref({});
 const form = ref({
   adminRemark: ''
@@ -300,13 +246,18 @@ const loadReservationList = async () => {
     let res;
     // 获取所有预约数据，然后在前端根据状态筛选
     res = await reservationAPI.list();
-
+    
+    let reservations;
     if (activeTab.value === 'ALL') {
-      reservationList.value = res.data;
+      reservations = res.data;
     } else {
       // 根据当前选中的标签页状态筛选数据
-      reservationList.value = res.data.filter(item => item.status === activeTab.value);
+      reservations = res.data.filter(item => item.status === activeTab.value);
     }
+    
+    // 后端已经在API中添加了facilityName和userName字段
+    // 直接使用后端返回的数据即可
+    reservationList.value = reservations;
   } catch (error) {
     console.error('加载预约列表失败:', error);
     ElMessage.error('加载预约列表失败');
@@ -316,60 +267,7 @@ const loadReservationList = async () => {
 };
 
 const handleTabChange = () => {
-  currentPage.value = 1; // 切换标签时回到第一页
   loadReservationList();
-};
-
-// 搜索功能
-const handleSearch = () => {
-  currentPage.value = 1; // 搜索时回到第一页
-  loadReservationList();
-};
-const handleSearchClear = () => {
-  searchKeyword.value = '';
-  currentPage.value = 1;
-  loadReservationList();
-};
-// 分页相关函数
-const handleSizeChange = (size) => {
-  pageSize.value = size;
-  currentPage.value = 1;
-  loadReservationList();
-};
-const handleCurrentChange = (page) => {
-  currentPage.value = page;
-  loadReservationList();
-};
-// 用户角色相关函数
-const getUserRoleType = (role) => {
-  switch (role) {
-    case 'TEACHER':
-      return 'warning';
-    case 'STUDENT':
-      return 'success';
-    case 'ADMIN':
-      return 'danger';
-    case 'MAINTAINER':
-      return 'info';
-    default:
-      return 'primary';
-  }
-};
-const getUserRoleText = (role) => {
-  switch (role) {
-    case 'TEACHER':
-      return '教师';
-    case 'STUDENT':
-      return '学生';
-    case 'ADMIN':
-      return '管理员';
-    case 'MAINTAINER':
-      return '维护员';
-    case 'USER':
-      return '普通用户';
-    default:
-      return role || '未知';
-  }
 };
 
 const handleApprove = (row) => {
@@ -398,7 +296,7 @@ const handleSubmit = async () => {
       await reservationAPI.approve(currentRow.value.id, form.value);
 
       // 同时更新设施状态为使用中
-      await updateFacilityStatus(currentRow.value.facilityId, 'IN_USE');
+      await updateFaciltymentStatus(currentRow.value.facilityId, 'IN_USE');
 
       ElMessage.success('审核通过，设施状态已更新为使用中');
     } else {
@@ -417,7 +315,7 @@ const handleSubmit = async () => {
 };
 
 // 更新设施状态
-const updateFacilityStatus = async (facilityId, status) => {
+const updateFaciltymentStatus = async (facilityId, status) => {
   try {
     await facilityAPI.updateStatus(facilityId, status);
   } catch (error) {
@@ -662,11 +560,11 @@ const getStatusText = (status) => {
 }
 
 /* 表格单元格内容样式 */
-.facility-info {
+.faciltyment-info {
   min-width: 0;
 }
 
-.facility-name {
+.faciltyment-name {
   font-size: 14px;
   font-weight: 600;
   color: #1a202c;

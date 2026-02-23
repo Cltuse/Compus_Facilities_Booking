@@ -35,15 +35,15 @@
         </div>
         <div class="card-content">
           <div class="info-item">
-            <span class="label">用户名</span>
+            <span class="label">学号/工号</span>
             <span class="value">{{ userInfo.username }}</span>
           </div>
           <div class="info-item">
-            <span class="label">真实姓名</span>
+            <span class="label">姓名</span>
             <span class="value">{{ userInfo.realName }}</span>
           </div>
           <div class="info-item">
-            <span class="label">角色</span>
+            <span class="label">身份</span>
             <span class="value">{{ userInfo.role === 'ADMIN' ? '管理员' : '普通用户' }}</span>
           </div>
         </div>

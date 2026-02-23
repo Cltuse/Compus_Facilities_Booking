@@ -23,7 +23,7 @@ public class User {
     private String realName;
 
     @Column(nullable = false, length = 20)
-    private String role; // USER, ADMIN
+    private String role; // USER, ADMIN, TEACHER, STUDENT
 
     @Column(length = 20)
     private String phone;
@@ -51,4 +51,5 @@ public class User {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
 }

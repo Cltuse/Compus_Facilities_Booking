@@ -29,7 +29,7 @@
           <div class="input-wrapper">
             <el-input
               v-model="registerForm.username"
-              placeholder="用户名"
+              placeholder="学号/工号"
               size="large"
               prefix-icon="User"
             />

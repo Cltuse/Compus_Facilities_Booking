@@ -8,10 +8,13 @@ import com.facility.booking.repository.FacilityRepository;
 import com.facility.booking.repository.ReservationRepository;
 import com.facility.booking.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * 设备预约控制器
@@ -257,10 +260,25 @@ public class ReservationController {
      * @param reservation 预约记录
      */
     private void enrichReservation(Reservation reservation) {
+        // 设置设施名称
         Optional<Facility> facility = facilityRepository.findById(reservation.getFacilityId());
         facility.ifPresent(e -> reservation.setFacilityName(e.getName()));
 
-        Optional<User> user = userRepository.findById(reservation.getUserId());
-        user.ifPresent(u -> reservation.setUserName(u.getRealName()));
+        // 设置用户名称 - 优先使用realName，不存在时使用用户名
+        Optional<User> userOpt = userRepository.findById(reservation.getUserId());
+        if (userOpt.isPresent()) {
+            User u = userOpt.get();
+            // 优先使用realName，如果为空则使用username
+            String displayName = u.getRealName();
+            if (displayName == null || displayName.trim().isEmpty()) {
+                displayName = u.getUsername();
+            }
+            reservation.setUserName(displayName);
+            reservation.setUserRole(u.getRole());
+        } else {
+            // 用户不存在时，显示"未知用户"并记录日志
+            reservation.setUserName("未知用户");
+            reservation.setUserRole(null);
+        }
     }
 }

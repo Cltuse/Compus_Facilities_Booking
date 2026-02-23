@@ -36,10 +36,12 @@ public class Reservation {
     @Column(columnDefinition = "TEXT")
     private String adminRemark;
 
+    @Basic
     @Column(updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private LocalDateTime createdAt;
 
+    @Basic
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private LocalDateTime updatedAt;
 

@@ -13,10 +13,10 @@
     </parent>
     
     <groupId>com.lab</groupId>
-    <artifactId>equipment-management</artifactId>
+    <artifactId>facility-management</artifactId>
     <version>1.0.0</version>
-    <name>Lab Equipment Management System</name>
-    <description>实验室设备预约与维护管理系统</description>
+    <name>Compus Facilities Booking</name>
+    <description>校园公共设施预约管理系统</description>
     
     <properties>
         <java.version>21</java.version>

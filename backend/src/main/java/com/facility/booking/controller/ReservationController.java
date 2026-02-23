@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -243,6 +244,64 @@ public class ReservationController {
         }
         reservationRepository.deleteById(id);
         return Result.success("删除成功", null);
+    }
+
+    @GetMapping("/stats/time-range")
+    public Result<Map<String, Object>> getStatsByTimeRange(@RequestParam String range) {
+        LocalDateTime startTime = getStartTimeByRange(range);
+        List<Reservation> reservations = reservationRepository.findByCreatedAtAfter(startTime);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", reservations.size());
+        result.put("reservations", reservations);
+        
+        return Result.success(result);
+    }
+
+    @GetMapping("/stats/category")
+    public Result<Map<String, Object>> getCategoryStats(@RequestParam(required = false) String range) {
+        LocalDateTime startTime = range != null ? getStartTimeByRange(range) : LocalDateTime.of(2000, 1, 1, 0, 0);
+        List<Reservation> reservations = reservationRepository.findByCreatedAtAfter(startTime);
+        
+        Map<String, Integer> categoryCount = new LinkedHashMap<>();
+        for (Reservation r : reservations) {
+            Optional<Facility> facOpt = facilityRepository.findById(r.getFacilityId());
+            String category = "未分类";
+            if (facOpt.isPresent() && facOpt.get().getCategory() != null) {
+                category = facOpt.get().getCategory();
+            }
+            categoryCount.put(category, categoryCount.getOrDefault(category, 0) + 1);
+        }
+        
+        List<Map<String, Object>> pieData = new ArrayList<>();
+        String[] colors = {"#409eff", "#67c23a", "#e6a23c", "#f56c6c", "#909399", "#c71585", "#00ced1", "#ff6347"};
+        int colorIndex = 0;
+        for (Map.Entry<String, Integer> entry : categoryCount.entrySet()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("name", entry.getKey());
+            item.put("value", entry.getValue());
+            item.put("itemStyle", Map.of("color", colors[colorIndex % colors.length]));
+            pieData.add(item);
+            colorIndex++;
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("categoryData", pieData);
+        result.put("total", reservations.size());
+        
+        return Result.success(result);
+    }
+
+    private LocalDateTime getStartTimeByRange(String range) {
+        LocalDateTime now = LocalDateTime.now();
+        return switch (range) {
+            case "1d" -> now.minusDays(1);
+            case "7d" -> now.minusDays(7);
+            case "30d" -> now.minusDays(30);
+            case "180d" -> now.minusDays(180);
+            case "365d" -> now.minusDays(365);
+            default -> now.minusDays(7);
+        };
     }
 
     /**

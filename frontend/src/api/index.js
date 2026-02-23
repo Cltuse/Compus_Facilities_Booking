@@ -45,7 +45,9 @@ export const reservationAPI = {
     reject: (id, data) => request.put(`/reservation/${id}/reject`, data),
     cancel: (id) => request.put(`/reservation/${id}/cancel`),
     complete: (id) => request.put(`/reservation/${id}/complete`),
-    delete: (id) => request.delete(`/reservation/${id}`)
+    delete: (id) => request.delete(`/reservation/${id}`),
+    getStatsByTimeRange: (range) => request.get('/reservation/stats/time-range', { params: { range } }),
+    getCategoryStats: (range) => request.get('/reservation/stats/category', { params: { range } })
 };
 
 // 维护相关API

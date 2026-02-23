@@ -111,6 +111,64 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- 预约统计图表区域 -->
+    <el-row :gutter="24" class="charts-row">
+      <el-col :span="16">
+        <el-card class="chart-card reservation-line-card">
+          <template #header>
+            <div class="chart-header">
+              <div class="chart-title">
+                <div class="title-icon">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M18 9l-5 5-4-4-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <span>近期预约数量统计</span>
+              </div>
+              <div class="chart-controls">
+                <el-select v-model="timeRange" placeholder="选择时间段" @change="handleTimeRangeChange" class="time-select">
+                  <el-option label="1天内" value="1d" />
+                  <el-option label="7天内" value="7d" />
+                  <el-option label="30天内" value="30d" />
+                  <el-option label="半年内" value="180d" />
+                  <el-option label="一年内" value="365d" />
+                </el-select>
+              </div>
+            </div>
+          </template>
+          <div class="chart-container" ref="reservationLineChartRef"></div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card class="chart-card reservation-pie-card">
+          <template #header>
+            <div class="chart-header">
+              <div class="chart-title">
+                <div class="title-icon">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M22 12A10 10 0 0 0 12 2v10z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <span>预约类别分布</span>
+              </div>
+              <div class="chart-controls">
+                <el-select v-model="timeRange" placeholder="选择时间段" @change="handleTimeRangeChange" class="time-select">
+                  <el-option label="1天内" value="1d" />
+                  <el-option label="7天内" value="7d" />
+                  <el-option label="30天内" value="30d" />
+                  <el-option label="半年内" value="180d" />
+                  <el-option label="一年内" value="365d" />
+                </el-select>
+              </div>
+            </div>
+          </template>
+          <div class="chart-container" ref="reservationPieChartRef"></div>
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
@@ -128,14 +186,21 @@ const stats = ref({
 
 const lineChartRef = ref(null);
 const pieChartRef = ref(null);
+const reservationLineChartRef = ref(null);
+const reservationPieChartRef = ref(null);
 let lineChart = null;
 let pieChart = null;
+let reservationLineChart = null;
+let reservationPieChart = null;
+
+const timeRange = ref('7d');
 
 onMounted(async () => {
   await loadStats();
   await loadChartData();
   await nextTick();
   initCharts();
+  await loadReservationStats();
 });
 
 const loadStats = async () => {
@@ -395,6 +460,255 @@ const initPieChart = (data) => {
     pieChart?.resize();
   });
 };
+
+const loadReservationStats = async () => {
+  try {
+    console.log('正在加载预约统计数据, timeRange:', timeRange.value);
+    
+    const [timeRangeRes, categoryRes] = await Promise.all([
+      reservationAPI.getStatsByTimeRange(timeRange.value),
+      reservationAPI.getCategoryStats(timeRange.value)
+    ]);
+    
+    console.log('时间段数据:', timeRangeRes);
+    console.log('类别数据:', categoryRes);
+    console.log('reservations具体数据:', timeRangeRes.data.data?.reservations);
+
+    processReservationLineData(timeRangeRes.data?.reservations || []);
+    processReservationPieData(categoryRes.data?.categoryData || []);
+
+    console.log('处理后的折线图数据:', window.reservationLineData);
+    console.log('处理后的饼图数据:', window.reservationPieData);
+    
+    await nextTick();
+    initReservationCharts();
+  } catch (error) {
+    console.error('加载预约统计数据失败:', error);
+  }
+};
+
+const handleTimeRangeChange = async () => {
+  await loadReservationStats();
+};
+
+const processReservationLineData = (reservations) => {
+  const groupedData = {};
+
+  console.log('原始预约记录:', reservations);
+  if (reservations && reservations.length > 0) {
+    console.log('第一条记录:', reservations[0]);
+  }
+
+  reservations.forEach(r => {
+    if (r.createdAt) {
+      let date;
+      if (typeof r.createdAt === 'string') {
+        // 处理字符串格式
+        if (r.createdAt.includes('T')) {
+          date = r.createdAt.split('T')[0];
+        } else if (r.createdAt.includes(' ')) {
+          date = r.createdAt.split(' ')[0];
+        } else {
+          date = r.createdAt;
+        }
+      } else if (r.createdAt.date) {
+        date = r.createdAt.date;
+      } else if (r.createdAt.year) {
+        date = `${r.createdAt.year}-${String(r.createdAt.monthValue).padStart(2, '0')}-${String(r.createdAt.dayOfMonth).padStart(2, '0')}`;
+      }
+      if (date) {
+        groupedData[date] = (groupedData[date] || 0) + 1;
+      }
+    }
+  });
+
+  console.log('分组后的数据:', groupedData);
+  window.reservationLineData = groupedData;
+};
+
+const processReservationPieData = (categoryData) => {
+  window.reservationPieData = categoryData;
+};
+
+const initReservationCharts = () => {
+  // 销毁已存在的图表实例
+  if (reservationLineChart) {
+    reservationLineChart.dispose();
+  }
+
+  if (reservationPieChart) {
+    reservationPieChart.dispose();
+  }
+
+  initReservationLineChart();
+  initReservationPieChart();
+};
+
+const initReservationLineChart = () => {
+  if (!reservationLineChartRef.value) return;
+  
+  reservationLineChart = echarts.init(reservationLineChartRef.value);
+  
+  const groupedData = window.reservationLineData || {};
+  const sortedDates = Object.keys(groupedData).sort();
+  const values = sortedDates.map(date => groupedData[date]);
+  
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(50, 50, 50, 0.9)',
+      borderColor: 'none',
+      textStyle: {
+        color: '#fff'
+      },
+      formatter: (params) => {
+        const data = params[0];
+        return `${data.axisValue}<br/>预约数量: ${data.value} 次`;
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      top: '10%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: sortedDates,
+      axisLine: {
+        lineStyle: {
+          color: '#e2e8f0'
+        }
+      },
+      axisTick: {
+        show: false
+      },
+      axisLabel: {
+        color: '#718096',
+        fontSize: 11,
+        rotate: sortedDates.length > 10 ? 45 : 0,
+        interval: Math.floor(sortedDates.length / 10)
+      }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: {
+        show: false
+      },
+      axisTick: {
+        show: false
+      },
+      axisLabel: {
+        color: '#718096',
+        fontSize: 12
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f0f0f0'
+        }
+      }
+    },
+    series: [{
+      name: '预约数量',
+      type: 'line',
+      data: values,
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 8,
+      itemStyle: {
+        color: '#e6a23c'
+      },
+      lineStyle: {
+        width: 3,
+        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+          { offset: 0, color: '#e6a23c' },
+          { offset: 1, color: '#f56c6c' }
+        ])
+      },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(230, 162, 60, 0.4)' },
+          { offset: 1, color: 'rgba(230, 162, 60, 0.05)' }
+        ])
+      },
+      emphasis: {
+        itemStyle: {
+          color: '#f56c6c',
+          borderColor: '#fff',
+          borderWidth: 2,
+          shadowBlur: 10,
+          shadowColor: 'rgba(230, 162, 60, 0.5)'
+        }
+      }
+    }]
+  };
+  
+  reservationLineChart.setOption(option);
+  
+  window.addEventListener('resize', () => {
+    reservationLineChart?.resize();
+  });
+};
+
+const initReservationPieChart = () => {
+  if (!reservationPieChartRef.value) return;
+  
+  reservationPieChart = echarts.init(reservationPieChartRef.value);
+  
+  const categoryData = window.reservationPieData || [];
+  
+  const option = {
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(50, 50, 50, 0.9)',
+      borderColor: 'none',
+      textStyle: {
+        color: '#fff'
+      },
+      formatter: '{a} <br/>{b}: {c} ({d}%)'
+    },
+    series: [{
+      name: '预约类别',
+      type: 'pie',
+      radius: ['40%', '70%'],
+      center: ['50%', '50%'],
+      avoidLabelOverlap: false,
+      itemStyle: {
+        borderRadius: 8,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
+      label: {
+        show: false,
+        position: 'center'
+      },
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: '18',
+          fontWeight: 'bold',
+          color: '#1a202c'
+        },
+        itemStyle: {
+          shadowBlur: 10,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      },
+      labelLine: {
+        show: false
+      },
+      data: categoryData
+    }]
+  };
+  
+  reservationPieChart.setOption(option);
+  
+  window.addEventListener('resize', () => {
+    reservationPieChart?.resize();
+  });
+};
 </script>
 
 <style scoped>
@@ -599,8 +913,24 @@ const initPieChart = (data) => {
 }
 
 .chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   padding: 24px 32px 20px;
   border-bottom: 1px solid #f0f0f0;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+}
+
+.time-select {
+  width: 140px;
+}
+
+.time-select :deep(.el-input__wrapper) {
+  border-radius: 8px;
 }
 
 .chart-title {
@@ -647,6 +977,32 @@ const initPieChart = (data) => {
 
 .pie-chart-card .chart-container {
   height: 350px;
+}
+
+.reservation-line-card .chart-container,
+.reservation-pie-card .chart-container {
+  height: 350px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px 32px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+}
+
+.time-select {
+  width: 140px;
+}
+
+.time-select :deep(.el-input__wrapper) {
+  border-radius: 8px;
 }
 
 /* 动画效果 */

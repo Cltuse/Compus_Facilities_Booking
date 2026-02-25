@@ -32,8 +32,8 @@ public class FacilityController {
      */
     @GetMapping("/list")
     public Result<List<Facility>> list() {
-        List<Facility> facilitys = facilityRepository.findAll();
-        return Result.success(facilitys);
+        List<Facility> facilities = facilityRepository.findAll();
+        return Result.success(facilities);
     }
 
     /**
@@ -42,8 +42,8 @@ public class FacilityController {
      */
     @GetMapping("/available")
     public Result<List<Facility>> getAvailable() {
-        List<Facility> facilitys = facilityRepository.findByStatus("AVAILABLE");
-        return Result.success(facilitys);
+        List<Facility> facilities = facilityRepository.findByStatus("AVAILABLE");
+        return Result.success(facilities);
     }
 
     /**
@@ -67,8 +67,8 @@ public class FacilityController {
      */
     @GetMapping("/search")
     public Result<List<Facility>> search(@RequestParam String keyword) {
-        List<Facility> facilitys = facilityRepository.findByNameContaining(keyword);
-        return Result.success(facilitys);
+        List<Facility> facilities = facilityRepository.findByNameContaining(keyword);
+        return Result.success(facilities);
     }
 
     /**

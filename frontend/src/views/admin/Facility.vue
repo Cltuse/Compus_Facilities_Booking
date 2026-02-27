@@ -64,6 +64,23 @@
         v-loading="loading"
         stripe
       >
+        <el-table-column label="图片" width="120" align="center">
+          <template #default="{ row }">
+            <div class="facility-image">
+              <img 
+                v-if="row.imageUrl && isValidImageUrl(row.imageUrl)" 
+                :src="row.imageUrl" 
+                :alt="row.name"
+                class="facility-thumb"
+                @error="handleImageError"
+              />
+              <div v-else class="no-image">
+                <el-icon><Picture /></el-icon>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
+
         <el-table-column prop="name" label="设施名称" min-width="180">
           <template #default="{ row }">
             <div class="facility-name">
@@ -73,7 +90,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="category" label="类别" width="120">
+        <el-table-column prop="category" label="类别" width="140">
           <template #default="{ row }">
             <el-tag class="category-tag" effect="light">
               {{ row.category || '-' }}
@@ -81,7 +98,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="location" label="位置" width="150">
+        <el-table-column prop="location" label="位置" width="180">
           <template #default="{ row }">
             <span class="location">{{ row.location || '-' }}</span>
           </template>
@@ -106,7 +123,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -119,6 +136,7 @@
                 <el-icon><Edit /></el-icon>
                 编辑
               </el-button>
+
               <el-button
                 size="small"
                 type="danger"
@@ -156,6 +174,7 @@
       width="600px"
       class="facility-dialog"
       :close-on-click-modal="false"
+      @close="handleDialogClose"
     >
       <el-form :model="form" :rules="rules" ref="formRef" class="facility-form" label-width="100px">
         <el-form-item label="设施名称" prop="name">
@@ -200,6 +219,45 @@
         <el-form-item label="设施描述" prop="description">
           <el-input type="textarea" v-model="form.description" :rows="3" placeholder="请输入设施描述信息" maxlength="200" show-word-limit />
         </el-form-item>
+        
+        <!-- 设施图片 -->
+        <el-form-item label="设施图片" prop="imageUrl">
+          <div class="image-upload-section">
+            <div v-if="form.imageUrl" class="current-image-preview">
+              <img :src="form.imageUrl" :alt="form.name" class="facility-preview-image" />
+              <div class="image-actions">
+                <el-button size="small" type="danger" @click="removeImage" :icon="Delete">删除图片</el-button>
+                <el-button size="small" type="primary" @click="triggerFileSelect" :icon="Upload">更换图片</el-button>
+              </div>
+            </div>
+            <div v-else class="no-image-upload">
+              <el-upload
+                ref="dialogUploadRef"
+                class="dialog-image-uploader"
+                action="#"
+                :auto-upload="false"
+                :show-file-list="false"
+                :before-upload="beforeDialogImageUpload"
+                :on-change="handleDialogImageSelect"
+                accept="image/*"
+                drag
+              >
+                <el-icon class="upload-icon"><Upload /></el-icon>
+                <div class="upload-text">
+                  <div class="upload-title">点击或拖拽上传设施图片</div>
+                  <div class="upload-hint">支持 JPG、PNG、GIF 格式，大小不超过 10MB</div>
+                </div>
+              </el-upload>
+            </div>
+            <input 
+              ref="fileInputRef" 
+              type="file" 
+              accept="image/*" 
+              style="display: none;" 
+              @change="handleFileInputChange"
+            />
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -208,13 +266,88 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 图片上传对话框 -->
+    <el-dialog
+      title="设施图片管理"
+      v-model="imageDialogVisible"
+      width="500px"
+      class="image-dialog"
+      :close-on-click-modal="false"
+    >
+      <div class="image-upload-container">
+        <div v-if="currentFacility?.imageUrl" class="current-image">
+          <img :src="currentFacility.imageUrl" :alt="currentFacility.name" class="preview-image" />
+        </div>
+        <div v-else class="no-image-placeholder">
+          <el-icon><Picture /></el-icon>
+          <p>暂无设施图片</p>
+        </div>
+
+        <el-upload
+          ref="uploadRef"
+          class="image-uploader"
+          action="#"
+          :auto-upload="false"
+          :show-file-list="false"
+          :before-upload="beforeImageUpload"
+          :on-change="handleImageChange"
+          accept="image/*"
+        >
+          <template #trigger>
+            <el-button type="primary" class="upload-btn">
+              <el-icon><Upload /></el-icon>
+              选择图片
+            </el-button>
+          </template>
+        </el-upload>
+
+        <div v-if="selectedImage" class="selected-image-info">
+          <p>已选择: {{ selectedImage.name }}</p>
+          <p>大小: {{ formatFileSize(selectedImage.size) }}</p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="imageDialogVisible = false">关闭</el-button>
+          <el-button 
+            type="danger" 
+            @click="handleDeleteImage"
+            v-if="currentFacility?.imageUrl"
+          >
+            删除图片
+          </el-button>
+          <el-button 
+            type="primary" 
+            @click="handleUploadImage"
+            :disabled="!selectedImage"
+            :loading="uploading"
+          >
+            上传图片
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, onMounted, reactive } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { facilityAPI, facilityCategoryAPI } from '../../api';
+import { 
+  Search, 
+  Plus, 
+  Edit, 
+  Delete, 
+  Picture, 
+  Upload,
+  CircleCheck, 
+  CircleClose, 
+  Tools, 
+  Timer 
+} from '@element-plus/icons-vue';
+import { facilityAPI, facilityCategoryAPI, fileAPI } from '../../api';
 
 const loading = ref(false);
 const facilityList = ref([]);
@@ -225,6 +358,18 @@ const dialogTitle = ref('添加设施');
 const formRef = ref(null);
 const isEdit = ref(false);
 const categoryOptions = ref([]);
+
+// 图片上传相关
+const imageDialogVisible = ref(false);
+const currentFacility = ref(null);
+const selectedImage = ref(null);
+const uploading = ref(false);
+const uploadRef = ref(null);
+const baseUrl = ref('http://localhost:5681'); // 基础URL配置
+
+// 对话框图片上传相关
+const dialogUploadRef = ref(null);
+const fileInputRef = ref(null);
 
 // 搜索和分页
 const total = ref(0);
@@ -290,7 +435,13 @@ const loadFacilityList = async () => {
     }
 
     if (result.code === 200) {
-      facilityList.value = result.data.content || [];
+      const facilities = result.data.content || [];
+      facilities.forEach(facility => {
+        if (facility.imageUrl && facility.imageUrl.startsWith('blob:')) {
+          facility.imageUrl = null;
+        }
+      });
+      facilityList.value = facilities;
       total.value = result.data.totalElements || 0;
     } else {
       ElMessage.error(result.message || '获取设施列表失败');
@@ -359,51 +510,421 @@ const handleAdd = () => {
     status: 'AVAILABLE',
     description: '',
     purchaseDate: '',
-    price: 0
+    price: 0,
+    imageUrl: null,
+    _imageFile: null  // 清理临时图片文件引用
   };
+  // 清理文件输入框
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
   dialogVisible.value = true;
 };
 
 const handleEdit = (row) => {
   isEdit.value = true;
   dialogTitle.value = '编辑设施';
-  form.value = { ...row };
+  
+  // 清理之前的临时图片URL
+  if (form.value.imageUrl && form.value.imageUrl.startsWith('blob:')) {
+    URL.revokeObjectURL(form.value.imageUrl);
+  }
+  
+  form.value = { 
+    ...row,
+    _imageFile: null  // 清理临时图片文件引用
+  };
+  
+  // 如果 imageUrl 是 blob URL（之前编辑时留下的预览），清除它
+  if (form.value.imageUrl && form.value.imageUrl.startsWith('blob:')) {
+    form.value.imageUrl = null;
+  }
+  
+  // 清理文件输入框
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
+  
   dialogVisible.value = true;
 };
+
+const handleDelete = (row) => {
+  ElMessageBox.confirm(
+    `确定要删除设施 "${row.name}" 吗？`,
+    '删除确认',
+    {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+      confirmButtonClass: 'el-button--danger',
+      dangerouslyUseHTMLString: true,
+      message: `
+        <div style="margin: 10px 0;">
+          <p style="font-weight: bold; color: #f56c6c;">⚠️ 此操作不可恢复！</p>
+          <p style="margin-top: 8px;">设施名称：${row.name}</p>
+          ${row.model ? `<p>型号：${row.model}</p>` : ''}
+          <p>类别：${row.category || '未分类'}</p>
+        </div>
+      `
+    }
+  ).then(async () => {
+    try {
+      await facilityAPI.delete(row.id);
+      ElMessage.success('设施删除成功');
+      loadFacilityList();
+    } catch (error) {
+      console.error('删除失败:', error);
+      ElMessage.error('删除失败：' + (error.response?.data?.message || '未知错误'));
+    }
+  }).catch(() => {
+    ElMessage.info('已取消删除操作');
+  });
+};
+
+// 图片上传相关函数
+const handleImageUpload = (row) => {
+  currentFacility.value = { ...row };
+  selectedImage.value = null;
+  imageDialogVisible.value = true;
+};
+
+const beforeImageUpload = (file) => {
+  const isImage = file.type.startsWith('image/');
+  const isLt10M = file.size / 1024 / 1024 < 10;
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!');
+    return false;
+  }
+  if (!isLt10M) {
+    ElMessage.error('图片大小不能超过 10MB!');
+    return false;
+  }
+  return true;
+};
+
+const handleImageChange = async (uploadFile) => {
+  if (!uploadFile || !uploadFile.raw) return;
+  
+  const file = uploadFile.raw;
+  if (!beforeImageUpload(file)) return;
+  
+  selectedImage.value = file;
+  
+  // 清理之前的blob URL
+  if (currentFacility.value.imageUrl && currentFacility.value.imageUrl.startsWith('blob:')) {
+    URL.revokeObjectURL(currentFacility.value.imageUrl);
+  }
+  
+  // 创建新的预览URL
+  const tempUrl = URL.createObjectURL(file);
+  currentFacility.value.imageUrl = tempUrl;
+};
+
+const handleUploadImage = async () => {
+  if (!selectedImage.value) {
+    ElMessage.warning('请选择图片');
+    return;
+  }
+
+  uploading.value = true;
+  try {
+    // 使用正确的文件上传API
+    const result = await fileAPI.uploadFacilityImage(currentFacility.value.id, selectedImage.value);
+    if (result.code === 200) {
+      // 更新设施图片URL
+      currentFacility.value.imageUrl = result.data;
+      ElMessage.success('图片上传成功');
+      imageDialogVisible.value = false;
+      loadFacilityList();
+    } else {
+      ElMessage.error(result.message || '图片上传失败');
+    }
+  } catch (error) {
+    console.error('图片上传失败:', error);
+    ElMessage.error('图片上传失败');
+  } finally {
+    uploading.value = false;
+    selectedImage.value = null;
+  }
+};
+
+const handleDeleteImage = () => {
+  ElMessageBox.confirm(
+    `确定要删除设施 "${currentFacility.value.name}" 的图片吗？`,
+    '删除图片确认',
+    {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+      confirmButtonClass: 'el-button--danger',
+      dangerouslyUseHTMLString: true,
+      message: `
+        <div style="margin: 10px 0;">
+          <p style="font-weight: bold; color: #f56c6c;">⚠️ 此操作将永久删除设施图片！</p>
+          <p style="margin-top: 8px;">设施名称：${currentFacility.value.name}</p>
+          <p>删除后设施将显示默认图片</p>
+        </div>
+      `
+    }
+  ).then(async () => {
+    try {
+      const result = await facilityAPI.deleteImage(currentFacility.value.id);
+      if (result.code === 200) {
+        // 更新当前设施对象，移除图片URL
+        currentFacility.value.imageUrl = null;
+        // 同时更新表格中对应行的图片URL
+        const idx = facilityList.value.findIndex(f => f.id === currentFacility.value.id);
+        if (idx !== -1) facilityList.value[idx].imageUrl = null;
+        ElMessage.success('图片删除成功');
+        imageDialogVisible.value = false;
+      } else {
+        ElMessage.error(result.message || '图片删除失败');
+      }
+    } catch (error) {
+      console.error('图片删除失败:', error);
+      ElMessage.error('图片删除失败：' + (error.response?.data?.message || '未知错误'));
+    }
+  }).catch(() => {
+    ElMessage.info('已取消删除图片操作');
+  });
+};
+
+const handleImageError = (event) => {
+  if (event && event.target) {
+    event.target.style.display = 'none';
+    const parent = event.target.parentElement;
+    if (parent) {
+      const noImageEl = parent.querySelector('.no-image');
+      if (noImageEl) {
+        noImageEl.style.display = 'flex';
+      }
+    }
+  }
+};
+
+const isValidImageUrl = (url) => {
+  if (!url) return false;
+  if (url.startsWith('blob:')) {
+    return false;
+  }
+  return true;
+};
+
+// 图片上传成功处理函数
+const handleDialogUploadSuccess = (response) => {
+  if (response.code === 200) {
+    form.value.imageUrl = response.data;
+    ElMessage.success('图片上传成功');
+  } else {
+    ElMessage.error(response.message || '图片上传失败');
+  }
+};
+
+// 图片上传失败处理函数
+const handleDialogUploadError = (error) => {
+  ElMessage.error('图片上传失败: ' + (error.message || '未知错误'));
+};
+
+// 设施图片上传成功处理函数
+const handleUploadSuccess = (response) => {
+  if (response.code === 200) {
+    currentFacility.value.imageUrl = response.data;
+    ElMessage.success('图片上传成功');
+    loadFacilityList();
+  } else {
+    ElMessage.error(response.message || '图片上传失败');
+  }
+};
+
+// 设施图片上传失败处理函数
+const handleUploadError = (error) => {
+  ElMessage.error('图片上传失败: ' + (error.message || '未知错误'));
+};
+
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+// 对话框图片上传相关方法
+const triggerFileSelect = () => {
+  fileInputRef.value.click();
+};
+
+const handleFileInputChange = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    handleDialogImageSelect({ raw: file });
+  }
+};
+
+const beforeDialogImageUpload = (file) => {
+  const isImage = file.type.startsWith('image/');
+  const isLt10M = file.size / 1024 / 1024 < 10;
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!');
+    return false;
+  }
+  if (!isLt10M) {
+    ElMessage.error('图片大小不能超过 10MB!');
+    return false;
+  }
+  return true;
+};
+
+const handleDialogImageSelect = (uploadFile) => {
+  if (!uploadFile || !uploadFile.raw) return;
+  
+  const file = uploadFile.raw;
+  if (!beforeDialogImageUpload(file)) return;
+  
+  // 只创建预览，不上传
+  const tempUrl = URL.createObjectURL(file);
+  form.value.imageUrl = tempUrl;
+  // 保存文件引用，在提交时上传
+  form.value._imageFile = file;
+};
+
+const removeImage = () => {
+  form.value.imageUrl = null;
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
+  ElMessage.success('图片已移除');
+};
+
+const handleDialogClose = () => {
+  // 清理临时图片URL
+  if (form.value.imageUrl && form.value.imageUrl.startsWith('blob:')) {
+    URL.revokeObjectURL(form.value.imageUrl);
+  }
+  // 清理临时文件引用
+  if (form.value._imageFile) {
+    delete form.value._imageFile;
+  }
+  // 清空文件输入
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
+  
+  // 重置表单数据
+  if (dialogUploadRef.value) {
+    dialogUploadRef.value.clearFiles();
+  }
+  
+  // 重置selectedImage
+  selectedImage.value = null;
+};;
 
 const handleSubmit = async () => {
   try {
     await formRef.value.validate();
     
+    let formData = { ...form.value };
+    let newFacilityId = null;
+    let imageFile = form.value._imageFile; // 保存图片文件引用
+    
+    // 清理临时数据
+    delete formData._imageFile;
+    
     if (isEdit.value) {
-      await facilityAPI.update(form.value.id, form.value);
+      // 编辑模式：确保不提交临时的blob URL
+      if (formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
+        // 如果是临时预览URL，使用原来的URL或null
+        const originalFacility = facilityList.value.find(f => f.id === formData.id);
+        formData.imageUrl = originalFacility ? originalFacility.imageUrl : null;
+      }
+      
+      console.log('更新设施信息，formData:', formData);
+      // 更新设施信息（不包含新图片）
+      await facilityAPI.update(formData.id, formData);
       ElMessage.success('更新成功');
+      
+      // 如果有新选择的图片文件，单独上传
+      if (imageFile && imageFile instanceof File) {
+        try {
+          console.log('开始上传图片，文件类型:', imageFile.type, '文件大小:', imageFile.size);
+          const uploadResponse = await facilityAPI.uploadImage(formData.id, imageFile);
+          if (uploadResponse.code === 200) {
+            // 更新设施图片信息 - 从返回的设施对象中提取imageUrl
+            const updatedFacility = uploadResponse.data;
+            if (updatedFacility && updatedFacility.imageUrl) {
+              await facilityAPI.update(formData.id, { imageUrl: updatedFacility.imageUrl });
+              ElMessage.success('图片上传成功');
+            } else {
+              console.error('上传图片后返回的数据格式错误:', updatedFacility);
+              ElMessage.warning('设施更新成功，但图片URL提取失败');
+            }
+          } else {
+            ElMessage.warning('设施更新成功，但图片上传失败：' + (uploadResponse.message || '未知错误'));
+          }
+        } catch (uploadError) {
+          console.error('图片上传失败详情:', uploadError);
+          console.error('上传失败响应:', uploadError.response);
+          console.error('上传失败数据:', uploadError.response?.data);
+          ElMessage.warning('设施更新成功，但图片上传失败：' + (uploadError.message || uploadError.response?.data?.message || '网络错误'));
+        }
+      } else if (imageFile) {
+        console.warn('imageFile不是有效的File对象:', imageFile);
+      }
     } else {
-      await facilityAPI.create(form.value);
+      // 新增模式：确保不提交临时的blob URL
+      if (formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
+        console.log('检测到新增模式下的blob URL，设置为null');
+        formData.imageUrl = null;
+      }
+      
+      console.log('新增设施，formData:', formData);
+      // 先创建设施
+      const createResponse = await facilityAPI.create(formData);
+      newFacilityId = createResponse.data.id;
       ElMessage.success('添加成功');
+      
+      // 如果有新选择的图片文件，上传图片
+      if (imageFile && imageFile instanceof File) {
+        try {
+          console.log('开始上传图片，文件类型:', imageFile.type, '文件大小:', imageFile.size);
+          const uploadResponse = await facilityAPI.uploadImage(newFacilityId, imageFile);
+          if (uploadResponse.code === 200) {
+            // 更新设施图片信息 - 从返回的设施对象中提取imageUrl
+            const updatedFacility = uploadResponse.data;
+            if (updatedFacility && updatedFacility.imageUrl) {
+              await facilityAPI.update(newFacilityId, { imageUrl: updatedFacility.imageUrl });
+              ElMessage.success('设施创建成功，图片上传成功');
+            } else {
+              console.error('上传图片后返回的数据格式错误:', updatedFacility);
+              ElMessage.warning('设施创建成功，但图片URL提取失败');
+            }
+          } else {
+            ElMessage.warning('设施创建成功，但图片上传失败：' + (uploadResponse.message || '未知错误'));
+          }
+        } catch (uploadError) {
+          console.error('图片上传失败详情:', uploadError);
+          console.error('上传失败响应:', uploadError.response);
+          console.error('上传失败数据:', uploadError.response?.data);
+          ElMessage.warning('设施创建成功，但图片上传失败：' + (uploadError.message || uploadError.response?.data?.message || '网络错误'));
+        }
+      } else if (imageFile) {
+        console.warn('imageFile不是有效的File对象:', imageFile);
+      }
     }
     
+    // 关闭对话框并刷新列表
     dialogVisible.value = false;
     loadFacilityList();
   } catch (error) {
     console.error('提交失败:', error);
-  }
-};
-
-const handleDelete = (row) => {
-  ElMessageBox.confirm('确认删除该设施？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    try {
-      await facilityAPI.delete(row.id);
-      ElMessage.success('删除成功');
-      loadFacilityList();
-    } catch (error) {
-      console.error('删除失败:', error);
+    if (error.response?.data?.message) {
+      ElMessage.error('提交失败: ' + error.response.data.message);
+    } else {
+      ElMessage.error('提交失败，请稍后重试');
     }
-  }).catch(() => {});
+  }
 };
 
 const getStatusType = (status) => {
@@ -810,6 +1331,188 @@ const getStatusText = (status) => {
 @keyframes gradient-shimmer {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
+}
+
+/* 设施图片样式 */
+.facility-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+}
+
+/* 对话框内图片上传样式 */
+.image-upload-section {
+  width: 100%;
+}
+
+.current-image-preview {
+  text-align: center;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 2px dashed #e2e8f0;
+}
+
+.facility-preview-image {
+  max-width: 300px;
+  max-height: 200px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  object-fit: contain;
+}
+
+.image-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.no-image-upload {
+  text-align: center;
+}
+
+.dialog-image-uploader {
+  width: 100%;
+}
+
+.dialog-image-uploader :deep(.el-upload-dragger) {
+  width: 100%;
+  height: 180px;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition: all 0.3s ease;
+}
+
+.dialog-image-uploader :deep(.el-upload-dragger:hover) {
+  border-color: #409eff;
+  background: #f0f9ff;
+}
+
+.dialog-image-uploader :deep(.el-upload-dragger.is-dragover) {
+  border-color: #409eff;
+  background: #e6f7ff;
+}
+
+.upload-icon {
+  font-size: 48px;
+  color: #a0aec0;
+  margin-bottom: 12px;
+}
+
+.upload-text {
+  color: #4a5568;
+}
+
+.upload-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.upload-hint {
+  font-size: 14px;
+  color: #718096;
+}
+
+.facility-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+  font-size: 12px;
+}
+
+.no-image .el-icon {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+/* 图片上传对话框样式 */
+.image-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+}
+
+.image-upload-container {
+  text-align: center;
+}
+
+.current-image {
+  margin-bottom: 20px;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.no-image-placeholder {
+  width: 100%;
+  height: 200px;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+  margin-bottom: 20px;
+}
+
+.no-image-placeholder .el-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.image-uploader {
+  margin-bottom: 16px;
+}
+
+.upload-btn {
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.selected-image-info {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.selected-image-info p {
+  margin: 4px 0;
+}
+
+/* 操作按钮样式调整 */
+.image-btn {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.image-btn:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border-color: transparent;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
 /* 响应式设计 */

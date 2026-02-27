@@ -78,7 +78,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column prop="status" label="状态" width="120" align="center">
           <template #default="{ row }">
             <el-tag
               :type="row.status === 'ACTIVE' ? 'success' : 'info'"

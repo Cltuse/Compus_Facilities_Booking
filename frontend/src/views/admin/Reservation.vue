@@ -75,7 +75,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="120" align="center">
+        <el-table-column prop="status" label="状态" width="160" align="center">
           <template #default="{ row }">
             <el-tag
                 :type="getStatusType(row.status)"
@@ -94,7 +94,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="160" align="center" fixed="right">
+        <el-table-column label="操作" width="200" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button

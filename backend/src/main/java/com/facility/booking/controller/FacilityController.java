@@ -3,12 +3,14 @@ package com.facility.booking.controller;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.Facility;
 import com.facility.booking.repository.FacilityRepository;
+import com.facility.booking.service.FileUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +27,9 @@ public class FacilityController {
 
     @Autowired
     private FacilityRepository facilityRepository;
+
+    @Autowired
+    private FileUploadService fileUploadService;
 
     /**
      * 获取所有设备列表
@@ -147,6 +152,96 @@ public class FacilityController {
     }
 
     /**
+     * 创建新设备并上传图片
+     * @param facility 设备信息
+     * @param imageFile 图片文件
+     * @return 创建的设备信息
+     */
+    @PostMapping(consumes = "multipart/form-data")
+    public Result<Facility> createWithImage(
+            @RequestPart("facility") Facility facility,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile) {
+        try {
+            // 如果提供了图片，先上传图片
+            if (imageFile != null && !imageFile.isEmpty()) {
+                if (!fileUploadService.isValidImageFile(imageFile)) {
+                    return Result.error("只能上传图片文件");
+                }
+                String imageUrl = fileUploadService.uploadFile(imageFile, "facility");
+                facility.setImageUrl(imageUrl);
+            }
+            
+            Facility savedfacility = facilityRepository.save(facility);
+            return Result.success("创建成功", savedfacility);
+        } catch (Exception e) {
+            return Result.error("创建失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 上传设施图片
+     * @param id 设施ID
+     * @param file 图片文件
+     * @return 更新后的设施信息
+     */
+    @PostMapping("/{id}/image")
+    public Result<Facility> uploadImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        Optional<Facility> facilityOpt = facilityRepository.findById(id);
+        if (!facilityOpt.isPresent()) {
+            return Result.error("设施不存在");
+        }
+
+        try {
+            // 验证文件类型
+            if (!fileUploadService.isValidImageFile(file)) {
+                return Result.error("只能上传图片文件");
+            }
+
+            Facility facility = facilityOpt.get();
+            
+            // 如果已有图片，先删除旧图片
+            if (facility.getImageUrl() != null && !facility.getImageUrl().isEmpty()) {
+                fileUploadService.deleteFile(facility.getImageUrl());
+            }
+
+            // 上传新图片到facility子目录
+            String imageUrl = fileUploadService.uploadFile(file, "facility");
+            facility.setImageUrl(imageUrl);
+            
+            Facility savedFacility = facilityRepository.save(facility);
+            return Result.success("图片上传成功", savedFacility);
+            
+        } catch (Exception e) {
+            return Result.error("图片上传失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 删除设施图片
+     * @param id 设施ID
+     * @return 更新后的设施信息
+     */
+    @DeleteMapping("/{id}/image")
+    public Result<Facility> deleteImage(@PathVariable Long id) {
+        Optional<Facility> facilityOpt = facilityRepository.findById(id);
+        if (!facilityOpt.isPresent()) {
+            return Result.error("设施不存在");
+        }
+
+        Facility facility = facilityOpt.get();
+        
+        // 删除图片文件
+        if (facility.getImageUrl() != null && !facility.getImageUrl().isEmpty()) {
+            fileUploadService.deleteFile(facility.getImageUrl());
+            facility.setImageUrl(null);
+            Facility savedFacility = facilityRepository.save(facility);
+            return Result.success("图片删除成功", savedFacility);
+        }
+
+        return Result.success("设施没有图片", facility);
+    }
+
+    /**
      * 更新设备信息
      * @param id 设备ID
      * @param facility 更新的设备信息
@@ -154,11 +249,42 @@ public class FacilityController {
      */
     @PutMapping("/{id}")
     public Result<Facility> update(@PathVariable Long id, @RequestBody Facility facility) {
-        if (!facilityRepository.existsById(id)) {
+        Optional<Facility> facilityOpt = facilityRepository.findById(id);
+        if (!facilityOpt.isPresent()) {
             return Result.error("设备不存在");
         }
-        facility.setId(id);
-        Facility savedfacility = facilityRepository.save(facility);
+        
+        Facility existingFacility = facilityOpt.get();
+        
+        if (facility.getName() != null) {
+            existingFacility.setName(facility.getName());
+        }
+        if (facility.getModel() != null) {
+            existingFacility.setModel(facility.getModel());
+        }
+        if (facility.getCategory() != null) {
+            existingFacility.setCategory(facility.getCategory());
+        }
+        if (facility.getLocation() != null) {
+            existingFacility.setLocation(facility.getLocation());
+        }
+        if (facility.getStatus() != null) {
+            existingFacility.setStatus(facility.getStatus());
+        }
+        if (facility.getDescription() != null) {
+            existingFacility.setDescription(facility.getDescription());
+        }
+        if (facility.getPurchaseDate() != null) {
+            existingFacility.setPurchaseDate(facility.getPurchaseDate());
+        }
+        if (facility.getPrice() != null) {
+            existingFacility.setPrice(facility.getPrice());
+        }
+        if (facility.getImageUrl() != null && !facility.getImageUrl().isEmpty()) {
+            existingFacility.setImageUrl(facility.getImageUrl());
+        }
+        
+        Facility savedfacility = facilityRepository.save(existingFacility);
         return Result.success("更新成功", savedfacility);
     }
 
@@ -193,9 +319,18 @@ public class FacilityController {
      */
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
-        if (!facilityRepository.existsById(id)) {
+        Optional<Facility> facilityOpt = facilityRepository.findById(id);
+        if (!facilityOpt.isPresent()) {
             return Result.error("设备不存在");
         }
+
+        Facility facility = facilityOpt.get();
+        
+        // 删除相关图片文件
+        if (facility.getImageUrl() != null && !facility.getImageUrl().isEmpty()) {
+            fileUploadService.deleteFile(facility.getImageUrl());
+        }
+
         facilityRepository.deleteById(id);
         return Result.success("删除成功", null);
     }

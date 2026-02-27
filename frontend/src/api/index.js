@@ -24,9 +24,32 @@ export const facilityAPI = {
         params: { keyword, ...params }
     }),
     create: (data) => request.post('/facility', data),
+    createWithImage: (data, imageFile) => {
+        const formData = new FormData();
+        formData.append('facility', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+        return request.post('/facility', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
     update: (id, data) => request.put(`/facility/${id}`, data),
     updateStatus: (id, status) => request.put(`/facility/${id}/status`, { status }),
-    delete: (id) => request.delete(`/facility/${id}`)
+    delete: (id) => request.delete(`/facility/${id}`),
+    // 图片相关接口
+    uploadImage: (id, file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return request.post(`/facility/${id}/image`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
+    deleteImage: (id) => request.delete(`/facility/${id}/image`)
 };
 
 // 预约相关API
@@ -93,4 +116,27 @@ export const facilityCategoryAPI = {
     listByStatusPage: (status, params) => request.get('/facility-category/status/page', {
         params: { status, ...params }
     })
+};
+
+// 文件上传相关API
+export const fileAPI = {
+    uploadFacilityImage: (facilityId, file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return request.post(`/file/upload/facility/${facilityId}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
+    uploadAvatar: (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return request.post('/file/upload/avatar', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
+    deleteFile: (fileUrl) => request.delete('/file/delete', { params: { fileUrl } })
 };

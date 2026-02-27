@@ -41,14 +41,20 @@
         :key="item.id"
         @click="handleCardClick(item)"
       >
-        <div class="card-header">
-          <div class="facility-icon">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+        <div class="card-image">
+          <img 
+            v-if="item.imageUrl" 
+            :src="item.imageUrl" 
+            :alt="item.name"
+            class="facility-image"
+            @error="handleImageError"
+          />
+          <div v-else class="no-image">
+            <el-icon><Picture /></el-icon>
           </div>
+        </div>
+        
+        <div class="card-header">
           <div class="facility-status">
             <el-tag
               :type="getStatusType(item.status)"
@@ -188,7 +194,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Search, Calendar, Check, CircleCheck, Timer, Tools, CircleClose } from '@element-plus/icons-vue';
+import { Search, Calendar, Check, CircleCheck, Timer, Tools, CircleClose, Picture } from '@element-plus/icons-vue';
 import { facilityAPI, reservationAPI } from '../../api';
 
 const facilityList = ref([]);
@@ -358,6 +364,11 @@ const getStatusText = (status) => {
   return map[status] || status;
 };
 
+const handleImageError = (event) => {
+  event.target.style.display = 'none';
+  event.target.parentElement.querySelector('.no-image').style.display = 'flex';
+};
+
 // 卡片点击处理
 const handleCardClick = (item) => {
   if (item.status === 'AVAILABLE') {
@@ -373,6 +384,37 @@ const handleCardClick = (item) => {
   background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 25%, #e6f7ff 50%, #f8fafc 100%);
   padding: 24px;
   position: relative;
+}
+
+/* 设施卡片图片样式 */
+.card-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+  border-radius: 12px 12px 0 0;
+}
+
+.facility-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.facility-card:hover .facility-image {
+  transform: scale(1.05);
+}
+
+.no-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #a0aec0;
+  font-size: 48px;
 }
 
 /* 页面标题区域 */

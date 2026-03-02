@@ -26,6 +26,30 @@
       </el-tabs>
     </div>
 
+    <!-- 搜索和工具栏 -->
+    <div class="toolbar">
+      <div class="search-section">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索设施名称或申请人..."
+          size="large"
+          class="search-input"
+          clearable
+          @keyup.enter="handleSearch"
+          @clear="handleClearSearch"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+          <template #append>
+            <el-button @click="handleSearch" type="primary" size="large">
+              搜索
+            </el-button>
+          </template>
+        </el-input>
+      </div>
+    </div>
+
     <!-- 预约表格 -->
     <div class="table-container">
       <el-table
@@ -123,6 +147,20 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-container" v-if="total > 0">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.size"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          class="custom-pagination"
+        />
+      </div>
     </div>
 
     <!-- 审核对话框 -->
@@ -223,11 +261,19 @@ const actionType = ref('');
 const loading = ref(false);
 const submitLoading = ref(false);
 const formRef = ref(null);
-
 const currentRow = ref({});
 const form = ref({
   adminRemark: ''
 });
+
+// 搜索和分页
+const searchKeyword = ref('');
+const isSearchMode = ref(false);
+const pagination = ref({
+  page: 1,
+  size: 10
+});
+const total = ref(0);
 
 // 表单验证规则
 const rules = {
@@ -255,9 +301,20 @@ const loadReservationList = async () => {
       reservations = res.data.filter(item => item.status === activeTab.value);
     }
     
-    // 后端已经在API中添加了facilityName和userName字段
-    // 直接使用后端返回的数据即可
-    reservationList.value = reservations;
+    // 如果有搜索关键词，进行前端过滤
+    if (isSearchMode.value && searchKeyword.value.trim()) {
+      const keyword = searchKeyword.value.trim().toLowerCase();
+      reservations = reservations.filter(item =>
+        (item.facilityName && item.facilityName.toLowerCase().includes(keyword)) ||
+        (item.userName && item.userName.toLowerCase().includes(keyword))
+      );
+    }
+    
+    // 前端分页处理
+    total.value = reservations.length;
+    const startIndex = (pagination.value.page - 1) * pagination.value.size;
+    const endIndex = startIndex + pagination.value.size;
+    reservationList.value = reservations.slice(startIndex, endIndex);
   } catch (error) {
     console.error('加载预约列表失败:', error);
     ElMessage.error('加载预约列表失败');
@@ -266,7 +323,39 @@ const loadReservationList = async () => {
   }
 };
 
+// 搜索处理
+const handleSearch = () => {
+  pagination.value.page = 1;
+  if (searchKeyword.value.trim()) {
+    isSearchMode.value = true;
+  } else {
+    isSearchMode.value = false;
+  }
+  loadReservationList();
+};
+
+// 清除搜索
+const handleClearSearch = () => {
+  searchKeyword.value = '';
+  isSearchMode.value = false;
+  pagination.value.page = 1;
+  loadReservationList();
+};
+
+// 分页处理
+const handleSizeChange = (size) => {
+  pagination.value.size = size;
+  pagination.value.page = 1;
+  loadReservationList();
+};
+
+const handleCurrentChange = (page) => {
+  pagination.value.page = page;
+  loadReservationList();
+};
+
 const handleTabChange = () => {
+  pagination.value.page = 1;
   loadReservationList();
 };
 
@@ -486,6 +575,56 @@ const getStatusText = (status) => {
 .status-tabs :deep(.el-tabs__active-bar) {
   background: linear-gradient(90deg, #409eff 0%, #66b1ff 50%, #409eff 100%);
   height: 3px;
+}
+
+/* 搜索工具栏 */
+.toolbar {
+  background: #ffffff;
+  border-radius: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-section {
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-input {
+  width: 100%;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #e2e8f0 inset;
+}
+
+.search-input :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #409eff inset;
+}
+
+.search-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #409eff inset;
+}
+
+.search-input :deep(.el-input__inner) {
+  font-size: 14px;
+}
+
+.search-input :deep(.el-input-group__append) {
+  background: #409eff;
+  border-color: #409eff;
+  color: #ffffff;
+  border-radius: 0 8px 8px 0;
+}
+
+.search-input :deep(.el-input-group__append .el-button) {
+  color: #ffffff;
+  font-weight: 600;
 }
 
 /* 表格容器 */
@@ -831,6 +970,57 @@ const getStatusText = (status) => {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(64, 158, 255, 0.4);
   background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
+}
+
+/* 分页样式 */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 40px;
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.custom-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-pagination :deep(.el-pagination__total) {
+  color: #4a5568;
+  font-weight: 500;
+  margin-right: 16px;
+}
+
+.custom-pagination :deep(.el-pager) {
+  display: flex;
+  gap: 4px;
+}
+
+.custom-pagination :deep(.el-pager li) {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.custom-pagination :deep(.el-pager li.is-active) {
+  background: linear-gradient(135deg, #409eff 0%, #1976d2 100%);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.custom-pagination :deep(.el-select) {
+  margin: 0 8px;
+}
+
+.custom-pagination :deep(.el-input__wrapper) {
+  border-radius: 6px;
+  border-color: #e2e8f0;
+}
+
+.custom-pagination :deep(.el-input__inner) {
+  font-size: 13px;
 }
 
 /* 动画效果 */

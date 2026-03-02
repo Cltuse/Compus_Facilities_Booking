@@ -11,7 +11,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+import java.time.Duration;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * 设备维护记录控制器
@@ -89,7 +98,6 @@ public class MaintenanceController {
      */
     @PostMapping
     public Result<Maintenance> create(@RequestBody Maintenance maintenance) {
-        // 验证必要字段
         if (maintenance.getFacilityId() == null) {
             return Result.error("设施ID不能为空");
         }
@@ -102,19 +110,17 @@ public class MaintenanceController {
         if (maintenance.getDescription() == null || maintenance.getDescription().trim().isEmpty()) {
             return Result.error("维护描述不能为空");
         }
-        
-        // 验证时间逻辑
+
         if (maintenance.getStartTime() != null && maintenance.getEndTime() != null) {
             if (maintenance.getEndTime().isBefore(maintenance.getStartTime())) {
                 return Result.error("结束时间不能早于开始时间");
             }
         }
-        
-        // 设置默认状态
+
         if (maintenance.getStatus() == null || maintenance.getStatus().trim().isEmpty()) {
             maintenance.setStatus("PENDING");
         }
-        
+
         Maintenance savedMaintenance = maintenanceRepository.save(maintenance);
         enrichMaintenance(savedMaintenance);
         return Result.success("创建成功", savedMaintenance);
@@ -131,20 +137,17 @@ public class MaintenanceController {
         if (!maintenanceRepository.existsById(id)) {
             return Result.error("维护记录不存在");
         }
-        
-        // 验证时间逻辑
+
         if (maintenance.getStartTime() != null && maintenance.getEndTime() != null) {
             if (maintenance.getEndTime().isBefore(maintenance.getStartTime())) {
                 return Result.error("结束时间不能早于开始时间");
             }
         }
-        
-        // 获取现有记录，确保不丢失数据
+
         Optional<Maintenance> existingOpt = maintenanceRepository.findById(id);
         if (existingOpt.isPresent()) {
             Maintenance existing = existingOpt.get();
-            
-            // 如果前端没有传递某些字段，保持原有值
+
             if (maintenance.getFacilityId() == null) {
                 maintenance.setFacilityId(existing.getFacilityId());
             }
@@ -164,21 +167,19 @@ public class MaintenanceController {
                 maintenance.setStatus(existing.getStatus());
             }
         }
-        
+
         maintenance.setId(id);
-        
-        // 如果提供了maintainerId但没有maintainer姓名，自动填充
+
         if (maintenance.getMaintainerId() != null && (maintenance.getMaintainer() == null || maintenance.getMaintainer().trim().isEmpty())) {
             Optional<User> maintainer = userRepository.findById(maintenance.getMaintainerId());
             if (maintainer.isPresent()) {
                 User user = maintainer.get();
-                // 优先使用真实姓名，如果没有则使用用户名
-                String maintainerName = user.getRealName() != null && !user.getRealName().trim().isEmpty() 
-                    ? user.getRealName() : user.getUsername();
+                String maintainerName = user.getRealName() != null && !user.getRealName().trim().isEmpty()
+                        ? user.getRealName() : user.getUsername();
                 maintenance.setMaintainer(maintainerName);
             }
         }
-        
+
         Maintenance savedMaintenance = maintenanceRepository.save(maintenance);
         enrichMaintenance(savedMaintenance);
         return Result.success("更新成功", savedMaintenance);
@@ -213,20 +214,222 @@ public class MaintenanceController {
      * @param maintenance 维护记录
      */
     private void enrichMaintenance(Maintenance maintenance) {
-        // 获取设施名称
         Optional<Facility> facility = facilityRepository.findById(maintenance.getFacilityId());
         facility.ifPresent(e -> maintenance.setFacilityName(e.getName()));
-        
-        // 如果提供了maintainerId但没有maintainer姓名，自动填充
+
         if (maintenance.getMaintainerId() != null && (maintenance.getMaintainer() == null || maintenance.getMaintainer().trim().isEmpty())) {
             Optional<User> maintainer = userRepository.findById(maintenance.getMaintainerId());
             if (maintainer.isPresent()) {
                 User user = maintainer.get();
-                // 优先使用真实姓名，如果没有则使用用户名
-                String maintainerName = user.getRealName() != null && !user.getRealName().trim().isEmpty() 
-                    ? user.getRealName() : user.getUsername();
+                String maintainerName = user.getRealName() != null && !user.getRealName().trim().isEmpty()
+                        ? user.getRealName() : user.getUsername();
                 maintenance.setMaintainer(maintainerName);
             }
         }
+    }
+
+    /**
+     * 根据时间范围获取开始时间
+     * @param range 时间范围
+     * @return 开始时间
+     */
+    private LocalDateTime getStartTimeByRange(String range) {
+        LocalDateTime now = LocalDateTime.now();
+        switch (range) {
+            case "1d": return now.minusDays(1);
+            case "7d": return now.minusDays(7);
+            case "30d": return now.minusDays(30);
+            case "180d": return now.minusDays(180);
+            case "365d": return now.minusDays(365);
+            default: return now.minusDays(7);
+        }
+    }
+
+    /**
+     * 获取时间段内的维修统计数据
+     * @param range 时间范围
+     * @return 统计数据
+     */
+    @GetMapping("/stats/time-range")
+    public Result<Map<String, Object>> getStatsByTimeRange(@RequestParam String range) {
+        LocalDateTime startTime = getStartTimeByRange(range);
+        List<Maintenance> maintenances = maintenanceRepository.findAll().stream()
+                .filter(m -> m.getCreatedAt() != null && m.getCreatedAt().isAfter(startTime))
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", maintenances.size());
+        result.put("maintenances", maintenances);
+
+        return Result.success(result);
+    }
+
+    /**
+     * 获取维修类型分布统计
+     * @param range 时间范围（可选）
+     * @return 类型分布数据
+     */
+    @GetMapping("/stats/type-distribution")
+    public Result<Map<String, Object>> getTypeDistribution(@RequestParam(required = false) String range) {
+        LocalDateTime startTime = range != null ? getStartTimeByRange(range) : LocalDateTime.of(2000, 1, 1, 0, 0);
+        List<Maintenance> maintenances = maintenanceRepository.findAll().stream()
+                .filter(m -> m.getCreatedAt() != null && m.getCreatedAt().isAfter(startTime))
+                .collect(Collectors.toList());
+
+        Map<String, Integer> typeCount = new LinkedHashMap<>();
+        typeCount.put("ROUTINE", 0);
+        typeCount.put("REPAIR", 0);
+        typeCount.put("UPGRADE", 0);
+        typeCount.put("OTHER", 0);
+
+        for (Maintenance m : maintenances) {
+            String type = m.getMaintenanceType();
+            if (type == null) {
+                typeCount.put("OTHER", typeCount.getOrDefault("OTHER", 0) + 1);
+            } else if (typeCount.containsKey(type)) {
+                typeCount.put(type, typeCount.get(type) + 1);
+            } else {
+                typeCount.put("OTHER", typeCount.getOrDefault("OTHER", 0) + 1);
+            }
+        }
+
+        List<Map<String, Object>> pieData = new ArrayList<>();
+        String[] colors = {"#409eff", "#67c23a", "#e6a23c", "#909399"};
+        String[] typeNames = {"日常保养", "故障维修", "设备升级", "其他"};
+        int index = 0;
+        for (Map.Entry<String, Integer> entry : typeCount.entrySet()) {
+            if (entry.getValue() > 0) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", typeNames[index]);
+                item.put("value", entry.getValue());
+                item.put("itemStyle", Map.of("color", colors[index]));
+                pieData.add(item);
+            }
+            index++;
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("typeDistribution", pieData);
+
+        return Result.success(result);
+    }
+
+    /**
+     * 获取平均维修时长统计
+     * @param range 时间范围（可选）
+     * @return 平均时长数据
+     */
+    @GetMapping("/stats/duration")
+    public Result<Map<String, Object>> getDurationStats(@RequestParam(required = false) String range) {
+        LocalDateTime startTime = range != null ? getStartTimeByRange(range) : LocalDateTime.of(2000, 1, 1, 0, 0);
+        List<Maintenance> completedMaintenances = maintenanceRepository.findAll().stream()
+                .filter(m -> m.getCreatedAt() != null && m.getCreatedAt().isAfter(startTime))
+                .filter(m -> "COMPLETED".equals(m.getStatus()))
+                .filter(m -> m.getStartTime() != null && m.getEndTime() != null)
+                .collect(Collectors.toList());
+
+        Map<String, List<Long>> durationByType = new LinkedHashMap<>();
+        durationByType.put("ROUTINE", new ArrayList<>());
+        durationByType.put("REPAIR", new ArrayList<>());
+        durationByType.put("UPGRADE", new ArrayList<>());
+        durationByType.put("OTHER", new ArrayList<>());
+
+        for (Maintenance m : completedMaintenances) {
+            long hours = Duration.between(m.getStartTime(), m.getEndTime()).toHours();
+            String type = m.getMaintenanceType();
+            if (type == null || !durationByType.containsKey(type)) {
+                type = "OTHER";
+            }
+            durationByType.get(type).add(hours);
+        }
+
+        String[] typeNames = {"日常保养", "故障维修", "设备升级", "其他"};
+        String[] types = {"ROUTINE", "REPAIR", "UPGRADE", "OTHER"};
+        List<Map<String, Object>> barData = new ArrayList<>();
+
+        for (int i = 0; i < types.length; i++) {
+            List<Long> durations = durationByType.get(types[i]);
+            double avgDuration = 0;
+            if (!durations.isEmpty()) {
+                avgDuration = durations.stream().mapToLong(Long::longValue).average().orElse(0);
+                BigDecimal bd = BigDecimal.valueOf(avgDuration).setScale(1, RoundingMode.HALF_UP);
+                avgDuration = bd.doubleValue();
+            }
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("type", typeNames[i]);
+            item.put("avgDuration", avgDuration);
+            barData.add(item);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("durationData", barData);
+
+        return Result.success(result);
+    }
+
+    /**
+     * 获取设施故障率排行
+     * @param range 时间范围（可选）
+     * @return 故障排行数据
+     */
+    @GetMapping("/stats/facility-faults")
+    public Result<Map<String, Object>> getFacilityFaultStats(@RequestParam(required = false) String range) {
+        LocalDateTime startTime = range != null ? getStartTimeByRange(range) : LocalDateTime.of(2000, 1, 1, 0, 0);
+        List<Maintenance> maintenances = maintenanceRepository.findAll().stream()
+                .filter(m -> m.getCreatedAt() != null && m.getCreatedAt().isAfter(startTime))
+                .collect(Collectors.toList());
+
+        Map<Long, Integer> faultCountByFacility = new HashMap<>();
+        for (Maintenance m : maintenances) {
+            faultCountByFacility.merge(m.getFacilityId(), 1, Integer::sum);
+        }
+
+        List<Map<String, Object>> topFaults = new ArrayList<>();
+        faultCountByFacility.entrySet().stream()
+                .sorted(Map.Entry.<Long, Integer>comparingByValue().reversed())
+                .limit(5)
+                .forEach(entry -> {
+                    Optional<Facility> facOpt = facilityRepository.findById(entry.getKey());
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("facilityId", entry.getKey());
+                    item.put("faultCount", entry.getValue());
+                    if (facOpt.isPresent()) {
+                        item.put("facilityName", facOpt.get().getName());
+                    } else {
+                        item.put("facilityName", "未知设施");
+                    }
+                    topFaults.add(item);
+                });
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("faultRanking", topFaults);
+
+        return Result.success(result);
+    }
+
+    /**
+     * 获取维修统计数据汇总
+     * @return 汇总统计数据
+     */
+    @GetMapping("/stats/summary")
+    public Result<Map<String, Object>> getSummaryStats() {
+        List<Maintenance> allMaintenances = maintenanceRepository.findAll();
+
+        int total = allMaintenances.size();
+        int pending = (int) allMaintenances.stream().filter(m -> "PENDING".equals(m.getStatus())).count();
+        int inProgress = (int) allMaintenances.stream().filter(m -> "IN_PROGRESS".equals(m.getStatus())).count();
+        int completed = (int) allMaintenances.stream().filter(m -> "COMPLETED".equals(m.getStatus())).count();
+
+        long totalFacilities = facilityRepository.count();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalFacilities", totalFacilities);
+        result.put("totalMaintenance", total);
+        result.put("pendingMaintenance", pending);
+        result.put("inProgressMaintenance", inProgress);
+        result.put("completedMaintenance", completed);
+
+        return Result.success(result);
     }
 }

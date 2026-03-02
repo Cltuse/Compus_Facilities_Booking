@@ -77,15 +77,31 @@
       </el-row>
     </div>
 
-    <!-- 图表区域 -->
+      <!-- 图表区域 -->
     <el-row :gutter="20" class="charts-container">
       <!-- 维修任务趋势图 -->
       <el-col :span="16">
         <el-card class="chart-card">
           <template #header>
             <div class="chart-header">
-              <div class="chart-title">维修任务趋势图</div>
-              <div class="chart-subtitle">按日期统计的维修任务数量变化</div>
+              <div class="chart-title">
+                <div class="title-icon">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M18 9l-5 5-4-4-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <span>维修任务趋势图</span>
+              </div>
+              <div class="chart-controls">
+                <el-select v-model="timeRange" placeholder="选择时间段" @change="handleTimeRangeChange" class="time-select">
+                  <el-option label="1天内" value="1d" />
+                  <el-option label="7天内" value="7d" />
+                  <el-option label="30天内" value="30d" />
+                  <el-option label="半年内" value="180d" />
+                  <el-option label="一年内" value="365d" />
+                </el-select>
+              </div>
             </div>
           </template>
           <div class="chart-container" ref="trendChartRef" style="height: 400px;"></div>
@@ -97,8 +113,24 @@
         <el-card class="chart-card">
           <template #header>
             <div class="chart-header">
-              <div class="chart-title">维修类型分布</div>
-              <div class="chart-subtitle">不同类型维护任务占比</div>
+              <div class="chart-title">
+                <div class="title-icon">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M22 12A10 10 0 0 0 12 2v10z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <span>维修类型分布</span>
+              </div>
+              <div class="chart-controls">
+                <el-select v-model="timeRange" placeholder="选择时间段" @change="handleTimeRangeChange" class="time-select">
+                  <el-option label="1天内" value="1d" />
+                  <el-option label="7天内" value="7d" />
+                  <el-option label="30天内" value="30d" />
+                  <el-option label="半年内" value="180d" />
+                  <el-option label="一年内" value="365d" />
+                </el-select>
+              </div>
             </div>
           </template>
           <div class="chart-container" ref="pieChartRef" style="height: 400px;"></div>
@@ -113,8 +145,23 @@
         <el-card class="chart-card">
           <template #header>
             <div class="chart-header">
-              <div class="chart-title">平均维修时长统计</div>
-              <div class="chart-subtitle">不同类型维护任务的平均完成时长</div>
+              <div class="chart-title">
+                <div class="title-icon">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <span>平均维修时长统计</span>
+              </div>
+              <div class="chart-controls">
+                <el-select v-model="timeRange" placeholder="选择时间段" @change="handleTimeRangeChange" class="time-select">
+                  <el-option label="1天内" value="1d" />
+                  <el-option label="7天内" value="7d" />
+                  <el-option label="30天内" value="30d" />
+                  <el-option label="半年内" value="180d" />
+                  <el-option label="一年内" value="365d" />
+                </el-select>
+              </div>
             </div>
           </template>
           <div class="chart-container" ref="durationChartRef" style="height: 300px;"></div>
@@ -126,8 +173,23 @@
         <el-card class="chart-card">
           <template #header>
             <div class="chart-header">
-              <div class="chart-title">设施故障率排行</div>
-              <div class="chart-subtitle">故障次数最多的设施 Top 5</div>
+              <div class="chart-title">
+                <div class="title-icon">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <span>设施故障率排行</span>
+              </div>
+              <div class="chart-controls">
+                <el-select v-model="timeRange" placeholder="选择时间段" @change="handleTimeRangeChange" class="time-select">
+                  <el-option label="1天内" value="1d" />
+                  <el-option label="7天内" value="7d" />
+                  <el-option label="30天内" value="30d" />
+                  <el-option label="半年内" value="180d" />
+                  <el-option label="一年内" value="365d" />
+                </el-select>
+              </div>
             </div>
           </template>
           <div class="chart-container" ref="faultChartRef" style="height: 300px;"></div>
@@ -141,11 +203,19 @@
 import { ref, onMounted, nextTick } from 'vue';
 import * as echarts from 'echarts';
 import { Warning, Check, Document, Box } from '@element-plus/icons-vue';
+import { maintenanceAPI, facilityAPI } from '../../api';
 
 const trendChartRef = ref(null);
 const pieChartRef = ref(null);
 const durationChartRef = ref(null);
 const faultChartRef = ref(null);
+
+let trendChart = null;
+let pieChart = null;
+let durationChart = null;
+let faultChart = null;
+
+const timeRange = ref('7d');
 
 const stats = ref({
   totalFacilities: 0,
@@ -154,92 +224,255 @@ const stats = ref({
   totalMaintenance: 0
 });
 
-onMounted(() => {
-  loadStats();
+const trendChartData = ref({});
+const typeDistributionData = ref([]);
+const durationData = ref([]);
+const faultRankingData = ref([]);
+
+onMounted(async () => {
+  await loadStats();
+  await loadChartData();
+  await nextTick();
   initCharts();
 });
 
 const loadStats = async () => {
-  // 模拟加载统计数据，实际应从后端API获取
-  stats.value = {
-    totalFacilities: 156,
-    pendingMaintenance: 24,
-    completedMaintenance: 132,
-    totalMaintenance: 156
-  };
+  try {
+    const summaryRes = await maintenanceAPI.getSummaryStats();
+    if (summaryRes.data) {
+      stats.value = {
+        totalFacilities: summaryRes.data.totalFacilities || 0,
+        pendingMaintenance: summaryRes.data.pendingMaintenance || 0,
+        completedMaintenance: summaryRes.data.completedMaintenance || 0,
+        totalMaintenance: summaryRes.data.totalMaintenance || 0
+      };
+    }
+  } catch (error) {
+    console.error('加载统计数据失败:', error);
+  }
+};
+
+const loadChartData = async () => {
+  try {
+    const [trendRes, typeRes, durationRes, faultRes] = await Promise.all([
+      maintenanceAPI.getStatsByTimeRange(timeRange.value),
+      maintenanceAPI.getTypeDistribution(timeRange.value),
+      maintenanceAPI.getDurationStats(timeRange.value),
+      maintenanceAPI.getFacilityFaultStats(timeRange.value)
+    ]);
+
+    processTrendData(trendRes.data?.maintenances || []);
+    typeDistributionData.value = typeRes.data?.typeDistribution || [];
+    durationData.value = durationRes.data?.durationData || [];
+    faultRankingData.value = faultRes.data?.faultRanking || [];
+  } catch (error) {
+    console.error('加载图表数据失败:', error);
+  }
+};
+
+const handleTimeRangeChange = async () => {
+  await loadChartData();
+  updateCharts();
+};
+
+const processTrendData = (maintenances) => {
+  const groupedData = {};
+  const completedData = {};
+
+  maintenances.forEach(m => {
+    if (m.createdAt) {
+      let date;
+      if (typeof m.createdAt === 'string') {
+        if (m.createdAt.includes('T')) {
+          date = m.createdAt.split('T')[0];
+        } else if (m.createdAt.includes(' ')) {
+          date = m.createdAt.split(' ')[0];
+        } else {
+          date = m.createdAt;
+        }
+      } else if (m.createdAt.date) {
+        date = m.createdAt.date;
+      } else if (m.createdAt.year) {
+        date = `${m.createdAt.year}-${String(m.createdAt.monthValue).padStart(2, '0')}-${String(m.createdAt.dayOfMonth).padStart(2, '0')}`;
+      }
+
+      if (date) {
+        if (m.status === 'COMPLETED') {
+          completedData[date] = (completedData[date] || 0) + 1;
+        } else {
+          groupedData[date] = (groupedData[date] || 0) + 1;
+        }
+      }
+    }
+  });
+
+  trendChartData.value = { pending: groupedData, completed: completedData };
 };
 
 const initCharts = async () => {
-  await nextTick();
-
-  // 维修任务趋势图（折线图）
   initTrendChart();
-
-  // 维修类型分布饼图
   initPieChart();
-
-  // 平均维修时长柱状图
   initDurationChart();
-
-  // 设施故障率排行柱状图
   initFaultChart();
 };
 
+const updateCharts = () => {
+  if (trendChart) initTrendChart();
+  if (pieChart) initPieChart();
+  if (durationChart) initDurationChart();
+  if (faultChart) initFaultChart();
+};
+
 const initTrendChart = () => {
+  if (!trendChartRef.value) return;
+
+  if (trendChart) {
+    trendChart.dispose();
+  }
+
   const chartDom = trendChartRef.value;
-  const myChart = echarts.init(chartDom);
+  trendChart = echarts.init(chartDom);
+
+  const groupedData = trendChartData.value.pending || {};
+  const completedData = trendChartData.value.completed || {};
+  const allDates = [...new Set([...Object.keys(groupedData), ...Object.keys(completedData)])].sort();
+
+  const pendingValues = allDates.map(date => groupedData[date] || 0);
+  const completedValues = allDates.map(date => completedData[date] || 0);
 
   const option = {
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      backgroundColor: 'rgba(50, 50, 50, 0.9)',
+      borderColor: 'none',
+      textStyle: {
+        color: '#fff'
+      },
+      formatter: (params) => {
+        let result = `${params[0].axisValue}<br/>`;
+        params.forEach(param => {
+          result += `${param.marker} ${param.seriesName}: ${param.value} 单<br/>`;
+        });
+        return result;
+      }
     },
     legend: {
-      data: ['待维修', '已维修']
+      data: ['待处理', '已完成'],
+      top: 0
     },
     grid: {
       left: '3%',
       right: '4%',
       bottom: '3%',
+      top: '15%',
       containLabel: true
     },
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+      data: allDates.length > 0 ? allDates : ['暂无数据'],
+      axisLine: {
+        lineStyle: {
+          color: '#e2e8f0'
+        }
+      },
+      axisTick: {
+        show: false
+      },
+      axisLabel: {
+        color: '#718096',
+        fontSize: 11,
+        rotate: allDates.length > 10 ? 45 : 0,
+        interval: Math.floor(allDates.length / 10) || 0
+      }
     },
     yAxis: {
-      type: 'value'
+      type: 'value',
+      axisLine: {
+        show: false
+      },
+      axisTick: {
+        show: false
+      },
+      axisLabel: {
+        color: '#718096',
+        fontSize: 12
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f0f0f0'
+        }
+      }
     },
     series: [
       {
-        name: '待维修',
+        name: '待处理',
         type: 'line',
-        stack: 'Total',
-        data: [12, 11, 13, 10, 15, 8, 10],
+        data: pendingValues,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 8,
         itemStyle: {
           color: '#e74c3c'
         },
+        lineStyle: {
+          width: 3,
+          color: '#e74c3c'
+        },
         areaStyle: {
-          opacity: 0.1
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(231, 76, 60, 0.3)' },
+            { offset: 1, color: 'rgba(231, 76, 60, 0.05)' }
+          ])
+        },
+        emphasis: {
+          itemStyle: {
+            color: '#e74c3c',
+            borderColor: '#fff',
+            borderWidth: 2,
+            shadowBlur: 10,
+            shadowColor: 'rgba(231, 76, 60, 0.5)'
+          }
         }
       },
       {
-        name: '已维修',
+        name: '已完成',
         type: 'line',
-        stack: 'Total',
-        data: [23, 25, 20, 22, 18, 28, 24],
+        data: completedValues,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 8,
         itemStyle: {
           color: '#2ecc71'
         },
+        lineStyle: {
+          width: 3,
+          color: '#2ecc71'
+        },
         areaStyle: {
-          opacity: 0.1
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(46, 204, 113, 0.3)' },
+            { offset: 1, color: 'rgba(46, 204, 113, 0.05)' }
+          ])
+        },
+        emphasis: {
+          itemStyle: {
+            color: '#2ecc71',
+            borderColor: '#fff',
+            borderWidth: 2,
+            shadowBlur: 10,
+            shadowColor: 'rgba(46, 204, 113, 0.5)'
+          }
         }
       }
     ]
   };
 
-  myChart.setOption(option);
-  window.addEventListener('resize', () => myChart.resize());
+  trendChart.setOption(option);
+
+  window.addEventListener('resize', () => {
+    trendChart?.resize();
+  });
 };
 
 const initPieChart = () => {
@@ -281,14 +514,32 @@ const initPieChart = () => {
 };
 
 const initDurationChart = () => {
+  if (!durationChartRef.value) return;
+
+  if (durationChart) {
+    durationChart.dispose();
+  }
+
   const chartDom = durationChartRef.value;
-  const myChart = echarts.init(chartDom);
+  durationChart = echarts.init(chartDom);
+
+  const categories = durationData.value.map(item => item.type) || ['日常保养', '故障维修', '设备升级', '其他'];
+  const values = durationData.value.map(item => item.avgDuration) || [0, 0, 0, 0];
 
   const option = {
     tooltip: {
       trigger: 'axis',
       axisPointer: {
         type: 'shadow'
+      },
+      backgroundColor: 'rgba(50, 50, 50, 0.9)',
+      borderColor: 'none',
+      textStyle: {
+        color: '#fff'
+      },
+      formatter: (params) => {
+        const data = params[0];
+        return `${data.axisValue}<br/>平均时长: ${data.value} 小时`;
       }
     },
     grid: {
@@ -300,58 +551,141 @@ const initDurationChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: ['日常保养', '故障维修', '设备升级', '其他'],
+      data: categories,
       axisTick: {
         alignWithLabel: true
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#e2e8f0'
+        }
+      },
+      axisLabel: {
+        color: '#718096',
+        fontSize: 12
       }
     },
     yAxis: {
       type: 'value',
-      name: '小时'
+      name: '小时',
+      axisLine: {
+        show: false
+      },
+      axisTick: {
+        show: false
+      },
+      axisLabel: {
+        color: '#718096',
+        fontSize: 12
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f0f0f0'
+        }
+      }
     },
     series: [
       {
         name: '平均维修时长',
         type: 'bar',
         barWidth: '60%',
-        data: [2.5, 6.2, 12.8, 4.1],
+        data: values,
         itemStyle: {
-          color: '#3498db'
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: '#3498db' },
+            { offset: 1, color: '#5dade2' }
+          ]),
+          borderRadius: [8, 8, 0, 0]
+        },
+        emphasis: {
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#5dade2' },
+              { offset: 1, color: '#3498db' }
+            ]),
+            shadowBlur: 10,
+            shadowColor: 'rgba(52, 152, 219, 0.3)'
+          }
         }
       }
     ]
   };
 
-  myChart.setOption(option);
-  window.addEventListener('resize', () => myChart.resize());
+  durationChart.setOption(option);
+
+  window.addEventListener('resize', () => {
+    durationChart?.resize();
+  });
 };
 
 const initFaultChart = () => {
+  if (!faultChartRef.value) return;
+
+  if (faultChart) {
+    faultChart.dispose();
+  }
+
   const chartDom = faultChartRef.value;
-  const myChart = echarts.init(chartDom);
+  faultChart = echarts.init(chartDom);
+
+  const categories = faultRankingData.value.map(item => item.facilityName).reverse() || ['暂无数据'];
+  const values = faultRankingData.value.map(item => item.faultCount).reverse() || [0];
 
   const option = {
     tooltip: {
       trigger: 'axis',
       axisPointer: {
         type: 'shadow'
+      },
+      backgroundColor: 'rgba(50, 50, 50, 0.9)',
+      borderColor: 'none',
+      textStyle: {
+        color: '#fff'
+      },
+      formatter: (params) => {
+        const data = params[0];
+        return `${data.axisValue}<br/>故障次数: ${data.value} 次`;
       }
     },
     grid: {
       left: '3%',
-      right: '4%',
+      right: '15%',
       bottom: '3%',
       top: '10%',
       containLabel: true
     },
     xAxis: {
-      type: 'value'
+      type: 'value',
+      axisLine: {
+        show: false
+      },
+      axisTick: {
+        show: false
+      },
+      axisLabel: {
+        color: '#718096',
+        fontSize: 12
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f0f0f0'
+        }
+      }
     },
     yAxis: {
       type: 'category',
-      data: ['投影仪', '空调', '音响设备', '电脑', '打印机'],
+      data: categories,
       axisTick: {
         show: false
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#e2e8f0'
+        }
+      },
+      axisLabel: {
+        color: '#718096',
+        fontSize: 12
       }
     },
     series: [
@@ -360,18 +694,37 @@ const initFaultChart = () => {
         type: 'bar',
         label: {
           show: true,
-          position: 'right'
+          position: 'right',
+          color: '#718096',
+          fontSize: 12
         },
-        data: [15, 12, 9, 7, 5],
+        data: values,
         itemStyle: {
-          color: '#e67e22'
+          color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+            { offset: 0, color: '#e67e22' },
+            { offset: 1, color: '#f39c12' }
+          ]),
+          borderRadius: [0, 8, 8, 0]
+        },
+        emphasis: {
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+              { offset: 0, color: '#f39c12' },
+              { offset: 1, color: '#e67e22' }
+            ]),
+            shadowBlur: 10,
+            shadowColor: 'rgba(230, 126, 34, 0.3)'
+          }
         }
       }
     ]
   };
 
-  myChart.setOption(option);
-  window.addEventListener('resize', () => myChart.resize());
+  faultChart.setOption(option);
+
+  window.addEventListener('resize', () => {
+    faultChart?.resize();
+  });
 };
 </script>
 
@@ -542,22 +895,61 @@ const initFaultChart = () => {
 }
 
 .chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   padding-bottom: 12px;
   border-bottom: 1px solid #edf2f7;
 }
 
 .chart-title {
+  display: flex;
+  align-items: center;
   font-size: 18px;
   font-weight: 600;
   color: #1a202c;
   margin: 0 0 4px 0;
 }
 
+.chart-title .title-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
+}
+
+.chart-title .title-icon svg {
+  width: 18px;
+  height: 18px;
+  color: #409eff;
+}
+
+.chart-title span {
+  font-size: 16px;
+}
+
 .chart-subtitle {
   font-size: 14px;
   color: #718096;
-  margin: 0;
+  margin: 0 0 0 42px;
   font-weight: 400;
+}
+
+.chart-controls {
+  flex-shrink: 0;
+}
+
+.time-select {
+  width: 120px;
+}
+
+.time-select :deep(.el-input__wrapper) {
+  border-radius: 8px;
 }
 
 .chart-container {

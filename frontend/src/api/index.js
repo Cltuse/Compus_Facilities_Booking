@@ -81,7 +81,12 @@ export const maintenanceAPI = {
     getById: (id) => request.get(`/maintenance/${id}`),
     create: (data) => request.post('/maintenance', data),
     update: (id, data) => request.put(`/maintenance/${id}`, data),
-    delete: (id) => request.delete(`/maintenance/${id}`)
+    delete: (id) => request.delete(`/maintenance/${id}`),
+    getStatsByTimeRange: (range) => request.get('/maintenance/stats/time-range', { params: { range } }),
+    getTypeDistribution: (range) => request.get('/maintenance/stats/type-distribution', { params: { range } }),
+    getDurationStats: (range) => request.get('/maintenance/stats/duration', { params: { range } }),
+    getFacilityFaultStats: (range) => request.get('/maintenance/stats/facility-faults', { params: { range } }),
+    getSummaryStats: () => request.get('/maintenance/stats/summary')
 };
 
 // 通知相关API

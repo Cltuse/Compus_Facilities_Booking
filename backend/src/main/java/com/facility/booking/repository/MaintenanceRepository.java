@@ -10,4 +10,6 @@ public interface MaintenanceRepository extends JpaRepository<Maintenance, Long> 
     List<Maintenance> findByFacilityId(Long facilityId);
 
     List<Maintenance> findByStatus(String status);
+    
+    List<Maintenance> findByMaintainerId(Long maintainerId);
 }

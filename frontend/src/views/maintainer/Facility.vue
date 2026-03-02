@@ -67,7 +67,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="category" label="类别" width="120">
+        <el-table-column prop="category" label="类别" width="180"align="center">
           <template #default="{ row }">
             <el-tag class="category-tag" effect="light">
               {{ row.category || '-' }}
@@ -75,7 +75,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="location" label="位置" width="150">
+        <el-table-column prop="location" label="位置" width="180" align="center">
           <template #default="{ row }">
             <span class="location">{{ row.location || '-' }}</span>
           </template>
@@ -100,7 +100,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button

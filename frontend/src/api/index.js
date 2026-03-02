@@ -77,6 +77,7 @@ export const reservationAPI = {
 export const maintenanceAPI = {
     list: () => request.get('/maintenance/list'),
     getByfacilityId: (facilityId) => request.get(`/maintenance/facility/${facilityId}`),
+    getByMaintainerId: (maintainerId) => request.get(`/maintenance/maintainer/${maintainerId}`),
     getById: (id) => request.get(`/maintenance/${id}`),
     create: (data) => request.post('/maintenance', data),
     update: (id, data) => request.put(`/maintenance/${id}`, data),

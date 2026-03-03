@@ -37,7 +37,7 @@
     <div class="facility-grid">
       <div
         class="facility-card"
-        v-for="item in facilityList"
+        v-for="item in paginatedFacilityList"
         :key="item.id"
         @click="handleCardClick(item)"
       >
@@ -188,11 +188,37 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 空状态 -->
+    <div class="empty-state" v-if="filteredFacilityList.length === 0">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h3 class="empty-title">暂无设施</h3>
+      <p class="empty-description">当前没有任何设施信息</p>
+    </div>
+
+    <!-- 分页组件 -->
+    <div class="pagination-container" v-if="filteredFacilityList.length > 0">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="filteredFacilityList.length"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Search, Calendar, Check, CircleCheck, Timer, Tools, CircleClose, Picture } from '@element-plus/icons-vue';
 import { facilityAPI, reservationAPI } from '../../api';
@@ -204,6 +230,10 @@ const dialogVisible = ref(false);
 const formRef = ref(null);
 const currentFacility = ref({});
 const userInfo = ref({});
+
+// 分页相关
+const currentPage = ref(1);
+const pageSize = ref(12);
 
 const disabledStartDate = (time) => {
   const today = new Date();
@@ -294,23 +324,48 @@ const loadFacilityList = async () => {
   }
 };
 
-// 实时搜索筛选 - 直接更新facilityList
-const handleSearchInput = () => {
-  if (!searchKeyword.value) {
-    facilityList.value = allFacilityList.value;
-    return;
+// 过滤后的设施列表（搜索筛选）
+const filteredFacilityList = computed(() => {
+  let filtered = allFacilityList.value;
+
+  if (searchKeyword.value) {
+    const keyword = searchKeyword.value.toLowerCase().trim();
+    filtered = filtered.filter(item => {
+      return (
+        (item.name && item.name.toLowerCase().includes(keyword)) ||
+        (item.model && item.model.toLowerCase().includes(keyword)) ||
+        (item.category && item.category.toLowerCase().includes(keyword)) ||
+        (item.location && item.location.toLowerCase().includes(keyword)) ||
+        (item.description && item.description.toLowerCase().includes(keyword))
+      );
+    });
   }
 
-  const keyword = searchKeyword.value.toLowerCase().trim();
-  facilityList.value = allFacilityList.value.filter(item => {
-    return (
-      (item.name && item.name.toLowerCase().includes(keyword)) ||
-      (item.model && item.model.toLowerCase().includes(keyword)) ||
-      (item.category && item.category.toLowerCase().includes(keyword)) ||
-      (item.location && item.location.toLowerCase().includes(keyword)) ||
-      (item.description && item.description.toLowerCase().includes(keyword))
-    );
-  });
+  return filtered;
+});
+
+// 分页后的设施列表
+const paginatedFacilityList = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return filteredFacilityList.value.slice(start, end);
+});
+
+// 处理搜索
+const handleSearchInput = () => {
+  currentPage.value = 1;
+  facilityList.value = filteredFacilityList.value;
+};
+
+// 处理页码变化
+const handleCurrentChange = (page) => {
+  currentPage.value = page;
+};
+
+// 处理每页条数变化
+const handleSizeChange = (size) => {
+  pageSize.value = size;
+  currentPage.value = 1;
 };
 
 const handleReserve = (item) => {

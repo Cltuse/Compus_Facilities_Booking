@@ -19,10 +19,10 @@
     </div>
 
     <!-- 通知列表 -->
-    <div class="notices-container" v-if="noticeList.length > 0">
+    <div class="notices-container" v-if="paginatedNoticeList.length > 0">
       <div
         class="notice-item"
-        v-for="item in noticeList"
+        v-for="item in paginatedNoticeList"
         :key="item.id"
         @click="handleNoticeClick(item)"
       >
@@ -91,6 +91,19 @@
       <p class="empty-description">当前没有任何系统通知</p>
     </div>
 
+    <!-- 分页组件 -->
+    <div class="pagination-container" v-if="noticeList.length > 0">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="noticeList.length"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
+
     <!-- 通知详情对话框 -->
     <el-dialog
       v-model="detailDialogVisible"
@@ -139,7 +152,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Document } from '@element-plus/icons-vue';
 import { noticeAPI } from '../../api';
@@ -148,8 +161,19 @@ const noticeList = ref([]);
 const detailDialogVisible = ref(false);
 const currentNotice = ref({});
 
+// 分页相关
+const currentPage = ref(1);
+const pageSize = ref(10);
+
 onMounted(() => {
   loadNotices();
+});
+
+// 分页后的通知列表
+const paginatedNoticeList = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return noticeList.value.slice(start, end);
 });
 
 const loadNotices = async () => {
@@ -159,6 +183,17 @@ const loadNotices = async () => {
   } catch (error) {
     console.error('加载通知失败:', error);
   }
+};
+
+// 处理页码变化
+const handleCurrentChange = (page) => {
+  currentPage.value = page;
+};
+
+// 处理每页条数变化
+const handleSizeChange = (size) => {
+  pageSize.value = size;
+  currentPage.value = 1;
 };
 
 // 格式化时间

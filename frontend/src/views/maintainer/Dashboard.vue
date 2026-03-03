@@ -123,13 +123,6 @@
                 <span>维修类型分布</span>
               </div>
               <div class="chart-controls">
-                <el-select v-model="timeRange" placeholder="选择时间段" @change="handleTimeRangeChange" class="time-select">
-                  <el-option label="1天内" value="1d" />
-                  <el-option label="7天内" value="7d" />
-                  <el-option label="30天内" value="30d" />
-                  <el-option label="半年内" value="180d" />
-                  <el-option label="一年内" value="365d" />
-                </el-select>
               </div>
             </div>
           </template>
@@ -154,13 +147,6 @@
                 <span>平均维修时长统计</span>
               </div>
               <div class="chart-controls">
-                <el-select v-model="timeRange" placeholder="选择时间段" @change="handleTimeRangeChange" class="time-select">
-                  <el-option label="1天内" value="1d" />
-                  <el-option label="7天内" value="7d" />
-                  <el-option label="30天内" value="30d" />
-                  <el-option label="半年内" value="180d" />
-                  <el-option label="一年内" value="365d" />
-                </el-select>
               </div>
             </div>
           </template>
@@ -168,7 +154,7 @@
         </el-card>
       </el-col>
 
-      <!-- 设施故障率排行 -->
+      <!-- 设施故障数排行 -->
       <el-col :span="12">
         <el-card class="chart-card">
           <template #header>
@@ -179,16 +165,9 @@
                     <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </div>
-                <span>设施故障率排行</span>
+                <span>设施故障数排行</span>
               </div>
               <div class="chart-controls">
-                <el-select v-model="timeRange" placeholder="选择时间段" @change="handleTimeRangeChange" class="time-select">
-                  <el-option label="1天内" value="1d" />
-                  <el-option label="7天内" value="7d" />
-                  <el-option label="30天内" value="30d" />
-                  <el-option label="半年内" value="180d" />
-                  <el-option label="一年内" value="365d" />
-                </el-select>
               </div>
             </div>
           </template>
@@ -333,11 +312,14 @@ const initTrendChart = () => {
   const chartDom = trendChartRef.value;
   trendChart = echarts.init(chartDom);
 
-  const groupedData = trendChartData.value.pending || {};
   const completedData = trendChartData.value.completed || {};
-  const allDates = [...new Set([...Object.keys(groupedData), ...Object.keys(completedData)])].sort();
+  let allDates = [...new Set([...Object.keys(completedData)])].sort();
 
-  const pendingValues = allDates.map(date => groupedData[date] || 0);
+  // 限制显示的数据点数量为5个，按时间排序取最新的5个
+  if (allDates.length > 5) {
+    allDates = allDates.slice(-5);
+  }
+
   const completedValues = allDates.map(date => completedData[date] || 0);
 
   const option = {
@@ -357,7 +339,7 @@ const initTrendChart = () => {
       }
     },
     legend: {
-      data: ['待处理', '已完成'],
+      data: ['已完成'],
       top: 0
     },
     grid: {
@@ -381,9 +363,9 @@ const initTrendChart = () => {
       },
       axisLabel: {
         color: '#718096',
-        fontSize: 11,
-        rotate: allDates.length > 10 ? 45 : 0,
-        interval: Math.floor(allDates.length / 10) || 0
+        fontSize: 12,
+        rotate: 0,
+        interval: 0
       }
     },
     yAxis: {
@@ -405,36 +387,6 @@ const initTrendChart = () => {
       }
     },
     series: [
-      {
-        name: '待处理',
-        type: 'line',
-        data: pendingValues,
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 8,
-        itemStyle: {
-          color: '#e74c3c'
-        },
-        lineStyle: {
-          width: 3,
-          color: '#e74c3c'
-        },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(231, 76, 60, 0.3)' },
-            { offset: 1, color: 'rgba(231, 76, 60, 0.05)' }
-          ])
-        },
-        emphasis: {
-          itemStyle: {
-            color: '#e74c3c',
-            borderColor: '#fff',
-            borderWidth: 2,
-            shadowBlur: 10,
-            shadowColor: 'rgba(231, 76, 60, 0.5)'
-          }
-        }
-      },
       {
         name: '已完成',
         type: 'line',
@@ -523,8 +475,13 @@ const initDurationChart = () => {
   const chartDom = durationChartRef.value;
   durationChart = echarts.init(chartDom);
 
-  const categories = durationData.value.map(item => item.type) || ['日常保养', '故障维修', '设备升级', '其他'];
-  const values = durationData.value.map(item => item.avgDuration) || [0, 0, 0, 0];
+  // 获取数据并过滤，最多显示5个类型
+  const filteredData = durationData.value
+    .filter(item => item.type !== '其他')
+    .slice(0, 5);
+  
+  const categories = filteredData.map(item => item.type) || ['日常保养', '故障维修', '设备升级'];
+  const values = filteredData.map(item => item.avgDuration) || [0, 0, 0];
 
   const option = {
     tooltip: {
@@ -545,7 +502,7 @@ const initDurationChart = () => {
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '15%',
       top: '10%',
       containLabel: true
     },
@@ -562,7 +519,9 @@ const initDurationChart = () => {
       },
       axisLabel: {
         color: '#718096',
-        fontSize: 12
+        fontSize: 12,
+        rotate: categories.length > 3 ? 30 : 0,
+        interval: 0
       }
     },
     yAxis: {
@@ -588,14 +547,14 @@ const initDurationChart = () => {
       {
         name: '平均维修时长',
         type: 'bar',
-        barWidth: '60%',
+        barWidth: '50%',
         data: values,
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: '#3498db' },
             { offset: 1, color: '#5dade2' }
           ]),
-          borderRadius: [8, 8, 0, 0]
+          borderRadius: [4, 4, 0, 0]
         },
         emphasis: {
           itemStyle: {
@@ -628,8 +587,18 @@ const initFaultChart = () => {
   const chartDom = faultChartRef.value;
   faultChart = echarts.init(chartDom);
 
-  const categories = faultRankingData.value.map(item => item.facilityName).reverse() || ['暂无数据'];
-  const values = faultRankingData.value.map(item => item.faultCount).reverse() || [0];
+  // 按故障次数排序（降序），最多显示5个设施
+  const sortedData = [...faultRankingData.value]
+    .sort((a, b) => b.faultCount - a.faultCount)
+    .slice(0, 5);
+  
+  // 如果数据不足5个，用空数据填充
+  while (sortedData.length < 5) {
+    sortedData.push({ facilityName: '', faultCount: 0 });
+  }
+
+  const categories = sortedData.map(item => item.facilityName || ' ');
+  const values = sortedData.map(item => item.faultCount || 0);
 
   const option = {
     tooltip: {
@@ -644,18 +613,48 @@ const initFaultChart = () => {
       },
       formatter: (params) => {
         const data = params[0];
+        // 如果设施名称为空或空格，不显示提示
+        if (!data.axisValue || data.axisValue.trim() === '') {
+          return '';
+        }
         return `${data.axisValue}<br/>故障次数: ${data.value} 次`;
       }
     },
     grid: {
       left: '3%',
-      right: '15%',
-      bottom: '3%',
+      right: '4%',
+      bottom: '15%',
       top: '10%',
       containLabel: true
     },
     xAxis: {
+      type: 'category',
+      data: categories,
+      axisTick: {
+        alignWithLabel: true
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#e2e8f0'
+        }
+      },
+      axisLabel: {
+        color: '#718096',
+        fontSize: 12,
+        rotate: 30,
+        interval: 0,
+        formatter: (value) => {
+          // 如果设施名称为空或空格，不显示标签
+          if (!value || value.trim() === '') {
+            return '';
+          }
+          return value.length > 8 ? value.substring(0, 8) + '...' : value;
+        }
+      }
+    },
+    yAxis: {
       type: 'value',
+      name: '故障次数',
       axisLine: {
         show: false
       },
@@ -672,43 +671,36 @@ const initFaultChart = () => {
         }
       }
     },
-    yAxis: {
-      type: 'category',
-      data: categories,
-      axisTick: {
-        show: false
-      },
-      axisLine: {
-        lineStyle: {
-          color: '#e2e8f0'
-        }
-      },
-      axisLabel: {
-        color: '#718096',
-        fontSize: 12
-      }
-    },
     series: [
       {
         name: '故障次数',
         type: 'bar',
         label: {
           show: true,
-          position: 'right',
+          position: 'top',
           color: '#718096',
-          fontSize: 12
+          fontSize: 11,
+          formatter: (params) => {
+            // 如果故障次数为0，不显示标签
+            return params.value > 0 ? params.value : '';
+          }
         },
         data: values,
         itemStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-            { offset: 0, color: '#e67e22' },
-            { offset: 1, color: '#f39c12' }
-          ]),
-          borderRadius: [0, 8, 8, 0]
+          color: (params) => {
+            // 如果故障次数为0，使用透明色
+            return params.value > 0 
+              ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#e67e22' },
+                  { offset: 1, color: '#f39c12' }
+                ])
+              : 'transparent';
+          },
+          borderRadius: [4, 4, 0, 0]
         },
         emphasis: {
           itemStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
               { offset: 0, color: '#f39c12' },
               { offset: 1, color: '#e67e22' }
             ]),

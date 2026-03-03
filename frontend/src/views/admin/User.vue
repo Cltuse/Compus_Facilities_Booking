@@ -45,26 +45,26 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="role" label="角色" width="100" align="center">
+        <el-table-column prop="role" label="角色" width="150" align="center">
           <template #default="{ row }">
             <el-tag
-              :type="row.role === 'ADMIN' ? 'danger' : 'primary'"
+              :type="getRoleTagType(row.role)"
               class="role-tag"
               effect="light"
             >
-              <el-icon><User v-if="row.role === 'ADMIN'" /><UserFilled v-else /></el-icon>
-              {{ row.role === 'ADMIN' ? '管理员' : '用户' }}
+              <el-icon><User v-if="row.role === 'ADMIN'" /><Tools v-else-if="row.role === 'MAINTAINER'" /><School v-else-if="row.role === 'TEACHER'" /><UserFilled v-else /></el-icon>
+              {{ formatRoleDisplayName(row.role) }}
             </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="phone" label="电话" min-width="140">
+        <el-table-column prop="phone" label="电话" min-width="150" align="center">
           <template #default="{ row }">
             <span class="contact-info">{{ row.phone || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="email" label="邮箱" min-width="200">
+        <el-table-column prop="email" label="邮箱" min-width="200" align="center">
           <template #default="{ row }">
             <span class="contact-info email-info">{{ row.email || '-' }}</span>
           </template>
@@ -161,8 +161,7 @@
             </el-form-item>
             <el-form-item label="角色" prop="role">
               <el-select v-model="form.role" placeholder="请选择角色" style="width: 100%;">
-                <el-option label="管理员" value="ADMIN" />
-                <el-option label="用户" value="USER" />
+                <el-option v-for="option in roleOptions" :key="option.value" :label="option.label" :value="option.value" />
               </el-select>
             </el-form-item>
           </div>
@@ -201,12 +200,15 @@
 import { ref, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { userAPI } from '../../api';
+import { getRoleDisplayName, getRoleOptions } from '../../utils/roleMapping';
+import { Plus, Edit, Delete, Lock, CircleCheck, CircleClose, User, UserFilled, Tools, School } from '@element-plus/icons-vue';
 
 const userList = ref([]);
 const dialogVisible = ref(false);
 const dialogTitle = ref('添加用户');
 const formRef = ref(null);
 const isEdit = ref(false);
+const roleOptions = ref(getRoleOptions());
 
 const form = ref({
   id: null,
@@ -319,6 +321,22 @@ const cellStyle = ({ row, column, rowIndex, columnIndex }) => {
     color: '#4a5568',
     fontSize: '14px'
   };
+};
+
+// 获取角色显示名称
+    const formatRoleDisplayName = (role) => {
+      return getRoleDisplayName(role);
+    };
+
+// 获取角色标签类型
+const getRoleTagType = (role) => {
+  switch (role) {
+    case 'ADMIN': return 'danger';
+    case 'MAINTAINER': return 'warning';
+    case 'TEACHER': return 'success';
+    case 'STUDENT': return 'primary';
+    default: return 'info';
+  }
 };
 
 // 表格行点击处理

@@ -256,9 +256,24 @@ const handleTimeRangeChange = async () => {
   updateCharts();
 };
 
+// 根据时间范围动态确定最大数据点数量
+const getMaxDataPointsByTimeRange = () => {
+  switch (timeRange.value) {
+    case '1d': return 24; // 按小时显示
+    case '7d': return 7;   // 按天显示
+    case '30d': return 15; // 每2天显示一个点
+    case '180d': return 30; // 每6天显示一个点
+    case '365d': return 52; // 按周显示
+    default: return 7;
+  }
+};
+
 const processTrendData = (maintenances) => {
-  const groupedData = {};
+  const allData = {};
   const completedData = {};
+  const pendingData = {};
+  const inProgressData = {};
+  const cancelledData = {};
 
   maintenances.forEach(m => {
     if (m.createdAt) {
@@ -278,16 +293,30 @@ const processTrendData = (maintenances) => {
       }
 
       if (date) {
+        // 所有任务统计
+        allData[date] = (allData[date] || 0) + 1;
+        
+        // 按状态统计
         if (m.status === 'COMPLETED') {
           completedData[date] = (completedData[date] || 0) + 1;
-        } else {
-          groupedData[date] = (groupedData[date] || 0) + 1;
+        } else if (m.status === 'PENDING') {
+          pendingData[date] = (pendingData[date] || 0) + 1;
+        } else if (m.status === 'IN_PROGRESS') {
+          inProgressData[date] = (inProgressData[date] || 0) + 1;
+        } else if (m.status === 'CANCELLED') {
+          cancelledData[date] = (cancelledData[date] || 0) + 1;
         }
       }
     }
   });
 
-  trendChartData.value = { pending: groupedData, completed: completedData };
+  trendChartData.value = { 
+    all: allData, 
+    completed: completedData, 
+    pending: pendingData, 
+    inProgress: inProgressData, 
+    cancelled: cancelledData 
+  };
 };
 
 const initCharts = async () => {
@@ -314,15 +343,32 @@ const initTrendChart = () => {
   const chartDom = trendChartRef.value;
   trendChart = echarts.init(chartDom);
 
+  // 获取所有任务数据
+  const allData = trendChartData.value.all || {};
   const completedData = trendChartData.value.completed || {};
-  let allDates = [...new Set([...Object.keys(completedData)])].sort();
+  const pendingData = trendChartData.value.pending || {};
+  const inProgressData = trendChartData.value.inProgress || {};
+  
+  // 合并所有日期，并根据时间范围动态调整显示密度
+  let allDates = [...new Set([
+    ...Object.keys(allData),
+    ...Object.keys(completedData),
+    ...Object.keys(pendingData),
+    ...Object.keys(inProgressData)
+  ])].sort();
 
-  // 限制显示的数据点数量为5个，按时间排序取最新的5个
-  if (allDates.length > 5) {
-    allDates = allDates.slice(-5);
+  // 根据时间范围动态调整显示的数据点数量
+  const maxDataPoints = getMaxDataPointsByTimeRange();
+  if (allDates.length > maxDataPoints) {
+    // 按时间间隔采样，而不是简单取最后几个
+    const step = Math.ceil(allDates.length / maxDataPoints);
+    allDates = allDates.filter((_, index) => index % step === 0 || index === allDates.length - 1);
   }
 
+  const allValues = allDates.map(date => allData[date] || 0);
   const completedValues = allDates.map(date => completedData[date] || 0);
+  const pendingValues = allDates.map(date => pendingData[date] || 0);
+  const inProgressValues = allDates.map(date => inProgressData[date] || 0);
 
   const option = {
     tooltip: {
@@ -341,7 +387,7 @@ const initTrendChart = () => {
       }
     },
     legend: {
-      data: ['已完成'],
+      data: ['所有任务', '已完成', '待处理', '进行中'],
       top: 0
     },
     grid: {
@@ -390,24 +436,42 @@ const initTrendChart = () => {
     },
     series: [
       {
+        name: '所有任务',
+        type: 'line',
+        data: allValues,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        itemStyle: {
+          color: '#3498db'
+        },
+        lineStyle: {
+          width: 3,
+          color: '#3498db'
+        },
+        emphasis: {
+          itemStyle: {
+            color: '#3498db',
+            borderColor: '#fff',
+            borderWidth: 2,
+            shadowBlur: 10,
+            shadowColor: 'rgba(52, 152, 219, 0.5)'
+          }
+        }
+      },
+      {
         name: '已完成',
         type: 'line',
         data: completedValues,
         smooth: true,
         symbol: 'circle',
-        symbolSize: 8,
+        symbolSize: 6,
         itemStyle: {
           color: '#2ecc71'
         },
         lineStyle: {
           width: 3,
           color: '#2ecc71'
-        },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(46, 204, 113, 0.3)' },
-            { offset: 1, color: 'rgba(46, 204, 113, 0.05)' }
-          ])
         },
         emphasis: {
           itemStyle: {
@@ -416,6 +480,54 @@ const initTrendChart = () => {
             borderWidth: 2,
             shadowBlur: 10,
             shadowColor: 'rgba(46, 204, 113, 0.5)'
+          }
+        }
+      },
+      {
+        name: '待处理',
+        type: 'line',
+        data: pendingValues,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        itemStyle: {
+          color: '#f39c12'
+        },
+        lineStyle: {
+          width: 2,
+          color: '#f39c12'
+        },
+        emphasis: {
+          itemStyle: {
+            color: '#f39c12',
+            borderColor: '#fff',
+            borderWidth: 2,
+            shadowBlur: 10,
+            shadowColor: 'rgba(243, 156, 18, 0.5)'
+          }
+        }
+      },
+      {
+        name: '进行中',
+        type: 'line',
+        data: inProgressValues,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        itemStyle: {
+          color: '#9b59b6'
+        },
+        lineStyle: {
+          width: 2,
+          color: '#9b59b6'
+        },
+        emphasis: {
+          itemStyle: {
+            color: '#9b59b6',
+            borderColor: '#fff',
+            borderWidth: 2,
+            shadowBlur: 10,
+            shadowColor: 'rgba(155, 89, 182, 0.5)'
           }
         }
       }
@@ -430,41 +542,72 @@ const initTrendChart = () => {
 };
 
 const initPieChart = () => {
+  if (!pieChartRef.value) return;
+
+  if (pieChart) {
+    pieChart.dispose();
+  }
+
   const chartDom = pieChartRef.value;
-  const myChart = echarts.init(chartDom);
+  pieChart = echarts.init(chartDom);
+
+  // 使用实际数据而不是静态数据
+  const typeData = typeDistributionData.value.map(item => ({
+    value: item.count || 0,
+    name: item.typeName || item.type || '未知类型'
+  })).filter(item => item.value > 0); // 只显示有数据的类型
+
+  // 如果没有数据，显示提示
+  if (typeData.length === 0) {
+    typeData.push({ value: 1, name: '暂无数据' });
+  }
 
   const option = {
     tooltip: {
-      trigger: 'item'
+      trigger: 'item',
+      formatter: '{a} <br/>{b}: {c} ({d}%)'
     },
     legend: {
       orient: 'vertical',
-      left: 'left'
+      left: 'left',
+      textStyle: {
+        color: '#718096'
+      }
     },
     series: [
       {
-        name: '维修类型',
+        name: '维修类型分布',
         type: 'pie',
-        radius: '50%',
-        data: [
-          { value: 45, name: '日常保养' },
-          { value: 32, name: '故障维修' },
-          { value: 28, name: '设备升级' },
-          { value: 15, name: '其他' }
-        ],
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: false,
+          position: 'center'
+        },
         emphasis: {
-          itemStyle: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          label: {
+            show: true,
+            fontSize: 14,
+            fontWeight: 'bold'
           }
-        }
+        },
+        labelLine: {
+          show: false
+        },
+        data: typeData
       }
     ]
   };
 
-  myChart.setOption(option);
-  window.addEventListener('resize', () => myChart.resize());
+  pieChart.setOption(option);
+  window.addEventListener('resize', () => {
+    pieChart?.resize();
+  });
 };
 
 const initDurationChart = () => {
@@ -477,13 +620,20 @@ const initDurationChart = () => {
   const chartDom = durationChartRef.value;
   durationChart = echarts.init(chartDom);
 
-  // 获取数据并过滤，最多显示5个类型
+  // 过滤掉平均时长为0的数据，并按时长排序
   const filteredData = durationData.value
-    .filter(item => item.type !== '其他')
-    .slice(0, 5);
+    .filter(item => item.avgDuration > 0)
+    .sort((a, b) => b.avgDuration - a.avgDuration)
+    .slice(0, 5); // 最多显示5个类型
   
-  const categories = filteredData.map(item => item.type) || ['日常保养', '故障维修', '设备升级'];
-  const values = filteredData.map(item => item.avgDuration) || [0, 0, 0];
+  const categories = filteredData.map(item => item.type || item.typeName || '未知类型');
+  const values = filteredData.map(item => item.avgDuration || 0);
+  
+  // 如果没有数据，显示提示
+  if (filteredData.length === 0) {
+    categories.push('暂无数据');
+    values.push(0);
+  }
 
   const option = {
     tooltip: {
@@ -589,18 +739,20 @@ const initFaultChart = () => {
   const chartDom = faultChartRef.value;
   faultChart = echarts.init(chartDom);
 
-  // 按故障次数排序（降序），最多显示5个设施
+  // 按故障次数排序（降序），最多显示5个设施，过滤掉故障次数为0的设施
   const sortedData = [...faultRankingData.value]
+    .filter(item => item.faultCount > 0)
     .sort((a, b) => b.faultCount - a.faultCount)
     .slice(0, 5);
   
-  // 如果数据不足5个，用空数据填充
-  while (sortedData.length < 5) {
-    sortedData.push({ facilityName: '', faultCount: 0 });
-  }
-
-  const categories = sortedData.map(item => item.facilityName || ' ');
+  const categories = sortedData.map(item => item.facilityName || '未知设施');
   const values = sortedData.map(item => item.faultCount || 0);
+  
+  // 如果没有数据，显示提示
+  if (sortedData.length === 0) {
+    categories.push('暂无数据');
+    values.push(0);
+  }
 
   const option = {
     tooltip: {

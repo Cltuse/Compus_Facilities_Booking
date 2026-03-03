@@ -69,13 +69,13 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="userName" label="申请人" min-width="120">
+        <el-table-column prop="userName" label="申请人" min-width="120" >
           <template #default="{ row }">
             <div class="user-info">{{ row.userName }}</div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="startTime" label="开始时间" width="160">
+        <el-table-column prop="startTime" label="开始时间" width="210" align="center">
           <template #default="{ row }">
             <div class="time-info">
               <el-icon><Clock /></el-icon>
@@ -84,7 +84,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="endTime" label="结束时间" width="160">
+        <el-table-column prop="endTime" label="结束时间" width="210" align="center">
           <template #default="{ row }">
             <div class="time-info">
               <el-icon><Clock /></el-icon>
@@ -93,7 +93,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="purpose" label="使用目的" min-width="200">
+        <el-table-column prop="purpose" label="使用目的" min-width="200" align="center">
           <template #default="{ row }">
             <div class="purpose-info">{{ row.purpose }}</div>
           </template>

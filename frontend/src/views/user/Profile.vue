@@ -44,7 +44,7 @@
           </div>
           <div class="info-item">
             <span class="label">身份</span>
-            <span class="value">{{ userInfo.role === 'ADMIN' ? '管理员' : '普通用户' }}</span>
+            <span class="value">{{ getRoleDisplayName(userInfo.role) }}</span>
           </div>
         </div>
         <div class="card-actions">
@@ -194,12 +194,18 @@ import { ref, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Edit, Lock } from '@element-plus/icons-vue';
 import { userAPI } from '../../api';
+import { getRoleDisplayName } from '../../utils/roleMapping';
 
 const userInfo = ref({});
 const profileDialogVisible = ref(false);
 const passwordDialogVisible = ref(false);
 const profileFormRef = ref(null);
 const passwordFormRef = ref(null);
+
+// 获取角色显示名称
+const getRoleDisplayName = (role) => {
+  return getRoleDisplayName(role);
+};
 
 const profileForm = ref({
   realName: '',

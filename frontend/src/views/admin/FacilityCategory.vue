@@ -66,7 +66,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="描述" min-width="200">
+        <el-table-column prop="description" label="描述" min-width="200" align="center">
           <template #default="{ row }">
             <span class="description">{{ row.description || '-' }}</span>
           </template>

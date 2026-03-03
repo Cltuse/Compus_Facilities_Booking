@@ -223,7 +223,7 @@
           <el-form-item label="设施名称" prop="facilityId" align="center">
             <el-select
                 v-model="form.facilityId"
-                placeholder="请输入关键字搜索设施"
+                placeholder="直接选择或搜索选择设施"
                 style="width: 100%"
                 :disabled="!!currentRow.id"
                 filterable

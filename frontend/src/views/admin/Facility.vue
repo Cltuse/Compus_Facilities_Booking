@@ -81,7 +81,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="name" label="设施名称" min-width="180">
+        <el-table-column prop="name" label="设施名称" min-width="180" align="center">
           <template #default="{ row }">
             <div class="facility-name">
               <div class="name">{{ row.name }}</div>
@@ -90,7 +90,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="category" label="类别" width="140">
+        <el-table-column prop="category" label="类别" min-width="140" align="center">
           <template #default="{ row }">
             <el-tag class="category-tag" effect="light">
               {{ row.category || '-' }}
@@ -98,13 +98,13 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="location" label="位置" width="180">
+        <el-table-column prop="location" label="位置" min-width="180" align="center">
           <template #default="{ row }">
             <span class="location">{{ row.location || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="110" align="center">
+        <el-table-column prop="status" label="状态" min-width="110" align="center">
           <template #default="{ row }">
             <el-tag
               :type="getStatusType(row.status)"

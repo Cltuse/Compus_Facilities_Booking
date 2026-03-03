@@ -157,8 +157,8 @@ router.beforeEach((to, from, next) => {
                 next('/user/welcome');
             }
         }
-        // 普通用户访问控制
-        else if (to.path.startsWith('/user') && !['USER', 'TEACHER', 'STUDENT'].includes(user.role)) {
+        // 普通用户访问控制（教师和学生）
+        else if (to.path.startsWith('/user') && !['TEACHER', 'STUDENT'].includes(user.role)) {
             if (user.role === 'ADMIN') {
                 next('/admin/dashboard');
             } else if (user.role === 'MAINTAINER') {

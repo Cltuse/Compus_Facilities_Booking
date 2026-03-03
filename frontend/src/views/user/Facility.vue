@@ -33,8 +33,18 @@
       </el-input>
     </div>
 
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container">
+      <div class="loading-spinner">
+        <el-icon class="is-loading">
+          <Loading />
+        </el-icon>
+      </div>
+      <p class="loading-text">正在加载设施信息...</p>
+    </div>
+
     <!-- 设施卡片网格 -->
-    <div class="facility-grid">
+    <div v-else class="facility-grid">
       <div
         class="facility-card"
         v-for="item in paginatedFacilityList"
@@ -190,7 +200,7 @@
     </el-dialog>
 
     <!-- 空状态 -->
-    <div class="empty-state" v-if="filteredFacilityList.length === 0">
+    <div class="empty-state" v-if="!loading && filteredFacilityList.length === 0">
       <div class="empty-icon">
         <svg viewBox="0 0 24 24" fill="none">
           <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -220,7 +230,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Search, Calendar, Check, CircleCheck, Timer, Tools, CircleClose, Picture } from '@element-plus/icons-vue';
+import { Search, Calendar, Check, CircleCheck, Timer, Tools, CircleClose, Picture, Loading } from '@element-plus/icons-vue';
 import { facilityAPI, reservationAPI } from '../../api';
 
 const facilityList = ref([]);
@@ -230,6 +240,7 @@ const dialogVisible = ref(false);
 const formRef = ref(null);
 const currentFacility = ref({});
 const userInfo = ref({});
+const loading = ref(true); // 加载状态
 
 // 分页相关
 const currentPage = ref(1);
@@ -316,11 +327,14 @@ onMounted(() => {
 
 const loadFacilityList = async () => {
   try {
+    loading.value = true;
     const res = await facilityAPI.list();
     allFacilityList.value = res.data;
     facilityList.value = res.data;
   } catch (error) {
     console.error('加载设施列表失败:', error);
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -433,6 +447,37 @@ const handleCardClick = (item) => {
 </script>
 
 <style scoped>
+/* 加载状态样式 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  min-height: 300px;
+}
+
+.loading-spinner {
+  margin-bottom: 16px;
+}
+
+.loading-spinner .el-icon {
+  font-size: 48px;
+  color: #409eff;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #606266;
+  margin: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* 页面背景 */
 .facility-page {
   min-height: 100vh;

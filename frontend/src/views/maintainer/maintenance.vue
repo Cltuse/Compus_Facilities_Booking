@@ -391,7 +391,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, EditPen, Check, Box, Clock, User } from '@element-plus/icons-vue';
 import { maintenanceAPI, facilityAPI } from '../../api';
@@ -435,6 +436,8 @@ const form = ref({
 });
 
 const facilityOptions = ref([]);
+const route = useRoute();
+const router = useRouter();
 
 
 
@@ -783,6 +786,34 @@ const handleStatusFilter = () => {
   currentPage.value = 1;
   pagination.value.page = 1;
   loadMaintenanceList();
+  
+  // 更新URL查询参数
+  updateQueryParams();
+};
+
+// 更新URL查询参数
+const updateQueryParams = () => {
+  const query = {};
+  if (maintenanceStatusFilter.value) {
+    query.maintenanceStatus = maintenanceStatusFilter.value;
+  }
+  if (statusFilter.value) {
+    query.status = statusFilter.value;
+  }
+  
+  router.replace({
+    query: query
+  });
+};
+
+// 处理路由查询参数
+const handleRouteQuery = (query) => {
+  if (query.maintenanceStatus !== undefined) {
+    maintenanceStatusFilter.value = query.maintenanceStatus;
+    currentPage.value = 1;
+    pagination.value.page = 1;
+    loadMaintenanceList();
+  }
 };
 
 const handleMaintenanceStatusFilter = () => {
@@ -790,6 +821,9 @@ const handleMaintenanceStatusFilter = () => {
   currentPage.value = 1;
   pagination.value.page = 1;
   loadMaintenanceList();
+  
+  // 更新URL查询参数
+  updateQueryParams();
 };
 
 // 点击统计项应用筛选
@@ -822,6 +856,11 @@ onMounted(() => {
   getCurrentUser();
   loadMaintenanceList();
   loadFacilities();
+  
+  // 监听路由查询参数变化
+  watch(() => route.query, (newQuery) => {
+    handleRouteQuery(newQuery);
+  }, { immediate: true });
 });
 </script>
 

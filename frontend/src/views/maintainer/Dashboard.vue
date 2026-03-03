@@ -20,7 +20,7 @@
     <div class="stats-container">
       <el-row :gutter="20">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card primary">
+          <el-card class="stat-card primary" @click="handleFacilityClick" style="cursor: pointer;">
             <div class="stat-content">
               <div class="stat-icon">
                 <el-icon><Box /></el-icon>
@@ -34,7 +34,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card warning">
+          <el-card class="stat-card warning" @click="handlePendingMaintenanceClick" style="cursor: pointer;">
             <div class="stat-content">
               <div class="stat-icon">
                 <el-icon><Warning /></el-icon>
@@ -48,7 +48,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card success">
+          <el-card class="stat-card success" @click="handleCompletedMaintenanceClick" style="cursor: pointer;">
             <div class="stat-content">
               <div class="stat-icon">
                 <el-icon><Check /></el-icon>
@@ -62,7 +62,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card info">
+          <el-card class="stat-card info" @click="handleTotalMaintenanceClick" style="cursor: pointer;">
             <div class="stat-content">
               <div class="stat-icon">
                 <el-icon><Document /></el-icon>
@@ -180,6 +180,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
 import * as echarts from 'echarts';
 import { Warning, Check, Document, Box } from '@element-plus/icons-vue';
 import { maintenanceAPI, facilityAPI } from '../../api';
@@ -193,6 +194,7 @@ let trendChart = null;
 let pieChart = null;
 let durationChart = null;
 let faultChart = null;
+const router = useRouter();
 
 const timeRange = ref('7d');
 
@@ -716,6 +718,42 @@ const initFaultChart = () => {
 
   window.addEventListener('resize', () => {
     faultChart?.resize();
+  });
+};
+
+// 点击事件处理函数
+const handleFacilityClick = () => {
+  // 跳转至设施管理界面
+  router.push('/maintainer/facility');
+};
+
+const handlePendingMaintenanceClick = () => {
+  // 跳转至维护任务，筛选未维护数据
+  router.push({
+    path: '/maintainer/maintenance',
+    query: {
+      maintenanceStatus: 'UNMAINTAINED'
+    }
+  });
+};
+
+const handleCompletedMaintenanceClick = () => {
+  // 跳转至维护任务，筛选已维护数据
+  router.push({
+    path: '/maintainer/maintenance',
+    query: {
+      maintenanceStatus: 'MAINTAINED'
+    }
+  });
+};
+
+const handleTotalMaintenanceClick = () => {
+  // 跳转至维护任务，筛选所有记录
+  router.push({
+    path: '/maintainer/maintenance',
+    query: {
+      maintenanceStatus: ''
+    }
   });
 };
 </script>

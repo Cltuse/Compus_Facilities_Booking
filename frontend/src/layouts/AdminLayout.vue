@@ -196,6 +196,7 @@ const handleMenuSelect = (index) => {
 .side-menu :deep(.el-menu-item:hover .el-icon) {
   transform: scale(1.1);
   color: #409eff;
+  animation: icon-glow 1.5s ease-in-out infinite;
 }
 
 .side-menu :deep(.el-menu-item.is-active .el-icon) {
@@ -244,6 +245,12 @@ const handleMenuSelect = (index) => {
 @keyframes gradient-shimmer {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
+}
+
+@keyframes icon-glow {
+  0% { filter: drop-shadow(0 0 2px rgba(64, 158, 255, 0.3)); }
+  50% { filter: drop-shadow(0 0 6px rgba(64, 158, 255, 0.6)); }
+  100% { filter: drop-shadow(0 0 2px rgba(64, 158, 255, 0.3)); }
 }
 
 /* 响应式设计 */

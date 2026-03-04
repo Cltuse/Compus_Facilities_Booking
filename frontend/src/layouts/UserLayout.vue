@@ -64,7 +64,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { Star } from '@element-plus/icons-vue';
+import { Star, Box, Calendar, Bell, User } from '@element-plus/icons-vue';
 import Header from '../components/Header.vue';
 
 const router = useRouter();
@@ -140,10 +140,11 @@ const handleMenuSelect = (index) => {
   opacity: 0;
   transition: opacity 0.3s ease;
   border-radius: 12px;
+  z-index: -1;
 }
 
 .side-menu :deep(.el-menu-item:hover) {
-  color: #409eff;
+  color: #252b47;
   transform: translateX(4px);
   background: linear-gradient(135deg, #f8fafc 0%, #e6f7ff 100%);
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
@@ -174,6 +175,7 @@ const handleMenuSelect = (index) => {
 .side-menu :deep(.el-menu-item:hover .el-icon) {
   transform: scale(1.1);
   color: #409eff;
+  animation: icon-glow 1.5s ease-in-out infinite;
 }
 
 .side-menu :deep(.el-menu-item.is-active .el-icon) {
@@ -222,6 +224,12 @@ const handleMenuSelect = (index) => {
 @keyframes gradient-shimmer {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
+}
+
+@keyframes icon-glow {
+  0% { filter: drop-shadow(0 0 2px rgba(64, 158, 255, 0.3)); }
+  50% { filter: drop-shadow(0 0 6px rgba(64, 158, 255, 0.6)); }
+  100% { filter: drop-shadow(0 0 2px rgba(64, 158, 255, 0.3)); }
 }
 
 /* 响应式设计 */

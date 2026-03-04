@@ -553,13 +553,14 @@ const initPieChart = () => {
 
   // 使用实际数据而不是静态数据
   const typeData = typeDistributionData.value.map(item => ({
-    value: item.count || 0,
-    name: item.typeName || item.type || '未知类型'
+    value: item.value || item.count || 0,
+    name: item.name || item.typeName || item.type || '未知类型',
+    itemStyle: item.itemStyle || {}
   })).filter(item => item.value > 0); // 只显示有数据的类型
 
   // 如果没有数据，显示提示
   if (typeData.length === 0) {
-    typeData.push({ value: 1, name: '暂无数据' });
+    typeData.push({ value: 1, name: '暂无数据', itemStyle: { color: '#909399' } });
   }
 
   const option = {

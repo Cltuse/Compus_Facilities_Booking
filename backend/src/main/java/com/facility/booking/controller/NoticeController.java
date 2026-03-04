@@ -20,6 +20,7 @@ public class NoticeController {
     @Autowired
     private NoticeRepository noticeRepository;
 
+
     /**
      * 获取所有通知公告
      * @return 通知公告列表
@@ -27,18 +28,24 @@ public class NoticeController {
     @GetMapping("/list")
     public Result<List<Notice>> list() {
         List<Notice> notices = noticeRepository.findAll();
+        // 按发布时间倒序排列
+        notices.sort((a, b) -> b.getPublishTime().compareTo(a.getPublishTime()));
         return Result.success(notices);
     }
 
     /**
-     * 获取已发布的通知公告
+     * 获取已发布的通知公告（按时间倒序）
      * @return 已发布的通知公告列表
      */
     @GetMapping("/published")
     public Result<List<Notice>> getPublished() {
         List<Notice> notices = noticeRepository.findByStatus("PUBLISHED");
+        // 按发布时间倒序排列
+        notices.sort((a, b) -> b.getPublishTime().compareTo(a.getPublishTime()));
         return Result.success(notices);
     }
+    
+
 
     /**
      * 根据ID获取通知公告详情

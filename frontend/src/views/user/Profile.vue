@@ -202,11 +202,6 @@ const passwordDialogVisible = ref(false);
 const profileFormRef = ref(null);
 const passwordFormRef = ref(null);
 
-// 获取角色显示名称
-const getRoleDisplayName = (role) => {
-  return getRoleDisplayName(role);
-};
-
 const profileForm = ref({
   realName: '',
   phone: '',

@@ -156,7 +156,6 @@ import { ref, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Document } from '@element-plus/icons-vue';
 import { noticeAPI } from '../../api';
-
 const noticeList = ref([]);
 const detailDialogVisible = ref(false);
 const currentNotice = ref({});

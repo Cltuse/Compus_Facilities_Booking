@@ -50,7 +50,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="startTime" label="开始时间" width="160">
+        <el-table-column prop="startTime" label="开始时间" width="210">
           <template #default="{ row }">
             <div class="time-info">
               <el-icon><Clock /></el-icon>
@@ -59,7 +59,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="endTime" label="结束时间" width="160">
+        <el-table-column prop="endTime" label="结束时间" width="210">
           <template #default="{ row }">
             <div class="time-info">
               <el-icon><Clock /></el-icon>
@@ -68,13 +68,13 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="purpose" label="使用目的" min-width="200">
+        <el-table-column prop="purpose" label="使用目的" min-width="200" align="center">
           <template #default="{ row }">
             <div class="purpose-info">{{ row.purpose }}</div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="120" align="center">
+        <el-table-column prop="status" label="状态" width="150" align="center">
           <template #default="{ row }">
             <el-tag
               :type="getStatusType(row.status)"

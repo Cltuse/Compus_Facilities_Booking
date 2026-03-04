@@ -381,13 +381,13 @@ const handleRowClick = (row) => {
   display: flex;
   align-items: center;
   gap: 16px;
-  transition: all 0.3s ease;
 }
 
-.header-content:hover {
+/* 移除hover动画效果，保持与其他页面一致 */
+/* .header-content:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-}
+} */
 
 .page-title {
   display: flex;

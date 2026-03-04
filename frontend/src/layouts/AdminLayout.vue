@@ -60,6 +60,27 @@
             </template>
           </el-menu-item>
 
+          <el-menu-item index="/admin/rule-config" class="menu-item">
+            <el-icon class="menu-icon-item"><Setting /></el-icon>
+            <template #title>
+              <span class="menu-text">规则配置</span>
+            </template>
+          </el-menu-item>
+
+          <el-menu-item index="/admin/blacklist" class="menu-item">
+            <el-icon class="menu-icon-item"><Warning /></el-icon>
+            <template #title>
+              <span class="menu-text">黑名单管理</span>
+            </template>
+          </el-menu-item>
+
+          <el-menu-item index="/admin/operation-log" class="menu-item">
+            <el-icon class="menu-icon-item"><Document /></el-icon>
+            <template #title>
+              <span class="menu-text">操作日志</span>
+            </template>
+          </el-menu-item>
+
           <el-menu-item index="/admin/profile" class="menu-item">
             <el-icon class="menu-icon-item"><Setting /></el-icon>
             <template #title>
@@ -86,7 +107,7 @@
 import { ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Header from '../components/Header.vue';
-import { Setting } from '@element-plus/icons-vue';
+import { Setting, Warning, Document } from '@element-plus/icons-vue';
 
 const router = useRouter();
 const route = useRoute();

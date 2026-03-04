@@ -48,6 +48,21 @@ const routes = [
                 component: () => import('../views/admin/Profile.vue')
             },
             {
+                path: 'rule-config',
+                name: 'AdminRuleConfig',
+                component: () => import('../views/admin/RuleConfig.vue')
+            },
+            {
+                path: 'blacklist',
+                name: 'AdminBlacklist',
+                component: () => import('../views/admin/Blacklist.vue')
+            },
+            {
+                path: 'operation-log',
+                name: 'AdminOperationLog',
+                component: () => import('../views/admin/OperationLog.vue')
+            },
+            {
                 path: 'user',
                 name: 'AdminUser',
                 component: () => import('../views/admin/User.vue')

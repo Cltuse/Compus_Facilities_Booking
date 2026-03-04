@@ -1,0 +1,401 @@
+package com.facility.booking.controller;
+
+import com.facility.booking.common.Result;
+import com.facility.booking.entity.*;
+import com.facility.booking.repository.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * 管理员专属功能控制器
+ * 包含预约规则配置、黑名单管理、操作日志审计等功能
+ */
+@RestController
+@RequestMapping("/api/admin")
+public class AdminController {
+
+    @Autowired
+    private RuleConfigRepository ruleConfigRepository;
+
+    @Autowired
+    private BlacklistRepository blacklistRepository;
+
+    @Autowired
+    private OperationLogRepository operationLogRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private FacilityCategoryRepository facilityCategoryRepository;
+
+    /**
+     * 预约规则配置管理
+     */
+
+    /**
+     * 获取所有当前生效的规则配置
+     * @return 规则配置列表
+     */
+    @GetMapping("/rule-configs")
+    public Result<List<RuleConfig>> getAllRuleConfigs() {
+        List<RuleConfig> rules = ruleConfigRepository.findAllCurrentRules();
+        // 填充类别名称
+        rules.forEach(rule -> {
+            if (rule.getCategoryId() != null) {
+                Optional<FacilityCategory> category = facilityCategoryRepository.findById(rule.getCategoryId());
+                category.ifPresent(value -> rule.setCategoryName(value.getCategoryName()));
+            } else {
+                rule.setCategoryName("全局默认");
+            }
+        });
+        return Result.success(rules);
+    }
+
+    /**
+     * 获取指定类别的规则配置历史版本
+     * @param categoryId 类别ID（可为null表示全局规则）
+     * @return 历史版本列表
+     */
+    @GetMapping("/rule-configs/history")
+    public Result<List<RuleConfig>> getRuleConfigHistory(@RequestParam(required = false) Long categoryId) {
+        List<RuleConfig> history;
+        if (categoryId == null) {
+            // 获取全局规则的所有历史版本（按创建时间倒序）
+            history = ruleConfigRepository.findByCategoryIdIsNullOrderByCreatedAtDesc();
+        } else {
+            history = ruleConfigRepository.findByCategoryIdOrderByCreatedAtDesc(categoryId);
+        }
+        return Result.success(history);
+    }
+
+    /**
+     * 创建或更新规则配置（保存为新版本）
+     * @param ruleConfig 规则配置信息
+     * @return 创建的规则配置
+     */
+    @PostMapping("/rule-configs")
+    public Result<RuleConfig> createRuleConfig(@RequestBody RuleConfig ruleConfig) {
+        try {
+            RuleConfig savedRule = ruleConfigRepository.save(ruleConfig);
+            
+            // 记录操作日志
+            OperationLog log = new OperationLog();
+            log.setOperationType("UPDATE_RULE");
+            log.setTargetId(savedRule.getId());
+            log.setDetail("创建/更新规则配置，类别ID: " + ruleConfig.getCategoryId());
+            operationLogRepository.save(log);
+            
+            return Result.success("规则配置保存成功", savedRule);
+        } catch (Exception e) {
+            return Result.error("规则配置保存失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取指定ID的规则配置详情
+     * @param id 规则配置ID
+     * @return 规则配置详情
+     */
+    @GetMapping("/rule-configs/{id}")
+    public Result<RuleConfig> getRuleConfigById(@PathVariable Long id) {
+        Optional<RuleConfig> ruleOpt = ruleConfigRepository.findById(id);
+        if (ruleOpt.isPresent()) {
+            RuleConfig rule = ruleOpt.get();
+            if (rule.getCategoryId() != null) {
+                Optional<FacilityCategory> category = facilityCategoryRepository.findById(rule.getCategoryId());
+                category.ifPresent(value -> rule.setCategoryName(value.getCategoryName()));
+            } else {
+                rule.setCategoryName("全局默认");
+            }
+            return Result.success(rule);
+        }
+        return Result.error("规则配置不存在");
+    }
+
+    /**
+     * 黑名单管理
+     */
+
+    /**
+     * 获取黑名单列表（支持分页和筛选）
+     * @param status 状态筛选（可选）
+     * @param userName 用户姓名筛选（可选）
+     * @param page 页码
+     * @param size 每页大小
+     * @return 黑名单列表
+     */
+    @GetMapping("/blacklist")
+    public Result<Map<String, Object>> getBlacklist(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String userName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Blacklist> blacklistPage;
+        
+        if (userName != null && !userName.trim().isEmpty()) {
+            blacklistPage = blacklistRepository.findByUserNameContaining(userName, pageable);
+        } else if (status != null && !status.trim().isEmpty()) {
+            blacklistPage = blacklistRepository.findByStatus(status, pageable);
+        } else {
+            blacklistPage = blacklistRepository.findAll(pageable);
+        }
+        
+        // 填充用户信息
+        blacklistPage.getContent().forEach(blacklist -> {
+            Optional<User> user = userRepository.findById(blacklist.getUserId());
+            user.ifPresent(value -> {
+                blacklist.setUserName(value.getUsername());
+                blacklist.setUserRealName(value.getRealName());
+            });
+            
+            if (blacklist.getOperatorId() != null) {
+                Optional<User> operator = userRepository.findById(blacklist.getOperatorId());
+                operator.ifPresent(value -> blacklist.setOperatorName(value.getRealName()));
+            }
+        });
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", blacklistPage.getContent());
+        result.put("totalElements", blacklistPage.getTotalElements());
+        result.put("totalPages", blacklistPage.getTotalPages());
+        result.put("currentPage", page);
+        
+        return Result.success(result);
+    }
+
+    /**
+     * 将用户加入黑名单
+     * @param blacklistData 黑名单信息
+     * @return 操作结果
+     */
+    @PostMapping("/blacklist")
+    public Result<Blacklist> addToBlacklist(@RequestBody Map<String, Object> blacklistData) {
+        try {
+            Long userId = Long.valueOf(blacklistData.get("userId").toString());
+            String reason = blacklistData.get("reason").toString();
+            String endTimeStr = blacklistData.get("endTime") != null ? blacklistData.get("endTime").toString() : null;
+            Long operatorId = Long.valueOf(blacklistData.get("operatorId").toString());
+            
+            // 检查用户是否已存在有效黑名单记录
+            Optional<Blacklist> existingBlacklist = blacklistRepository.findByUserIdAndStatus(userId, "ACTIVE");
+            if (existingBlacklist.isPresent()) {
+                return Result.error("该用户已在黑名单中");
+            }
+            
+            Blacklist blacklist = new Blacklist();
+            blacklist.setUserId(userId);
+            blacklist.setReason(reason);
+            blacklist.setStartTime(LocalDateTime.now());
+            blacklist.setStatus("ACTIVE");
+            blacklist.setOperatorId(operatorId);
+            
+            if (endTimeStr != null && !endTimeStr.trim().isEmpty()) {
+                blacklist.setEndTime(LocalDateTime.parse(endTimeStr));
+            }
+            
+            Blacklist savedBlacklist = blacklistRepository.save(blacklist);
+            
+            // 记录操作日志
+            OperationLog log = new OperationLog();
+            log.setOperatorId(operatorId);
+            log.setOperationType("ADD_BLACKLIST");
+            log.setTargetId(userId);
+            log.setDetail("将用户加入黑名单，原因: " + reason);
+            operationLogRepository.save(log);
+            
+            return Result.success("加入黑名单成功", savedBlacklist);
+        } catch (Exception e) {
+            return Result.error("加入黑名单失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 将用户移出黑名单
+     * @param id 黑名单记录ID
+     * @param operatorId 操作员ID
+     * @return 操作结果
+     */
+    @PutMapping("/blacklist/{id}/remove")
+    public Result<Blacklist> removeFromBlacklist(@PathVariable Long id, @RequestParam Long operatorId) {
+        Optional<Blacklist> blacklistOpt = blacklistRepository.findById(id);
+        if (!blacklistOpt.isPresent()) {
+            return Result.error("黑名单记录不存在");
+        }
+        
+        Blacklist blacklist = blacklistOpt.get();
+        if (!"ACTIVE".equals(blacklist.getStatus())) {
+            return Result.error("该黑名单记录状态不是生效中");
+        }
+        
+        blacklist.setStatus("REMOVED");
+        Blacklist updatedBlacklist = blacklistRepository.save(blacklist);
+        
+        // 记录操作日志
+        OperationLog log = new OperationLog();
+        log.setOperatorId(operatorId);
+        log.setOperationType("REMOVE_BLACKLIST");
+        log.setTargetId(blacklist.getUserId());
+        log.setDetail("将用户移出黑名单");
+        operationLogRepository.save(log);
+        
+        return Result.success("移出黑名单成功", updatedBlacklist);
+    }
+
+    /**
+     * 自动更新过期黑名单状态
+     * @return 更新的记录数量
+     */
+    @PutMapping("/blacklist/auto-expire")
+    public Result<Integer> autoExpireBlacklist() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Blacklist> expiredList = blacklistRepository.findByStatusAndEndTimeBefore("ACTIVE", now);
+        
+        int updatedCount = 0;
+        for (Blacklist blacklist : expiredList) {
+            blacklist.setStatus("EXPIRED");
+            blacklistRepository.save(blacklist);
+            updatedCount++;
+        }
+        
+        return Result.success("自动过期处理完成", updatedCount);
+    }
+
+    /**
+     * 操作日志审计
+     */
+
+    /**
+     * 获取操作日志列表（支持分页和筛选）
+     * @param operatorId 操作人ID（可选）
+     * @param operationType 操作类型（可选）
+     * @param startTime 开始时间（可选）
+     * @param endTime 结束时间（可选）
+     * @param page 页码
+     * @param size 每页大小
+     * @return 操作日志列表
+     */
+    @GetMapping("/operation-logs")
+    public Result<Map<String, Object>> getOperationLogs(
+            @RequestParam(required = false) Long operatorId,
+            @RequestParam(required = false) String operationType,
+            @RequestParam(required = false) String startTime,
+            @RequestParam(required = false) String endTime,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        System.out.println("操作日志查询参数 - operatorId: " + operatorId + ", operationType: " + operationType + ", startTime: " + startTime + ", endTime: " + endTime + ", page: " + page + ", size: " + size);
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<OperationLog> logPage;
+        
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+        
+        try {
+            if (startTime != null && !startTime.trim().isEmpty()) {
+                // 尝试解析前端格式：YYYY-MM-DDTHH:mm:ss
+                start = LocalDateTime.parse(startTime);
+            }
+            if (endTime != null && !endTime.trim().isEmpty()) {
+                // 尝试解析前端格式：YYYY-MM-DDTHH:mm:ss
+                end = LocalDateTime.parse(endTime);
+            }
+        } catch (Exception e) {
+            // 如果解析失败，尝试其他格式
+            try {
+                if (startTime != null && !startTime.trim().isEmpty()) {
+                    // 尝试空格格式：YYYY-MM-DD HH:mm:ss
+                    start = LocalDateTime.parse(startTime.replace(" ", "T"));
+                }
+                if (endTime != null && !endTime.trim().isEmpty()) {
+                    // 尝试空格格式：YYYY-MM-DD HH:mm:ss
+                    end = LocalDateTime.parse(endTime.replace(" ", "T"));
+                }
+            } catch (Exception e2) {
+                return Result.error("时间格式错误，请使用ISO格式（yyyy-MM-ddTHH:mm:ss）或（yyyy-MM-dd HH:mm:ss）");
+            }
+        }
+        
+        // 强制使用无条件查询，确保能返回数据
+        System.out.println("强制使用无条件查询所有操作日志");
+        logPage = operationLogRepository.findAllByOrderByCreatedAtDesc(pageable);
+        
+        System.out.println("查询完成，记录数: " + logPage.getTotalElements() + ", 当前页记录数: " + logPage.getContent().size());
+        
+        // 填充操作人姓名
+        logPage.getContent().forEach(log -> {
+            if (log.getOperatorId() != null) {
+                Optional<User> operator = userRepository.findById(log.getOperatorId());
+                operator.ifPresent(value -> log.setOperatorName(value.getRealName()));
+            }
+        });
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", logPage.getContent());
+        result.put("totalElements", logPage.getTotalElements());
+        result.put("totalPages", logPage.getTotalPages());
+        result.put("currentPage", page);
+        
+        // 添加调试信息
+        System.out.println("操作日志查询结果 - 总记录数: " + logPage.getTotalElements());
+        System.out.println("操作日志查询结果 - 当前页记录数: " + logPage.getContent().size());
+        
+        return Result.success(result);
+    }
+
+    /**
+     * 获取操作日志详情
+     * @param id 日志ID
+     * @return 日志详情
+     */
+    @GetMapping("/operation-logs/{id}")
+    public Result<OperationLog> getOperationLogById(@PathVariable Long id) {
+        Optional<OperationLog> logOpt = operationLogRepository.findById(id);
+        if (logOpt.isPresent()) {
+            OperationLog log = logOpt.get();
+            if (log.getOperatorId() != null) {
+                Optional<User> operator = userRepository.findById(log.getOperatorId());
+                operator.ifPresent(value -> log.setOperatorName(value.getRealName()));
+            }
+            return Result.success(log);
+        }
+        return Result.error("操作日志不存在");
+    }
+
+    /**
+     * 获取操作类型列表
+     * @return 操作类型列表
+     */
+    @GetMapping("/operation-logs/types")
+    public Result<List<String>> getOperationTypes() {
+        try {
+            System.out.println("获取操作类型列表 - 开始");
+            List<String> types = List.of(
+                "APPROVE_RESERVATION", "REJECT_RESERVATION", "VERIFY_CHECKIN", 
+                "ADD_BLACKLIST", "REMOVE_BLACKLIST", "REPLY_FEEDBACK",
+                "UPDATE_RULE", "CREATE_FACILITY", "UPDATE_FACILITY", 
+                "CREATE_NOTICE", "UPDATE_NOTICE", "MAINTENANCE_COMPLETE"
+            );
+            System.out.println("获取操作类型列表 - 成功，类型数量: " + types.size());
+            return Result.success(types);
+        } catch (Exception e) {
+            System.err.println("获取操作类型列表 - 失败: " + e.getMessage());
+            e.printStackTrace();
+            return Result.error("获取操作类型列表失败: " + e.getMessage());
+        }
+    }
+}

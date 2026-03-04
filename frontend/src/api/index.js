@@ -9,7 +9,8 @@ export const userAPI = {
     create: (data) => request.post('/user', data),
     update: (id, data) => request.put(`/user/${id}`, data),
     changePassword: (id, data) => request.post(`/user/${id}/change-password`, data),
-    delete: (id) => request.delete(`/user/${id}`)
+    delete: (id) => request.delete(`/user/${id}`),
+    searchUsers: (keyword) => request.get('/user/search', { params: { keyword } })
 };
 
 // 设备相关API
@@ -145,4 +146,33 @@ export const fileAPI = {
         });
     },
     deleteFile: (fileUrl) => request.delete('/file/delete', { params: { fileUrl } })
+};
+
+// 管理员专属功能API
+export const adminAPI = {
+    // 预约规则配置管理
+    getRuleConfigs: () => request.get('/admin/rule-configs'),
+    getRuleConfigHistory: (categoryId) => request.get('/admin/rule-configs/history', { params: { categoryId } }),
+    createRuleConfig: (data) => request.post('/admin/rule-configs', data),
+    getRuleConfigById: (id) => request.get(`/admin/rule-configs/${id}`),
+    
+    // 黑名单管理
+    getBlacklist: (params) => request.get('/admin/blacklist', { params }),
+    addToBlacklist: (data) => request.post('/admin/blacklist', data),
+    removeFromBlacklist: (id, params) => request.put(`/admin/blacklist/${id}/remove`, null, { params }),
+    autoExpireBlacklist: () => request.put('/admin/blacklist/auto-expire'),
+    
+    // 操作日志审计
+    getOperationLogs: (params) => request.get('/admin/operation-logs', { params }),
+    getOperationLogById: (id) => request.get(`/admin/operation-logs/${id}`),
+    getOperationTypes: () => request.get('/admin/operation-logs/types'),
+    
+    // 用户搜索（用于黑名单添加）
+    searchUsers: (keyword) => request.get('/user/search', { params: { keyword } }),
+    
+    // 统计数据
+    getDashboardStats: () => request.get('/admin/stats/dashboard'),
+    getUserStats: () => request.get('/admin/stats/users'),
+    getReservationStats: () => request.get('/admin/stats/reservations'),
+    getFacilityStats: () => request.get('/admin/stats/facilities')
 };

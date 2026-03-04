@@ -6,6 +6,7 @@ import com.facility.booking.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -218,5 +219,25 @@ public class UserController {
         }
         userRepository.deleteById(id);
         return Result.success("删除成功", null);
+    }
+
+    /**
+     * 搜索用户（按姓名或学号）
+     * @param keyword 搜索关键词
+     * @return 匹配的用户列表
+     */
+    @GetMapping("/search")
+    public Result<List<User>> searchUsers(@RequestParam String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return Result.success(new ArrayList<>());
+        }
+        
+        String searchTerm = "%" + keyword.trim() + "%";
+        List<User> users = userRepository.findByRealNameLikeOrUsernameLike(searchTerm);
+        
+        // 隐藏密码信息
+        users.forEach(user -> user.setPassword("******"));
+        
+        return Result.success(users);
     }
 }

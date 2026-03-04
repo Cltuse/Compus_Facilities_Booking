@@ -412,10 +412,11 @@ const handleRowClick = (row) => {
   transition: all 0.3s ease;
 }
 
-.title-icon:hover {
+/* 移除鼠标悬停效果，保持与其他页面一致 */
+/* .title-icon:hover {
   transform: scale(1.05);
   box-shadow: 0 6px 16px rgba(64, 158, 255, 0.25);
-}
+} */
 
 .title-icon svg {
   width: 24px;

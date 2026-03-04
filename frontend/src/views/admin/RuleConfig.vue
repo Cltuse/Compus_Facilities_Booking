@@ -1,27 +1,56 @@
 <template>
   <div class="rule-config">
-    <!-- 页面标题 -->
+    <!-- 页面标题区域 -->
     <div class="page-header">
-      <h1 class="page-title">
-        <el-icon><Setting /></el-icon>
-        预约规则配置
-      </h1>
-      <p class="page-subtitle">管理不同设施类别的预约规则</p>
+      <div class="header-decoration"></div>
+      <div class="header-content">
+        <h1 class="page-title">
+          <div class="title-icon">
+            <el-icon><Setting /></el-icon>
+          </div>
+          预约规则配置
+        </h1>
+        <p class="page-subtitle">管理不同设施类别的预约规则</p>
+      </div>
     </div>
 
-    <!-- 操作栏 -->
-    <div class="operation-bar">
-      <el-button type="primary" @click="handleCreate" :icon="Plus">
-        新建规则
-      </el-button>
-      <el-button @click="loadRuleConfigs" :icon="Refresh">
-        刷新
-      </el-button>
+    <!-- 搜索和工具栏 -->
+    <div class="toolbar">
+      <div class="search-section">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索规则类别..."
+          size="large"
+          class="search-input"
+          clearable
+          @keyup.enter="handleSearch"
+          @clear="handleClearSearch"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+          <template #append>
+            <el-button @click="handleSearch" type="primary" size="large">
+              搜索
+            </el-button>
+          </template>
+        </el-input>
+      </div>
+      <div class="button-section">
+        <el-button type="primary" size="large" class="add-button" @click="handleCreate">
+          <el-icon><Plus /></el-icon>
+          新建规则
+        </el-button>
+        <el-button size="large" @click="loadRuleConfigs" class="refresh-button">
+          <el-icon><Refresh /></el-icon>
+          刷新
+        </el-button>
+      </div>
     </div>
 
     <!-- 规则列表 -->
-    <el-card class="rule-list-card">
-      <el-table :data="ruleConfigs" style="width: 100%" v-loading="loading">
+    <div class="table-container">
+      <el-table :data="filteredRuleConfigs" class="rule-table" v-loading="loading" stripe>
         <el-table-column prop="categoryName" label="规则类别" width="120">
           <template #default="scope">
             <el-tag :type="scope.row.categoryId ? 'primary' : 'success'">
@@ -91,14 +120,16 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </div>
+
 
     <!-- 规则编辑对话框 -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
       width="600px"
-      :close-on-click-modal="false">
+      :close-on-click-modal="false"
+      class="rule-dialog">
       <el-form :model="ruleForm" :rules="rules" ref="ruleFormRef" label-width="120px">
         <el-form-item label="规则类别" prop="categoryId">
           <el-select v-model="ruleForm.categoryId" placeholder="选择设施类别" clearable style="width: 100%">
@@ -197,7 +228,8 @@
     <el-dialog
       v-model="historyDialogVisible"
       title="规则历史版本"
-      width="800px">
+      width="800px"
+      class="history-dialog">
       <el-timeline>
         <el-timeline-item
           v-for="rule in ruleHistory"
@@ -234,14 +266,16 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Setting, Plus, Refresh, Edit, Clock } from '@element-plus/icons-vue';
+import { Setting, Plus, Refresh, Edit, Clock, Search } from '@element-plus/icons-vue';
 import { adminAPI, facilityCategoryAPI } from '../../api';
 
 const loading = ref(false);
 const submitLoading = ref(false);
 const ruleConfigs = ref([]);
+const filteredRuleConfigs = ref([]);
 const categories = ref([]);
 const ruleHistory = ref([]);
+const searchKeyword = ref('');
 
 const dialogVisible = ref(false);
 const historyDialogVisible = ref(false);
@@ -283,11 +317,34 @@ const loadRuleConfigs = async () => {
   try {
     const response = await adminAPI.getRuleConfigs();
     ruleConfigs.value = response.data;
+    filterRuleConfigs();
   } catch (error) {
     ElMessage.error('加载规则配置失败');
   } finally {
     loading.value = false;
   }
+};
+
+const filterRuleConfigs = () => {
+  if (!searchKeyword.value.trim()) {
+    filteredRuleConfigs.value = ruleConfigs.value;
+    return;
+  }
+  
+  const keyword = searchKeyword.value.toLowerCase();
+  filteredRuleConfigs.value = ruleConfigs.value.filter(config => {
+    const categoryName = config.categoryName || '全局默认';
+    return categoryName.toLowerCase().includes(keyword);
+  });
+};
+
+const handleSearch = () => {
+  filterRuleConfigs();
+};
+
+const handleClearSearch = () => {
+  searchKeyword.value = '';
+  filterRuleConfigs();
 };
 
 const loadCategories = async () => {
@@ -361,42 +418,240 @@ onMounted(() => {
 
 <style scoped>
 .rule-config {
-  padding: 20px;
+  padding: 0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 25%, #e6f7ff 50%, #f8fafc 100%);
+  min-height: calc(100vh - 88px);
 }
 
+/* 页面标题区域 */
 .page-header {
-  margin-bottom: 20px;
+  position: relative;
+  background: #ffffff;
+  margin: 0 0 24px 0;
+  border-radius: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.header-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #409eff 0%, #66b1ff 50%, #409eff 100%);
+  background-size: 200% 100%;
+  animation: gradient-shimmer 3s ease-in-out infinite;
+}
+
+.header-content {
+  padding: 32px 40px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .page-title {
   display: flex;
   align-items: center;
-  font-size: 24px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
 }
 
-.page-title .el-icon {
-  margin-right: 8px;
-  font-size: 28px;
+.title-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+}
+
+.title-icon :deep(.el-icon) {
+  font-size: 24px;
+  color: #409eff;
+}
+
+.title-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+}
+
+.title-icon svg {
+  width: 24px;
+  height: 24px;
   color: #409eff;
 }
 
 .page-subtitle {
-  color: #909399;
   font-size: 14px;
-  margin: 0;
+  color: #718096;
+  margin: 0 0 0 64px;
+  font-weight: 400;
 }
 
-.operation-bar {
-  margin-bottom: 20px;
+/* 工具栏 */
+.toolbar {
+  margin-bottom: 24px;
+  padding: 0 40px;
   display: flex;
-  gap: 10px;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.rule-list-card {
-  margin-bottom: 20px;
+.search-section {
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-input {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  height: 48px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.search-input :deep(.el-input__wrapper:hover) {
+  border-color: #cbd5e0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-input :deep(.el-input__wrapper.is-focus) {
+  border-color: #409eff;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-input :deep(.el-input__inner) {
+  font-size: 15px;
+  height: 46px;
+  font-weight: 500;
+}
+
+.search-input :deep(.el-input-group__append) {
+  border-radius: 0 12px 12px 0;
+  background: linear-gradient(135deg, #409eff 0%, #1976d2 100%);
+  border: none;
+  box-shadow: 0 4px 14px rgba(64, 158, 255, 0.3);
+}
+
+.search-input :deep(.el-input-group__append .el-button) {
+  border-radius: 0 12px 12px 0;
+  background: transparent;
+  border: none;
+  color: white;
+  font-weight: 600;
+}
+
+.button-section {
+  flex-shrink: 0;
+}
+
+.add-button {
+  border-radius: 12px;
+  font-weight: 600;
+  height: 48px;
+  padding: 0 24px;
+  background: linear-gradient(135deg, #409eff 0%, #1976d2 100%);
+  border: none;
+  box-shadow: 0 4px 14px rgba(64, 158, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.add-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(64, 158, 255, 0.4);
+  background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
+}
+
+.refresh-button {
+  border-radius: 12px;
+  font-weight: 600;
+  height: 48px;
+  padding: 0 24px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.refresh-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #cbd5e0;
+}
+
+/* 表格容器 */
+.table-container {
+  background: #ffffff;
+  border-radius: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin: 0 40px 24px;
+}
+
+.rule-table :deep(.el-table__header th) {
+  background: #f8fafc;
+  color: #2d3748;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.rule-table :deep(.el-table__row:hover) {
+  background: #f7fafc;
+}
+
+.rule-table :deep(.el-tag) {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.rule-table :deep(.el-button) {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.rule-table :deep(.el-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rule-table {
+  width: 100%;
+}
+
+.rule-table :deep(.el-table) {
+  width: 100% !important;
+}
+
+/* 动画效果 */
+@keyframes gradient-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .form-tip {
@@ -418,5 +673,109 @@ onMounted(() => {
 :deep(.el-descriptions__label) {
   color: #606266;
   font-weight: 500;
+}
+
+/* 对话框样式 */
+.rule-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.rule-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #f8fafc 0%, #e6f7ff 100%);
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.rule-dialog :deep(.el-dialog__title) {
+  color: #1a202c;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.rule-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+.rule-dialog :deep(.el-form-item__label) {
+  color: #4a5568;
+  font-weight: 600;
+}
+
+.rule-dialog :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.rule-dialog :deep(.el-input__wrapper:hover) {
+  border-color: #cbd5e0;
+}
+
+.rule-dialog :deep(.el-input__wrapper.is-focus) {
+  border-color: #409eff;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+}
+
+.rule-dialog :deep(.el-input-number) {
+  width: 100% !important;
+}
+
+.rule-dialog :deep(.el-input-number__decrease),
+.rule-dialog :deep(.el-input-number__increase) {
+  border-radius: 0 6px 6px 0;
+}
+
+.rule-dialog :deep(.el-select .el-input__wrapper) {
+  cursor: pointer;
+}
+
+.rule-dialog :deep(.el-textarea__inner) {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.rule-dialog :deep(.el-textarea__inner:hover) {
+  border-color: #cbd5e0;
+}
+
+.rule-dialog :deep(.el-textarea__inner:focus) {
+  border-color: #409eff;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+}
+
+.history-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.history-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #f8fafc 0%, #e6f7ff 100%);
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.history-dialog :deep(.el-dialog__title) {
+  color: #1a202c;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.history-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+.history-dialog :deep(.el-timeline-item__timestamp) {
+  color: #718096;
+  font-weight: 500;
+}
+
+.history-dialog :deep(.el-timeline-item__content) {
+  color: #2d3748;
 }
 </style>

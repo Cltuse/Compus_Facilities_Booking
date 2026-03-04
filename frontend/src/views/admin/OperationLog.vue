@@ -1,17 +1,29 @@
 <template>
   <div class="operation-log">
-    <!-- 页面标题 -->
+    <!-- 页面标题区域 -->
     <div class="page-header">
-      <h1 class="page-title">
-        <el-icon><Document /></el-icon>
-        操作日志审计
-      </h1>
-      <p class="page-subtitle">查看系统操作记录，便于问题排查和责任追踪</p>
+      <div class="header-decoration"></div>
+      <div class="header-content">
+        <h1 class="page-title">
+          <div class="title-icon">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="10,9 9,9 8,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          操作日志审计
+        </h1>
+        <p class="page-subtitle">查看系统操作记录，便于问题排查和责任追踪</p>
+      </div>
     </div>
 
-    <!-- 搜索栏 -->
-    <el-card class="search-card">
-      <el-form :inline="true" :model="searchForm" class="search-form">
+    <!-- 搜索和工具栏 -->
+    <div class="toolbar">
+      <div class="search-section">
+        <el-form :inline="true" :model="searchForm" class="search-form">
         <el-form-item label="操作人">
           <el-select
             v-model="searchForm.operatorId"
@@ -61,11 +73,12 @@
         </el-form-item>
         
         <el-form-item>
-          <el-button type="primary" @click="handleSearch" :icon="Search">搜索</el-button>
-          <el-button @click="resetSearch" :icon="Refresh">重置</el-button>
+          <el-button type="primary" @click="handleSearch" :icon="Search" size="large">搜索</el-button>
+          <el-button @click="resetSearch" :icon="Refresh" size="large">重置</el-button>
         </el-form-item>
       </el-form>
-    </el-card>
+      </div>
+    </div>
 
     <!-- 统计信息 -->
     <el-row :gutter="20" class="stats-row">
@@ -124,8 +137,8 @@
     </el-row>
 
     <!-- 操作日志列表 -->
-    <el-card class="log-list-card">
-      <el-table :data="logData" style="width: 100%" v-loading="loading">
+    <div class="table-container">
+      <el-table :data="logData" class="operation-table" v-loading="loading" stripe>
         <el-table-column prop="operatorName" label="操作人" width="140" />
         <el-table-column prop="operationType" label="操作类型" width="160">
           <template #default="scope">
@@ -136,8 +149,8 @@
         </el-table-column>
         <el-table-column prop="targetId" label="目标ID" width="100" />
         <el-table-column prop="detail" label="操作详情" min-width="200" show-overflow-tooltip  align="center"/>
-        <el-table-column prop="ipAddress" label="IP地址" width="140" />
-        <el-table-column prop="createdAt" label="操作时间" width="200">
+        <el-table-column prop="ipAddress" label="IP地址" width="160" />
+        <el-table-column prop="createdAt" label="操作时间" width="220">
           <template #default="scope">
             {{ formatDateTime(scope.row.createdAt) }}
           </template>
@@ -160,15 +173,17 @@
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
-          @current-change="handleCurrentChange" />
+          @current-change="handleCurrentChange"
+          class="custom-pagination" />
       </div>
-    </el-card>
+    </div>
 
     <!-- 详情对话框 -->
     <el-dialog
       v-model="detailDialogVisible"
       title="操作日志详情"
-      width="600px">
+      width="600px"
+      class="detail-dialog">
       <el-descriptions :column="1" border v-if="currentDetail">
         <el-descriptions-item label="操作人">
           {{ currentDetail.operatorName || '系统' }}
@@ -414,7 +429,9 @@ onMounted(() => {
 
 <style scoped>
 .operation-log {
-  padding: 20px;
+  padding: 0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 25%, #e6f7ff 50%, #f8fafc 100%);
+  min-height: calc(100vh - 88px);
 }
 
 .empty-state {
@@ -422,55 +439,156 @@ onMounted(() => {
   text-align: center;
 }
 
+/* 页面标题区域 */
 .page-header {
-  margin-bottom: 20px;
+  position: relative;
+  background: #ffffff;
+  margin: 0 0 24px 0;
+  border-radius: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.header-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #409eff 0%, #66b1ff 50%, #409eff 100%);
+  background-size: 200% 100%;
+  animation: gradient-shimmer 3s ease-in-out infinite;
+}
+
+.header-content {
+  padding: 32px 40px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .page-title {
   display: flex;
   align-items: center;
-  font-size: 24px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
 }
 
-.page-title .el-icon {
-  margin-right: 8px;
-  font-size: 28px;
+.title-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+}
+
+.title-icon svg {
+  width: 24px;
+  height: 24px;
   color: #409eff;
 }
 
 .page-subtitle {
-  color: #909399;
   font-size: 14px;
-  margin: 0;
+  color: #718096;
+  margin: 0 0 0 64px;
+  font-weight: 400;
 }
 
-.search-card {
-  margin-bottom: 20px;
+/* 工具栏 */
+.toolbar {
+  margin-bottom: 24px;
+  padding: 0 40px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-section {
+  flex: 1;
+  min-width: 300px;
 }
 
 .search-form {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 16px;
   align-items: center;
 }
 
+.search-form :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+.search-form :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.search-form :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.search-form :deep(.el-input__wrapper:hover) {
+  border-color: #cbd5e0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-form :deep(.el-input__wrapper.is-focus) {
+  border-color: #409eff;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-form :deep(.el-select .el-input__wrapper) {
+  border-radius: 8px;
+}
+
+.search-form :deep(.el-date-editor.el-input) {
+  width: 180px;
+}
+
+.search-form :deep(.el-button) {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.search-form :deep(.el-button:hover) {
+  transform: translateY(-1px);
+}
+
+/* 统计信息 */
 .stats-row {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding: 0 40px;
 }
 
 .stat-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: none;
+  overflow: hidden;
+}
+
+.stat-card :deep(.el-card__body) {
+  padding: 0;
 }
 
 .stat-content {
   display: flex;
   align-items: center;
-  padding: 20px;
+  padding: 24px;
 }
 
 .stat-icon-wrapper {
@@ -481,6 +599,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   margin-right: 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .total-card .stat-icon-wrapper {
@@ -510,28 +629,213 @@ onMounted(() => {
 
 .stat-value {
   font-size: 28px;
-  font-weight: 600;
-  color: #303133;
+  font-weight: 700;
+  color: #2d3748;
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: #718096;
+  font-weight: 500;
 }
 
-.log-list-card {
-  margin-bottom: 20px;
+/* 表格容器 */
+.table-container {
+  background: #ffffff;
+  border-radius: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin: 0 40px 24px;
 }
 
+.operation-table {
+  width: 100%;
+}
+
+.operation-table :deep(.el-table) {
+  width: 100% !important;
+}
+
+.operation-table :deep(.el-table__header-wrapper) {
+  width: 100% !important;
+}
+
+.operation-table :deep(.el-table__body-wrapper) {
+  width: 100% !important;
+}
+
+.operation-table :deep(.el-table__header) {
+  width: 100% !important;
+}
+
+.operation-table :deep(.el-table__body) {
+  width: 100% !important;
+}
+
+.operation-table :deep(.el-table__header th) {
+  background: #f8fafc;
+  color: #2d3748;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.operation-table :deep(.el-table__row:hover) {
+  background: #f7fafc;
+}
+
+.operation-table :deep(.el-button--info) {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.operation-table :deep(.el-button--info:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 分页 */
 .pagination-container {
+  padding: 20px 0;
   display: flex;
   justify-content: center;
-  margin-top: 20px;
 }
 
-:deep(.el-descriptions__label) {
+.custom-pagination :deep(.el-pagination) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-pagination :deep(.el-pagination__total) {
+  color: #4a5568;
   font-weight: 500;
-  color: #606266;
+  margin-right: 16px;
+}
+
+.custom-pagination :deep(.el-pager) {
+  display: flex;
+  gap: 4px;
+}
+
+.custom-pagination :deep(.el-pager li) {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.custom-pagination :deep(.el-pager li:hover) {
+  transform: translateY(-1px);
+}
+
+.custom-pagination :deep(.el-pager li.is-active) {
+  background: linear-gradient(135deg, #409eff 0%, #1976d2 100%);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 8px rgba(64, 158, 255, 0.3);
+}
+
+.custom-pagination :deep(.el-select) {
+  margin: 0 8px;
+}
+
+.custom-pagination :deep(.el-input__wrapper) {
+  border-radius: 6px;
+  border-color: #e2e8f0;
+}
+
+.custom-pagination :deep(.el-input__inner) {
+  font-size: 13px;
+}
+
+/* 详情对话框 */
+.detail-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.detail-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #f8fafc 0%, #e6f7ff 100%);
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.detail-dialog :deep(.el-dialog__title) {
+  color: #1a202c;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.detail-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+.detail-dialog :deep(.el-descriptions__label) {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.detail-dialog :deep(.el-descriptions__content) {
+  color: #2d3748;
+}
+
+/* 动画效果 */
+@keyframes gradient-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .header-content {
+    padding: 24px 20px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .page-subtitle {
+    margin: 8px 0 0 0;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .title-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .title-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .toolbar {
+    padding: 0 20px;
+  }
+
+  .stats-row {
+    padding: 0 20px;
+  }
+
+  .table-container {
+    margin: 0 20px 24px;
+  }
+
+  .search-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-form :deep(.el-form-item) {
+    margin-right: 0;
+    width: 100%;
+  }
+
+  .search-form :deep(.el-date-editor.el-input) {
+    width: 100%;
+  }
 }
 </style>

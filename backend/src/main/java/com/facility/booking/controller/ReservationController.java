@@ -94,10 +94,60 @@ public class ReservationController {
      */
     @PostMapping
     public Result<Reservation> create(@RequestBody Reservation reservation) {
-        reservation.setStatus("PENDING");
-        Reservation savedReservation = reservationRepository.save(reservation);
-        enrichReservation(savedReservation);
-        return Result.success("预约成功", savedReservation);
+        try {
+            // 1. 基本数据验证
+            if (reservation.getFacilityId() == null) {
+                return Result.error("设施ID不能为空");
+            }
+            if (reservation.getUserId() == null) {
+                return Result.error("用户ID不能为空");
+            }
+            if (reservation.getStartTime() == null) {
+                return Result.error("开始时间不能为空");
+            }
+            if (reservation.getEndTime() == null) {
+                return Result.error("结束时间不能为空");
+            }
+            
+            // 2. 检查设施是否存在
+            Optional<Facility> facilityOpt = facilityRepository.findById(reservation.getFacilityId());
+            if (!facilityOpt.isPresent()) {
+                return Result.error("设施不存在");
+            }
+            
+            // 3. 检查用户是否存在
+            Optional<User> userOpt = userRepository.findById(reservation.getUserId());
+            if (!userOpt.isPresent()) {
+                return Result.error("用户不存在");
+            }
+            
+            // 4. 检查时间有效性
+            if (reservation.getEndTime().isBefore(reservation.getStartTime())) {
+                return Result.error("结束时间不能早于开始时间");
+            }
+            
+            // 5. 检查时间冲突
+            List<Reservation> existingReservations = reservationRepository.findByFacilityId(reservation.getFacilityId());
+            for (Reservation existing : existingReservations) {
+                if (isTimeConflict(reservation.getStartTime(), reservation.getEndTime(), 
+                                 existing.getStartTime(), existing.getEndTime()) &&
+                    !"REJECTED".equals(existing.getStatus()) && 
+                    !"CANCELLED".equals(existing.getStatus())) {
+                    return Result.error("该时间段已被预约，请选择其他时间");
+                }
+            }
+            
+            // 6. 设置默认状态并保存
+            reservation.setStatus("PENDING");
+            reservation.setCheckinStatus("NOT_CHECKED");
+            
+            Reservation savedReservation = reservationRepository.save(reservation);
+            enrichReservation(savedReservation);
+            return Result.success("预约成功", savedReservation);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("预约失败：" + e.getMessage());
+        }
     }
 
     /**
@@ -468,6 +518,19 @@ public class ReservationController {
             case "365d" -> now.minusDays(365);
             default -> now.minusDays(7);
         };
+    }
+
+    /**
+     * 检查时间是否冲突
+     * @param start1 第一个时间段的开始时间
+     * @param end1 第一个时间段的结束时间
+     * @param start2 第二个时间段的开始时间
+     * @param end2 第二个时间段的结束时间
+     * @return 是否冲突
+     */
+    private boolean isTimeConflict(LocalDateTime start1, LocalDateTime end1, 
+                                  LocalDateTime start2, LocalDateTime end2) {
+        return !(end1.isBefore(start2) || start1.isAfter(end2));
     }
 
     /**

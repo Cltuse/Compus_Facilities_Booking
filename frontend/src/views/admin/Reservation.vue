@@ -358,7 +358,7 @@
         >
           <el-form-item label="设施名称">
             <el-input
-                v-model="currentRow.faciltymentName"
+                v-model="currentRow.facilityName"
                 disabled
                 class="readonly-input"
             />

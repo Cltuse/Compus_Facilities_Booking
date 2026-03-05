@@ -29,4 +29,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             "EXISTS(SELECT f FROM Facility f WHERE f.id = r.facilityId AND " +
             "LOWER(f.name) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Reservation> findByKeyword(@Param("keyword") String keyword);
+    
+    // 签到签退相关查询
+    List<Reservation> findByCheckinStatus(String checkinStatus);
+    List<Reservation> findByStatusAndCheckinStatus(String status, String checkinStatus);
+    List<Reservation> findByCheckinStatusAndStartTimeBetween(String checkinStatus, LocalDateTime startTime, LocalDateTime endTime);
+    List<Reservation> findByCheckinStatusAndEndTimeBefore(String checkinStatus, LocalDateTime endTime);
 }

@@ -16,11 +16,64 @@
       </div>
     </div>
 
+    <!-- 统计卡片 -->
+    <div class="stats-container">
+      <el-row :gutter="20">
+        <el-col :span="6">
+          <div class="stat-card">
+            <div class="stat-icon total">
+              <el-icon><Document /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ stats.totalReservations || 0 }}</div>
+              <div class="stat-label">总预约数</div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="stat-card">
+            <div class="stat-icon pending">
+              <el-icon><Clock /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ stats.pendingReservations || 0 }}</div>
+              <div class="stat-label">待审核</div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="stat-card">
+            <div class="stat-icon approved">
+              <el-icon><CircleCheck /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ stats.approvedReservations || 0 }}</div>
+              <div class="stat-label">已通过</div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="stat-card">
+            <div class="stat-icon completed">
+              <el-icon><Check /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ stats.completedReservations || 0 }}</div>
+              <div class="stat-label">已完成</div>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+    </div>
+
+
+
     <!-- 状态标签页 -->
     <div class="tabs-container">
       <el-tabs v-model="activeTab" @tab-change="handleTabChange" class="status-tabs">
         <el-tab-pane label="待审核" name="PENDING" />
         <el-tab-pane label="已通过" name="APPROVED" />
+        <el-tab-pane label="已完成" name="COMPLETED" />
         <el-tab-pane label="已拒绝" name="REJECTED" />
         <el-tab-pane label="全部" name="ALL" />
       </el-tabs>
@@ -99,7 +152,36 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="160" align="center">
+        <el-table-column prop="checkinStatus" label="签到状态" width="140" align="center">
+          <template #default="{ row }">
+            <el-tag
+                :type="getCheckinStatusType(row.checkinStatus)"
+                class="status-tag"
+                effect="light"
+            >
+              <el-icon>
+                <CircleCheck v-if="row.checkinStatus === 'CHECKED_IN'" />
+                <CircleCheck v-else-if="row.checkinStatus === 'CHECKED_OUT'" />
+                <Clock v-else-if="row.checkinStatus === 'NOT_CHECKED'" />
+                <CircleClose v-else-if="row.checkinStatus === 'MISSED'" />
+              </el-icon>
+              {{ getCheckinStatusText(row.checkinStatus) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="verificationCode" label="核销码" width="120" align="center">
+          <template #default="{ row }">
+            <div v-if="row.verificationCode" class="verification-code">
+              <el-tag type="info" effect="plain" size="small">
+                {{ row.verificationCode }}
+              </el-tag>
+            </div>
+            <div v-else class="no-code">-</div>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="status" label="预约状态" width="160" align="center">
           <template #default="{ row }">
             <el-tag
                 :type="getStatusType(row.status)"
@@ -143,6 +225,39 @@
                 <el-icon><CircleClose /></el-icon>
                 拒绝
               </el-button>
+              <el-button
+                  v-if="row.status === 'APPROVED' && row.checkinStatus === 'NOT_CHECKED'"
+                  size="small"
+                  type="primary"
+                  :plain="true"
+                  class="action-btn checkin-btn"
+                  @click.stop="handleCheckin(row)"
+              >
+                <el-icon><Check /></el-icon>
+                签到
+              </el-button>
+              <el-button
+                  v-if="row.status === 'APPROVED' && row.checkinStatus === 'CHECKED_IN'"
+                  size="small"
+                  type="success"
+                  :plain="true"
+                  class="action-btn checkout-btn"
+                  @click.stop="handleCheckout(row)"
+              >
+                <el-icon><CircleCheck /></el-icon>
+                签退
+              </el-button>
+              <el-button
+                  v-if="row.status === 'APPROVED' && row.checkinStatus === 'CHECKED_IN' && row.verificationCode"
+                  size="small"
+                  type="warning"
+                  :plain="true"
+                  class="action-btn verify-btn"
+                  @click.stop="handleVerify(row)"
+              >
+                <el-icon><Key /></el-icon>
+                核销
+              </el-button>
             </div>
           </template>
         </el-table-column>
@@ -162,6 +277,59 @@
         />
       </div>
     </div>
+
+    <!-- 预约详情对话框 -->
+    <el-dialog
+        v-model="detailDialogVisible"
+        title="预约详情"
+        width="700px"
+        class="detail-dialog"
+        :close-on-click-modal="false"
+    >
+      <div class="detail-content" v-if="currentRow">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="设施名称">{{ currentRow.facilityName }}</el-descriptions-item>
+          <el-descriptions-item label="申请人">{{ currentRow.userName }}</el-descriptions-item>
+          <el-descriptions-item label="开始时间">{{ currentRow.startTime }}</el-descriptions-item>
+          <el-descriptions-item label="结束时间">{{ currentRow.endTime }}</el-descriptions-item>
+          <el-descriptions-item label="预约状态">
+            <el-tag :type="getStatusType(currentRow.status)" size="small">
+              {{ getStatusText(currentRow.status) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="签到状态">
+            <el-tag :type="getCheckinStatusType(currentRow.checkinStatus)" size="small">
+              {{ getCheckinStatusText(currentRow.checkinStatus) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="核销码" v-if="currentRow.verificationCode">
+            <el-tag type="info" size="small">{{ currentRow.verificationCode }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="核销管理员" v-if="currentRow.verifiedByName">
+            {{ currentRow.verifiedByName }}
+          </el-descriptions-item>
+          <el-descriptions-item label="签到时间" v-if="currentRow.checkinTime">
+            {{ currentRow.checkinTime }}
+          </el-descriptions-item>
+          <el-descriptions-item label="签退时间" v-if="currentRow.checkoutTime">
+            {{ currentRow.checkoutTime }}
+          </el-descriptions-item>
+          <el-descriptions-item label="使用目的" :span="2">
+            <div class="purpose-detail">{{ currentRow.purpose || '无' }}</div>
+          </el-descriptions-item>
+          <el-descriptions-item label="管理员备注" :span="2" v-if="currentRow.adminRemark">
+            <div class="admin-remark">{{ currentRow.adminRemark }}</div>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="detailDialogVisible = false" size="large">
+            关闭
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
 
     <!-- 审核对话框 -->
     <el-dialog
@@ -248,14 +416,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
-import { reservationAPI, facilityAPI, userAPI } from '../../api';
-import { Clock, CircleCheck, CircleClose, Check, Search } from '@element-plus/icons-vue';
+import { reservationAPI, facilityAPI, userAPI, adminAPI } from '../../api';
+import { Clock, CircleCheck, CircleClose, Check, Search, Key, Document } from '@element-plus/icons-vue';
+import * as echarts from 'echarts';
 
 const activeTab = ref('PENDING');
 const reservationList = ref([]);
 const dialogVisible = ref(false);
+const detailDialogVisible = ref(false);
 const dialogTitle = ref('');
 const actionType = ref('');
 const loading = ref(false);
@@ -265,6 +435,28 @@ const currentRow = ref({});
 const form = ref({
   adminRemark: ''
 });
+
+// 统计数据
+const stats = ref({
+  totalReservations: 0,
+  pendingReservations: 0,
+  approvedReservations: 0,
+  completedReservations: 0,
+  rejectedReservations: 0,
+  cancelledReservations: 0,
+  notCheckedReservations: 0,
+  checkedInReservations: 0,
+  checkedOutReservations: 0,
+  missedReservations: 0,
+  todayTotal: 0,
+  todayPending: 0,
+  todayApproved: 0
+});
+
+// 图表相关
+const trendChart = ref(null);
+let chartInstance = null;
+const trends = ref([]);
 
 // 搜索和分页
 const searchKeyword = ref('');
@@ -284,6 +476,7 @@ const rules = {
 
 onMounted(() => {
   loadReservationList();
+  loadStats();
 });
 
 const loadReservationList = async () => {
@@ -322,6 +515,135 @@ const loadReservationList = async () => {
     loading.value = false;
   }
 };
+
+// 加载统计数据
+const loadStats = async () => {
+  try {
+    const res = await adminAPI.getReservationStats();
+    // 根据API返回的数据结构判断是否成功
+    if (res.code === 200 || res.success) {
+      stats.value = res.data;
+      console.log('统计数据加载成功:', res.data);
+    } else {
+      // 如果API调用成功但返回数据异常，设置默认值
+      console.warn('统计数据API返回异常:', res);
+      stats.value = {
+        totalReservations: 0,
+        pendingReservations: 0,
+        approvedReservations: 0,
+        completedReservations: 0,
+        rejectedReservations: 0
+      };
+    }
+  } catch (error) {
+    console.error('加载统计数据失败:', error);
+    // 设置默认值防止页面显示异常
+    stats.value = {
+      totalReservations: 0,
+      pendingReservations: 0,
+      approvedReservations: 0,
+      completedReservations: 0,
+      rejectedReservations: 0
+    };
+  }
+};
+
+// 加载趋势数据
+const loadTrends = async () => {
+  try {
+    const res = await adminAPI.getReservationTrends();
+    if (res.success) {
+      trends.value = res.data;
+      nextTick(() => {
+        initChart();
+      });
+    }
+  } catch (error) {
+    console.error('加载趋势数据失败:', error);
+  }
+};
+
+// 初始化图表
+const initChart = () => {
+  if (!trendChart.value) return;
+  
+  if (chartInstance) {
+    chartInstance.dispose();
+  }
+  
+  chartInstance = echarts.init(trendChart.value);
+  
+  const dates = trends.value.map(item => item.date);
+  const totalData = trends.value.map(item => item.total);
+  const pendingData = trends.value.map(item => item.pending);
+  const approvedData = trends.value.map(item => item.approved);
+  const completedData = trends.value.map(item => item.completed);
+  
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross'
+      }
+    },
+    legend: {
+      data: ['总数', '待审核', '已通过', '已完成']
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: dates
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: [
+      {
+        name: '总数',
+        type: 'line',
+        data: totalData,
+        smooth: true,
+        itemStyle: { color: '#409eff' }
+      },
+      {
+        name: '待审核',
+        type: 'line',
+        data: pendingData,
+        smooth: true,
+        itemStyle: { color: '#e6a23c' }
+      },
+      {
+        name: '已通过',
+        type: 'line',
+        data: approvedData,
+        smooth: true,
+        itemStyle: { color: '#67c23a' }
+      },
+      {
+        name: '已完成',
+        type: 'line',
+        data: completedData,
+        smooth: true,
+        itemStyle: { color: '#909399' }
+      }
+    ]
+  };
+  
+  chartInstance.setOption(option);
+};
+
+// 窗口大小改变时重新调整图表
+window.addEventListener('resize', () => {
+  if (chartInstance) {
+    chartInstance.resize();
+  }
+});
 
 // 搜索处理
 const handleSearch = () => {
@@ -435,7 +757,9 @@ const cellStyle = ({ row, column, rowIndex, columnIndex }) => {
 
 // 表格行点击处理
 const handleRowClick = (row) => {
-  // 可以在这里添加行点击的逻辑，比如显示详情
+  // 显示预约详情
+  currentRow.value = row;
+  detailDialogVisible.value = true;
 };
 
 const getStatusType = (status) => {
@@ -458,6 +782,64 @@ const getStatusText = (status) => {
     'CANCELLED': '已取消'
   };
   return map[status] || status;
+};
+
+const getCheckinStatusType = (checkinStatus) => {
+  const map = {
+    'NOT_CHECKED': 'info',
+    'CHECKED_IN': 'success',
+    'CHECKED_OUT': 'success',
+    'MISSED': 'danger'
+  };
+  return map[checkinStatus] || '';
+};
+
+const getCheckinStatusText = (checkinStatus) => {
+  const map = {
+    'NOT_CHECKED': '未签到',
+    'CHECKED_IN': '已签到',
+    'CHECKED_OUT': '已签退',
+    'MISSED': '爽约'
+  };
+  return map[checkinStatus] || checkinStatus;
+};
+
+// 签到处理
+const handleCheckin = async (row) => {
+  try {
+    await reservationAPI.checkin(row.id);
+    ElMessage.success('签到成功');
+    loadReservationList();
+  } catch (error) {
+    console.error('签到失败:', error);
+    ElMessage.error('签到失败: ' + (error.response?.data?.message || '请重试'));
+  }
+};
+
+// 签退处理
+const handleCheckout = async (row) => {
+  try {
+    await reservationAPI.checkout(row.id);
+    ElMessage.success('签退成功');
+    loadReservationList();
+  } catch (error) {
+    console.error('签退失败:', error);
+    ElMessage.error('签退失败: ' + (error.response?.data?.message || '请重试'));
+  }
+};
+
+// 核销处理
+const handleVerify = async (row) => {
+  try {
+    // 使用管理员ID 1 作为示例，实际应该从登录信息获取
+    const adminId = 1;
+    await reservationAPI.verify(row.id, adminId, row.verificationCode);
+    ElMessage.success('核销成功');
+    loadReservationList();
+  } catch (error) {
+    console.error('核销失败:', error);
+    ElMessage.error('核销失败: ' + (error.response?.data?.message || '请重试'));
+  }
 };
 </script>
 
@@ -575,6 +957,75 @@ const getStatusText = (status) => {
 .status-tabs :deep(.el-tabs__active-bar) {
   background: linear-gradient(90deg, #409eff 0%, #66b1ff 50%, #409eff 100%);
   height: 3px;
+}
+
+/* 统计卡片容器 */
+.stats-container {
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.stat-icon.total {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  color: #1890ff;
+}
+
+.stat-icon.pending {
+  background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%);
+  color: #fa8c16;
+}
+
+.stat-icon.approved {
+  background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+  color: #52c41a;
+}
+
+.stat-icon.completed {
+  background: linear-gradient(135deg, #f0f5ff 0%, #d6e4ff 100%);
+  color: #597ef7;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #718096;
+  font-weight: 500;
 }
 
 /* 搜索工具栏 */
@@ -754,6 +1205,24 @@ const getStatusText = (status) => {
   transition: all 0.3s ease;
 }
 
+/* 核销码样式 */
+.verification-code {
+  display: flex;
+  justify-content: center;
+}
+
+.verification-code .el-tag {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.no-code {
+  color: #a0aec0;
+  font-size: 14px;
+  text-align: center;
+}
+
 .status-tag.el-tag--success {
   background: linear-gradient(135deg, rgba(72, 187, 120, 0.1) 0%, rgba(56, 161, 105, 0.1) 100%);
   color: #38a169;
@@ -779,6 +1248,65 @@ const getStatusText = (status) => {
   display: flex;
   gap: 8px;
   justify-content: center;
+}
+
+/* 详情对话框样式 */
+.detail-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+.detail-content {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.purpose-detail {
+  color: #4a5568;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.admin-remark {
+  color: #2d3748;
+  background: #fff3cd;
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 4px solid #ffc107;
+  font-style: italic;
+}
+
+/* 趋势图表样式 */
+.chart-container {
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: none;
+}
+
+.chart-card :deep(.el-card__header) {
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);
+  border-bottom: 1px solid #e2e8f0;
+  padding: 20px 24px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header span {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.trend-chart {
+  width: 100%;
+  height: 300px;
 }
 
 .action-btn {
@@ -819,6 +1347,48 @@ const getStatusText = (status) => {
   border-color: #f56565;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+}
+
+.checkin-btn {
+  color: #409eff;
+  border-color: #409eff;
+  background: rgba(64, 158, 255, 0.05);
+}
+
+.checkin-btn:hover {
+  background: linear-gradient(135deg, #409eff 0%, #3375cc 100%);
+  color: #ffffff;
+  border-color: #409eff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+}
+
+.checkout-btn {
+  color: #67c23a;
+  border-color: #67c23a;
+  background: rgba(103, 194, 58, 0.05);
+}
+
+.checkout-btn:hover {
+  background: linear-gradient(135deg, #67c23a 0%, #529b2e 100%);
+  color: #ffffff;
+  border-color: #67c23a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3);
+}
+
+.verify-btn {
+  color: #e6a23c;
+  border-color: #e6a23c;
+  background: rgba(230, 162, 60, 0.05);
+}
+
+.verify-btn:hover {
+  background: linear-gradient(135deg, #e6a23c 0%, #d48a1b 100%);
+  color: #ffffff;
+  border-color: #e6a23c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(230, 162, 60, 0.3);
 }
 
 .action-btn .el-icon {

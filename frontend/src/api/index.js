@@ -71,7 +71,12 @@ export const reservationAPI = {
     complete: (id) => request.put(`/reservation/${id}/complete`),
     delete: (id) => request.delete(`/reservation/${id}`),
     getStatsByTimeRange: (range) => request.get('/reservation/stats/time-range', { params: { range } }),
-    getCategoryStats: (range) => request.get('/reservation/stats/category', { params: { range } })
+    getCategoryStats: (range) => request.get('/reservation/stats/category', { params: { range } }),
+    // 签到签退相关接口
+    checkin: (id) => request.put(`/reservation/${id}/checkin`),
+    checkout: (id) => request.put(`/reservation/${id}/checkout`),
+    verify: (id, adminId, verificationCode) => request.put(`/reservation/${id}/verify?adminId=${adminId}&verificationCode=${verificationCode}`),
+    getVerificationCode: (id) => request.get(`/reservation/${id}/verification-code`)
 };
 
 // 维护相关API
@@ -173,6 +178,9 @@ export const adminAPI = {
     // 统计数据
     getDashboardStats: () => request.get('/admin/stats/dashboard'),
     getUserStats: () => request.get('/admin/stats/users'),
-    getReservationStats: () => request.get('/admin/stats/reservations'),
+    getReservationStats: () => request.get('/admin/reservation-stats'),
+    getReservationTrends: () => request.get('/admin/reservation-trends'),
     getFacilityStats: () => request.get('/admin/stats/facilities')
+
+
 };

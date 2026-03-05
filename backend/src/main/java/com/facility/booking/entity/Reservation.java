@@ -45,6 +45,27 @@ public class Reservation {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private LocalDateTime updatedAt;
 
+    @Column(name = "checkin_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
+    private LocalDateTime checkinTime;
+
+    @Column(name = "checkout_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
+    private LocalDateTime checkoutTime;
+
+    @Column(name = "checkin_status", length = 20)
+    private String checkinStatus = "NOT_CHECKED"; // NOT_CHECKED-未签到/CHECKED_IN-已签到/CHECKED_OUT-已签退/MISSED-爽约
+
+    @Column(name = "verification_code", length = 64)
+    private String verificationCode;
+
+    @Column(name = "verified_by")
+    private Long verifiedBy;
+
+    @Column(name = "verified_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
+    private LocalDateTime verifiedTime;
+
     @Transient
     private String facilityName;
 
@@ -53,6 +74,9 @@ public class Reservation {
 
     @Transient
     private String userRole;
+
+    @Transient
+    private String verifiedByName;
 
     @PrePersist
     protected void onCreate() {

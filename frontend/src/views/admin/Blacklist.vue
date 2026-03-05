@@ -132,7 +132,7 @@
             {{ formatDateTime(scope.row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="scope">
             <el-button
               v-if="scope.row.status === 'ACTIVE'"

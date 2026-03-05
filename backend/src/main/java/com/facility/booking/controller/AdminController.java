@@ -11,11 +11,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 管理员专属功能控制器
@@ -39,6 +41,9 @@ public class AdminController {
 
     @Autowired
     private FacilityCategoryRepository facilityCategoryRepository;
+
+    @Autowired
+    private ReservationRepository reservationRepository;
 
     /**
      * 预约规则配置管理
@@ -396,6 +401,95 @@ public class AdminController {
             System.err.println("获取操作类型列表 - 失败: " + e.getMessage());
             e.printStackTrace();
             return Result.error("获取操作类型列表失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 预约管理统计
+     */
+
+    /**
+     * 获取预约统计数据
+     * @return 预约统计信息
+     */
+    @GetMapping("/reservation-stats")
+    public Result<Map<String, Object>> getReservationStats() {
+        try {
+            // 获取各种状态的预约数量
+            long totalReservations = reservationRepository.count();
+            long pendingReservations = reservationRepository.findByStatus("PENDING").size();
+            long approvedReservations = reservationRepository.findByStatus("APPROVED").size();
+            long completedReservations = reservationRepository.findByStatus("COMPLETED").size();
+            long rejectedReservations = reservationRepository.findByStatus("REJECTED").size();
+            long cancelledReservations = reservationRepository.findByStatus("CANCELLED").size();
+            
+            // 获取签到相关统计
+            long notCheckedReservations = reservationRepository.findByCheckinStatus("NOT_CHECKED").size();
+            long checkedInReservations = reservationRepository.findByCheckinStatus("CHECKED_IN").size();
+            long checkedOutReservations = reservationRepository.findByCheckinStatus("CHECKED_OUT").size();
+            long missedReservations = reservationRepository.findByCheckinStatus("MISSED").size();
+            
+            // 获取今日数据
+            LocalDateTime todayStart = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+            List<Reservation> todayReservations = reservationRepository.findByCreatedAtAfter(todayStart);
+            long todayTotal = todayReservations.size();
+            long todayPending = todayReservations.stream().filter(r -> "PENDING".equals(r.getStatus())).count();
+            long todayApproved = todayReservations.stream().filter(r -> "APPROVED".equals(r.getStatus())).count();
+            
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalReservations", totalReservations);
+            stats.put("pendingReservations", pendingReservations);
+            stats.put("approvedReservations", approvedReservations);
+            stats.put("completedReservations", completedReservations);
+            stats.put("rejectedReservations", rejectedReservations);
+            stats.put("cancelledReservations", cancelledReservations);
+            stats.put("notCheckedReservations", notCheckedReservations);
+            stats.put("checkedInReservations", checkedInReservations);
+            stats.put("checkedOutReservations", checkedOutReservations);
+            stats.put("missedReservations", missedReservations);
+            stats.put("todayTotal", todayTotal);
+            stats.put("todayPending", todayPending);
+            stats.put("todayApproved", todayApproved);
+            
+            return Result.success(stats);
+        } catch (Exception e) {
+            return Result.error("获取预约统计数据失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取预约趋势数据（最近7天）
+     * @return 预约趋势数据
+     */
+    @GetMapping("/reservation-trends")
+    public Result<List<Map<String, Object>>> getReservationTrends() {
+        try {
+            List<Map<String, Object>> trends = new ArrayList<>();
+            LocalDateTime now = LocalDateTime.now();
+            
+            for (int i = 6; i >= 0; i--) {
+                LocalDateTime date = now.minusDays(i);
+                LocalDateTime startOfDay = date.withHour(0).withMinute(0).withSecond(0);
+                LocalDateTime endOfDay = date.withHour(23).withMinute(59).withSecond(59);
+                
+                List<Reservation> dayReservations = reservationRepository.findByCreatedAtAfter(startOfDay);
+                dayReservations = dayReservations.stream()
+                    .filter(r -> r.getCreatedAt().isBefore(endOfDay))
+                    .collect(Collectors.toList());
+                
+                Map<String, Object> dayData = new HashMap<>();
+                dayData.put("date", date.toLocalDate().toString());
+                dayData.put("total", dayReservations.size());
+                dayData.put("pending", dayReservations.stream().filter(r -> "PENDING".equals(r.getStatus())).count());
+                dayData.put("approved", dayReservations.stream().filter(r -> "APPROVED".equals(r.getStatus())).count());
+                dayData.put("completed", dayReservations.stream().filter(r -> "COMPLETED".equals(r.getStatus())).count());
+                
+                trends.add(dayData);
+            }
+            
+            return Result.success(trends);
+        } catch (Exception e) {
+            return Result.error("获取预约趋势数据失败: " + e.getMessage());
         }
     }
 }

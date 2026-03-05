@@ -12,10 +12,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * 设备预约控制器
@@ -246,6 +249,169 @@ public class ReservationController {
         return Result.success("删除成功", null);
     }
 
+    /**
+     * 用户签到
+     * @param id 预约记录ID
+     * @return 签到结果
+     */
+    @PutMapping("/{id}/checkin")
+    public Result<Reservation> checkin(@PathVariable Long id) {
+        Optional<Reservation> resOpt = reservationRepository.findById(id);
+        if (!resOpt.isPresent()) {
+            return Result.error("预约不存在");
+        }
+
+        Reservation reservation = resOpt.get();
+        
+        // 检查预约状态
+        if (!"APPROVED".equals(reservation.getStatus())) {
+            return Result.error("只有已通过的预约才能签到");
+        }
+        
+        // 检查签到状态
+        if (!"NOT_CHECKED".equals(reservation.getCheckinStatus())) {
+            return Result.error("该预约已签到或状态异常");
+        }
+        
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 检查是否在预约时间范围内（可提前15分钟签到）
+        if (now.isBefore(reservation.getStartTime().minusMinutes(15))) {
+            return Result.error("还未到签到时间，可提前15分钟签到");
+        }
+        
+        if (now.isAfter(reservation.getEndTime())) {
+            return Result.error("预约时间已结束，无法签到");
+        }
+        
+        // 更新签到信息
+        reservation.setCheckinStatus("CHECKED_IN");
+        reservation.setCheckinTime(now);
+        
+        // 生成核销码
+        String verificationCode = generateVerificationCode(id);
+        reservation.setVerificationCode(verificationCode);
+        
+        Reservation savedReservation = reservationRepository.save(reservation);
+        enrichReservation(savedReservation);
+        return Result.success("签到成功", savedReservation);
+    }
+
+    /**
+     * 用户签退
+     * @param id 预约记录ID
+     * @return 签退结果
+     */
+    @PutMapping("/{id}/checkout")
+    public Result<Reservation> checkout(@PathVariable Long id) {
+        Optional<Reservation> resOpt = reservationRepository.findById(id);
+        if (!resOpt.isPresent()) {
+            return Result.error("预约不存在");
+        }
+
+        Reservation reservation = resOpt.get();
+        
+        // 检查预约状态
+        if (!"APPROVED".equals(reservation.getStatus())) {
+            return Result.error("只有已通过的预约才能签退");
+        }
+        
+        // 检查签到状态
+        if (!"CHECKED_IN".equals(reservation.getCheckinStatus())) {
+            return Result.error("请先签到后再签退");
+        }
+        
+        // 更新签退信息
+        reservation.setCheckinStatus("CHECKED_OUT");
+        reservation.setCheckoutTime(LocalDateTime.now());
+        
+        Reservation savedReservation = reservationRepository.save(reservation);
+        enrichReservation(savedReservation);
+        return Result.success("签退成功", savedReservation);
+    }
+
+    /**
+     * 管理员核销预约
+     * @param id 预约记录ID
+     * @param adminId 管理员ID
+     * @param verificationCode 核销码
+     * @return 核销结果
+     */
+    @PutMapping("/{id}/verify")
+    public Result<Reservation> verify(@PathVariable Long id, 
+                                     @RequestParam Long adminId,
+                                     @RequestParam String verificationCode) {
+        Optional<Reservation> resOpt = reservationRepository.findById(id);
+        if (!resOpt.isPresent()) {
+            return Result.error("预约不存在");
+        }
+
+        Reservation reservation = resOpt.get();
+        
+        // 检查核销码
+        if (!verificationCode.equals(reservation.getVerificationCode())) {
+            return Result.error("核销码错误");
+        }
+        
+        // 检查预约状态
+        if (!"CHECKED_IN".equals(reservation.getCheckinStatus())) {
+            return Result.error("该预约状态无法核销");
+        }
+        
+        // 更新核销信息
+        reservation.setVerifiedBy(adminId);
+        reservation.setVerifiedTime(LocalDateTime.now());
+        reservation.setCheckinStatus("CHECKED_OUT");
+        reservation.setCheckoutTime(LocalDateTime.now());
+        
+        Reservation savedReservation = reservationRepository.save(reservation);
+        enrichReservation(savedReservation);
+        return Result.success("核销成功", savedReservation);
+    }
+
+    /**
+     * 获取预约核销码
+     * @param id 预约记录ID
+     * @return 核销码
+     */
+    @GetMapping("/{id}/verification-code")
+    public Result<Map<String, String>> getVerificationCode(@PathVariable Long id) {
+        Optional<Reservation> resOpt = reservationRepository.findById(id);
+        if (!resOpt.isPresent()) {
+            return Result.error("预约不存在");
+        }
+
+        Reservation reservation = resOpt.get();
+        if (reservation.getVerificationCode() == null) {
+            return Result.error("该预约暂无核销码");
+        }
+        
+        Map<String, String> result = new HashMap<>();
+        result.put("verificationCode", reservation.getVerificationCode());
+        return Result.success(result);
+    }
+
+    /**
+     * 生成核销码
+     * @param reservationId 预约ID
+     * @return 核销码
+     */
+    private String generateVerificationCode(Long reservationId) {
+        try {
+            String input = reservationId + System.currentTimeMillis() + "campus_facility";
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(input.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString().substring(0, 8).toUpperCase();
+        } catch (NoSuchAlgorithmException e) {
+            // 如果MD5不可用，使用简单的随机码
+            return String.format("%08d", (int)(Math.random() * 100000000));
+        }
+    }
+
     @GetMapping("/stats/time-range")
     public Result<Map<String, Object>> getStatsByTimeRange(@RequestParam String range) {
         LocalDateTime startTime = getStartTimeByRange(range);
@@ -338,6 +504,45 @@ public class ReservationController {
             // 用户不存在时，显示"未知用户"并记录日志
             reservation.setUserName("未知用户");
             reservation.setUserRole(null);
+        }
+        
+        // 设置核销管理员姓名
+        if (reservation.getVerifiedBy() != null) {
+            Optional<User> verifiedByOpt = userRepository.findById(reservation.getVerifiedBy());
+            if (verifiedByOpt.isPresent()) {
+                User verifiedByUser = verifiedByOpt.get();
+                String verifiedByName = verifiedByUser.getRealName();
+                if (verifiedByName == null || verifiedByName.trim().isEmpty()) {
+                    verifiedByName = verifiedByUser.getUsername();
+                }
+                reservation.setVerifiedByName(verifiedByName);
+            }
+        }
+    }
+
+    /**
+     * 定时任务：自动标记爽约的预约
+     * 每30分钟执行一次，检查已批准但未签到的预约是否已过期
+     */
+    @Scheduled(cron = "0 0/30 * * * ?")
+    public void autoMarkMissedReservations() {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 查找所有已批准但未签到的预约，且结束时间已经过去超过30分钟
+        List<Reservation> missedReservations = reservationRepository.findByStatusAndCheckinStatus("APPROVED", "NOT_CHECKED");
+        
+        int missedCount = 0;
+        for (Reservation reservation : missedReservations) {
+            // 如果预约结束时间已经过去超过30分钟，标记为爽约
+            if (now.isAfter(reservation.getEndTime().plusMinutes(30))) {
+                reservation.setCheckinStatus("MISSED");
+                reservationRepository.save(reservation);
+                missedCount++;
+            }
+        }
+        
+        if (missedCount > 0) {
+            System.out.println("自动标记爽约预约完成，共标记 " + missedCount + " 条记录");
         }
     }
 }

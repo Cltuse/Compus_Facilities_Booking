@@ -24,121 +24,73 @@
     <div class="toolbar">
       <div class="search-section">
         <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="操作人">
-          <el-select
-            v-model="searchForm.operatorId"
-            placeholder="选择操作人"
-            clearable
-            filterable
-            remote
-            :remote-method="searchOperators"
-            :loading="operatorLoading"
-            style="width: 200px">
-            <el-option
-              v-for="operator in operatorOptions"
-              :key="operator.id"
-              :label="`${operator.realName} (${operator.username})`"
-              :value="operator.id" />
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="操作类型">
-          <el-select v-model="searchForm.operationType" placeholder="选择操作类型" clearable style="width: 180px">
-            <el-option
-              v-for="type in operationTypes"
-              :key="type.value"
-              :label="type.label"
-              :value="type.value" />
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="开始时间">
-          <el-date-picker
-            v-model="searchForm.startTime"
-            type="datetime"
-            placeholder="选择开始时间"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DDTHH:mm:ss"
-            style="width: 180px" />
-        </el-form-item>
-        
-        <el-form-item label="结束时间">
-          <el-date-picker
-            v-model="searchForm.endTime"
-            type="datetime"
-            placeholder="选择结束时间"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DDTHH:mm:ss"
-            style="width: 180px" />
-        </el-form-item>
-        
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch" :icon="Search" size="large">搜索</el-button>
-          <el-button @click="resetSearch" :icon="Refresh" size="large">重置</el-button>
-        </el-form-item>
-      </el-form>
+          <div class="form-row">
+            <el-form-item label="操作人">
+              <el-select
+                v-model="searchForm.operatorId"
+                placeholder="选择操作人"
+                clearable
+                filterable
+                remote
+                :remote-method="searchOperators"
+                :loading="operatorLoading"
+                style="width: 160px">
+                <el-option
+                  v-for="operator in operatorOptions"
+                  :key="operator.id"
+                  :label="`${operator.realName} (${operator.username})`"
+                  :value="operator.id" />
+              </el-select>
+            </el-form-item>
+            
+            <el-form-item label="操作类型">
+              <el-select v-model="searchForm.operationType" placeholder="选择操作类型" clearable style="width: 140px">
+                <el-option
+                  v-for="type in operationTypes"
+                  :key="type.value"
+                  :label="type.label"
+                  :value="type.value" />
+              </el-select>
+            </el-form-item>
+            
+            <el-form-item label="开始时间">
+              <el-date-picker
+                v-model="searchForm.startTime"
+                type="datetime"
+                placeholder="选择开始时间"
+                format="YYYY-MM-DD HH:mm"
+                value-format="YYYY-MM-DDTHH:mm:ss"
+                style="width: 160px" />
+            </el-form-item>
+            
+            <el-form-item label="结束时间">
+              <el-date-picker
+                v-model="searchForm.endTime"
+                type="datetime"
+                placeholder="选择结束时间"
+                format="YYYY-MM-DD HH:mm"
+                value-format="YYYY-MM-DDTHH:mm:ss"
+                style="width: 160px" />
+            </el-form-item>
+            
+            <el-form-item class="button-group">
+              <el-button type="primary" @click="handleSearch" :icon="Search" size="default">搜索</el-button>
+              <el-button @click="resetSearch" :icon="Refresh" size="default">重置</el-button>
+            </el-form-item>
+          </div>
+        </el-form>
       </div>
     </div>
 
-    <!-- 统计信息 -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :span="6">
-        <el-card class="stat-card total-card">
-          <div class="stat-content">
-            <div class="stat-icon-wrapper">
-              <el-icon class="stat-icon"><Document /></el-icon>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value">{{ stats.totalCount }}</div>
-              <div class="stat-label">总记录数</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="stat-card today-card">
-          <div class="stat-content">
-            <div class="stat-icon-wrapper">
-              <el-icon class="stat-icon"><Clock /></el-icon>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value">{{ stats.todayCount }}</div>
-              <div class="stat-label">今日操作</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="stat-card week-card">
-          <div class="stat-content">
-            <div class="stat-icon-wrapper">
-              <el-icon class="stat-icon"><Calendar /></el-icon>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value">{{ stats.weekCount }}</div>
-              <div class="stat-label">本周操作</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="stat-card user-card">
-          <div class="stat-content">
-            <div class="stat-icon-wrapper">
-              <el-icon class="stat-icon"><User /></el-icon>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value">{{ stats.activeUsers }}</div>
-              <div class="stat-label">活跃用户</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
     <!-- 操作日志列表 -->
-    <div class="table-container">
-      <el-table :data="logData" class="operation-table" v-loading="loading" stripe>
+      <div class="table-container">
+      <div v-if="!loading && logData.length === 0 && hasActiveFilters" class="search-no-results">
+        <el-empty description="未找到符合条件的操作日志">
+          <el-button type="primary" @click="resetSearch">清除搜索条件</el-button>
+        </el-empty>
+      </div>
+      </div>
+      <el-table :data="logData" class="operation-table" v-loading="loading" stripe :key="tableKey">
         <el-table-column prop="operatorName" label="操作人" width="140" />
         <el-table-column prop="operationType" label="操作类型" width="160">
           <template #default="scope">
@@ -207,13 +159,13 @@
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
-  </div>
+
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Document, Search, Refresh, View, Clock, Calendar, User } from '@element-plus/icons-vue';
+import { Search, Refresh, View } from '@element-plus/icons-vue';
 import { adminAPI, userAPI } from '../../api';
 
 const loading = ref(false);
@@ -223,6 +175,12 @@ const logData = ref([]);
 const operatorOptions = ref([]);
 const operationTypes = ref([]);
 const currentDetail = ref(null);
+const tableKey = ref(Date.now()); // 用于强制重新渲染表格
+
+// 计算属性：是否有活动的过滤条件
+const hasActiveFilters = computed(() => {
+  return searchForm.operatorId || searchForm.operationType || searchForm.startTime || searchForm.endTime;
+});
 
 const searchForm = reactive({
   operatorId: '',
@@ -231,20 +189,91 @@ const searchForm = reactive({
   endTime: ''
 });
 
+// 监听搜索表单变化，实时更新数据
+watch([() => searchForm.operatorId, () => searchForm.operationType, () => searchForm.startTime, () => searchForm.endTime], () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  searchTimeout = setTimeout(() => {
+    pagination.currentPage = 1;
+    loadOperationLogs();
+  }, 300);
+});
+
+let searchTimeout = null;
+
 const pagination = reactive({
   currentPage: 1,
   pageSize: 10,
   total: 0
 });
 
-const stats = reactive({
-  totalCount: 0,
-  todayCount: 0,
-  weekCount: 0,
-  activeUsers: 0
-});
+
 
 const detailDialogVisible = ref(false);
+
+// 时间选择器快捷选项
+const startTimeShortcuts = [
+  {
+    text: '今天',
+    value: () => {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
+  },
+  {
+    text: '昨天',
+    value: () => {
+      const date = new Date();
+      date.setDate(date.getDate() - 1);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
+  },
+  {
+    text: '7天前',
+    value: () => {
+      const date = new Date();
+      date.setDate(date.getDate() - 7);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
+  },
+  {
+    text: '30天前',
+    value: () => {
+      const date = new Date();
+      date.setDate(date.getDate() - 30);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
+  }
+];
+
+const endTimeShortcuts = [
+  {
+    text: '现在',
+    value: () => new Date()
+  },
+  {
+    text: '今天',
+    value: () => {
+      const date = new Date();
+      date.setHours(23, 59, 59, 999);
+      return date;
+    }
+  },
+  {
+    text: '昨天',
+    value: () => {
+      const date = new Date();
+      date.setDate(date.getDate() - 1);
+      date.setHours(23, 59, 59, 999);
+      return date;
+    }
+  }
+];
 
 const loadOperationTypes = async () => {
   try {
@@ -305,7 +334,7 @@ const getOperationTypeText = (type) => {
   return texts[type] || type;
 };
 
-const loadOperationLogs = async (updateStats = false) => {
+const loadOperationLogs = async () => {
   loading.value = true;
   try {
     const params = {
@@ -322,58 +351,110 @@ const loadOperationLogs = async (updateStats = false) => {
     }
     if (searchForm.startTime) {
       params.startTime = searchForm.startTime;
+      console.log('开始时间参数:', params.startTime);
     }
     if (searchForm.endTime) {
       params.endTime = searchForm.endTime;
+      console.log('结束时间参数:', params.endTime);
     }
+    
+    console.log('搜索参数:', params);
     
     const response = await adminAPI.getOperationLogs(params);
     const data = response.data;
     
-    logData.value = data.content || [];
-    pagination.total = data.totalElements || 0;
+    console.log('API响应数据:', data);
     
-    // 只有在需要更新统计信息时才调用loadStats
-    if (updateStats) {
-      await loadStats();
+    // 检查返回的数据是否符合搜索条件
+    if (params.operationType && data.content) {
+      const matchingItems = data.content.filter(item => item.operationType === params.operationType);
+      console.log(`后端返回数据中匹配操作类型的记录数: ${matchingItems.length}/${data.content.length}`);
     }
+    if (params.operatorId && data.content) {
+      const matchingItems = data.content.filter(item => item.operatorId == params.operatorId);
+      console.log(`后端返回数据中匹配操作人的记录数: ${matchingItems.length}/${data.content.length}`);
+    }
+    
+    // 处理不同的响应格式
+    let content = [];
+    let total = 0;
+    
+    if (data.content && Array.isArray(data.content)) {
+      // Spring Data 标准格式
+      content = data.content;
+      total = data.totalElements || 0;
+    } else if (Array.isArray(data)) {
+      // 直接数组格式
+      content = data;
+      total = data.length;
+    } else if (data.data && Array.isArray(data.data)) {
+      // 嵌套data格式
+      content = data.data;
+      total = data.total || data.totalElements || data.data.length;
+    } else {
+      console.warn('未预期的数据格式:', data);
+      content = [];
+      total = 0;
+    }
+    
+    // 按时间倒序排序（最新的在前）
+    content.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    // 客户端过滤：如果后端没有正确过滤，在前端进行补充过滤
+    if (searchForm.operationType) {
+      const filteredContent = content.filter(item => item.operationType === searchForm.operationType);
+      console.log(`客户端过滤 - 操作类型: ${content.length} -> ${filteredContent.length} (过滤类型: ${searchForm.operationType})`);
+      content = filteredContent;
+      total = filteredContent.length;
+    }
+    
+    // 按操作人过滤
+    if (searchForm.operatorId) {
+      const filteredContent = content.filter(item => item.operatorId == searchForm.operatorId);
+      console.log(`客户端过滤 - 操作人: ${content.length} -> ${filteredContent.length} (操作人ID: ${searchForm.operatorId})`);
+      content = filteredContent;
+      total = filteredContent.length;
+    }
+    
+    // 按时间范围过滤
+    if (searchForm.startTime || searchForm.endTime) {
+      const start = searchForm.startTime ? new Date(searchForm.startTime) : null;
+      const end = searchForm.endTime ? new Date(searchForm.endTime) : null;
+      
+      const filteredContent = content.filter(item => {
+        const itemTime = new Date(item.createdAt);
+        if (start && itemTime < start) return false;
+        if (end && itemTime > end) return false;
+        return true;
+      });
+      
+      console.log(`客户端过滤 - 时间范围: ${content.length} -> ${filteredContent.length}`);
+      content = filteredContent;
+      total = filteredContent.length;
+    }
+    
+    // 按时间倒序排序（最新的在前）
+    content.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // 强制触发响应式更新
+    logData.value = [...content];
+    pagination.total = total;
+    
+    // 更新tableKey强制重新渲染表格
+    tableKey.value = Date.now();
+    
+    console.log('查询结果 - 总记录数:', total, ', 当前页记录数:', content.length);
+    console.log('表格数据已更新:', logData.value);
+    console.log('表格key已更新:', tableKey.value);
   } catch (error) {
+    console.error('加载操作日志失败:', error);
     ElMessage.error('加载操作日志失败');
   } finally {
     loading.value = false;
   }
 };
 
-const loadStats = async () => {
-  try {
-    // 只有在有搜索条件时才更新统计信息
-    const hasSearchCondition = searchForm.operatorId || searchForm.operationType || searchForm.startTime || searchForm.endTime;
-    
-    if (hasSearchCondition) {
-      // 有搜索条件时，基于当前搜索结果计算统计信息
-      stats.totalCount = pagination.total;
-      stats.todayCount = logData.value.filter(log => {
-        const logDate = new Date(log.createdAt);
-        const today = new Date();
-        return logDate.toDateString() === today.toDateString();
-      }).length;
-      stats.weekCount = logData.value.filter(log => {
-        const logDate = new Date(log.createdAt);
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        return logDate >= weekAgo;
-      }).length;
-      stats.activeUsers = new Set(logData.value.map(log => log.operatorId).filter(Boolean)).size;
-    } else {
-      // 无搜索条件时，统计信息保持不变（基于所有数据）
-      // 这里可以调用专门的统计接口获取全局数据
-      // 暂时保持当前值不变
-      console.log('无搜索条件，统计信息保持不变');
-    }
-  } catch (error) {
-    console.error('加载统计信息失败:', error);
-  }
-};
+
 
 const searchOperators = async (query) => {
   if (!query || query.length < 2) {
@@ -394,7 +475,7 @@ const searchOperators = async (query) => {
 
 const handleSearch = () => {
   pagination.currentPage = 1;
-  loadOperationLogs(true); // 搜索时更新统计信息
+  loadOperationLogs();
 };
 
 const resetSearch = () => {
@@ -402,18 +483,19 @@ const resetSearch = () => {
   searchForm.operationType = '';
   searchForm.startTime = '';
   searchForm.endTime = '';
+  operatorOptions.value = [];
   handleSearch();
 };
 
 const handleSizeChange = (val) => {
   pagination.pageSize = val;
   pagination.currentPage = 1;
-  loadOperationLogs(false); // 分页时不更新统计信息
+  loadOperationLogs();
 };
 
 const handleCurrentChange = (val) => {
   pagination.currentPage = val;
-  loadOperationLogs(false); // 分页时不更新统计信息
+  loadOperationLogs();
 };
 
 const handleView = (row) => {
@@ -423,7 +505,7 @@ const handleView = (row) => {
 
 onMounted(() => {
   loadOperationTypes();
-  loadOperationLogs(true); // 页面初始化时加载统计信息
+  loadOperationLogs();
 });
 </script>
 
@@ -523,8 +605,67 @@ onMounted(() => {
   align-items: center;
 }
 
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+}
+
 .search-form :deep(.el-form-item) {
   margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.search-form :deep(.el-form-item.button-group) {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 1400px) {
+  .form-row {
+    gap: 12px;
+  }
+  
+  .search-form :deep(.el-form-item) {
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .form-row {
+    gap: 8px;
+  }
+  
+  .search-form :deep(.el-select),
+  .search-form :deep(.el-date-editor) {
+    width: 140px !important;
+  }
+}
+
+@media (max-width: 992px) {
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-form :deep(.el-form-item) {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  
+  .search-form :deep(.el-form-item.button-group) {
+    margin-left: 0;
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  .search-form :deep(.el-select),
+  .search-form :deep(.el-date-editor) {
+    width: 100% !important;
+  }
 }
 
 .search-form :deep(.el-form-item__label) {
@@ -568,77 +709,7 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
-/* 统计信息 */
-.stats-row {
-  margin-bottom: 24px;
-  padding: 0 40px;
-}
 
-.stat-card {
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: none;
-  overflow: hidden;
-}
-
-.stat-card :deep(.el-card__body) {
-  padding: 0;
-}
-
-.stat-content {
-  display: flex;
-  align-items: center;
-  padding: 24px;
-}
-
-.stat-icon-wrapper {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 16px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.total-card .stat-icon-wrapper {
-  background: linear-gradient(135deg, #1890ff, #096dd9);
-}
-
-.today-card .stat-icon-wrapper {
-  background: linear-gradient(135deg, #52c41a, #3daa0d);
-}
-
-.week-card .stat-icon-wrapper {
-  background: linear-gradient(135deg, #faad14, #d48806);
-}
-
-.user-card .stat-icon-wrapper {
-  background: linear-gradient(135deg, #722ed1, #531dab);
-}
-
-.stat-icon {
-  font-size: 28px;
-  color: white;
-}
-
-.stat-info {
-  flex: 1;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: #2d3748;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #718096;
-  font-weight: 500;
-}
 
 /* 表格容器 */
 .table-container {
@@ -646,7 +717,23 @@ onMounted(() => {
   border-radius: 0;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  margin: 0 40px 24px;
+  margin: 24px 40px 24px;
+}
+
+.search-no-results {
+  padding: 60px 0;
+  text-align: center;
+}
+
+.filter-status {
+  margin-bottom: 16px;
+
+  background: #fafbfc;
+}
+
+.search-no-results :deep(.el-empty__description p) {
+  color: #909399;
+  font-size: 14px;
 }
 
 .operation-table {

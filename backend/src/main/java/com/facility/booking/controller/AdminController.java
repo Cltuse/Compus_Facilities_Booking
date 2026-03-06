@@ -335,9 +335,35 @@ public class AdminController {
             }
         }
         
-        // 强制使用无条件查询，确保能返回数据
-        System.out.println("强制使用无条件查询所有操作日志");
-        logPage = operationLogRepository.findAllByOrderByCreatedAtDesc(pageable);
+        // 根据搜索条件选择合适的查询方法
+        boolean hasSearchCondition = operatorId != null || 
+                                   (operationType != null && !operationType.trim().isEmpty()) || 
+                                   start != null || end != null;
+        
+        if (hasSearchCondition) {
+            System.out.println("使用条件查询操作日志");
+            // 设置默认时间范围（如果没有指定时间范围）
+            if (start == null && end == null) {
+                // 如果没有任何时间条件，查询所有时间的数据
+                start = LocalDateTime.of(2000, 1, 1, 0, 0);
+                end = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
+            } else if (start == null) {
+                start = LocalDateTime.of(2000, 1, 1, 0, 0);
+            } else if (end == null) {
+                end = LocalDateTime.now();
+            }
+            
+            logPage = operationLogRepository.findByConditions(
+                operatorId, 
+                operationType, 
+                start, 
+                end, 
+                pageable
+            );
+        } else {
+            System.out.println("使用无条件查询所有操作日志");
+            logPage = operationLogRepository.findAllByOrderByCreatedAtDesc(pageable);
+        }
         
         System.out.println("查询完成，记录数: " + logPage.getTotalElements() + ", 当前页记录数: " + logPage.getContent().size());
         

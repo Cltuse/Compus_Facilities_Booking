@@ -93,6 +93,35 @@
           </template>
         </el-table-column>
 
+        <el-table-column prop="checkinStatus" label="签到状态" width="140" align="center">
+          <template #default="{ row }">
+            <el-tag
+              :type="getCheckinStatusType(row.checkinStatus)"
+              class="status-tag"
+              effect="light"
+            >
+              <el-icon>
+                <CircleCheck v-if="row.checkinStatus === 'CHECKED_IN'" />
+                <CircleCheck v-else-if="row.checkinStatus === 'CHECKED_OUT'" />
+                <Clock v-else-if="row.checkinStatus === 'NOT_CHECKED'" />
+                <CircleClose v-else-if="row.checkinStatus === 'MISSED'" />
+              </el-icon>
+              {{ getCheckinStatusText(row.checkinStatus) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="verificationCode" label="核销码" width="120" align="center">
+          <template #default="{ row }">
+            <div v-if="row.verificationCode" class="verification-code">
+              <el-tag type="info" effect="plain" size="small">
+                {{ row.verificationCode }}
+              </el-tag>
+            </div>
+            <div v-else class="no-code">-</div>
+          </template>
+        </el-table-column>
+
         <el-table-column label="操作" width="180" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
@@ -118,15 +147,37 @@
                 取消
               </el-button>
               <el-button
-                v-if="row.status === 'APPROVED'"
+                v-if="row.status === 'APPROVED' && row.checkinStatus === 'NOT_CHECKED'"
+                size="small"
+                type="primary"
+                :plain="true"
+                class="action-btn checkin-btn"
+                @click.stop="handleCheckin(row)"
+              >
+                <el-icon><Check /></el-icon>
+                签到
+              </el-button>
+              <el-button
+                v-if="row.status === 'APPROVED' && row.checkinStatus === 'CHECKED_IN'"
                 size="small"
                 type="success"
                 :plain="true"
-                class="action-btn complete-btn"
-                @click.stop="handleComplete(row)"
+                class="action-btn checkout-btn"
+                @click.stop="handleCheckout(row)"
               >
-                <el-icon><Check /></el-icon>
-                完成
+                <el-icon><CircleCheck /></el-icon>
+                签退
+              </el-button>
+              <el-button
+                v-if="row.status === 'APPROVED' && row.checkinStatus === 'CHECKED_OUT'"
+                size="small"
+                type="info"
+                :plain="true"
+                class="action-btn completed-btn"
+                disabled
+              >
+                <el-icon><CircleCheck /></el-icon>
+                已签退
               </el-button>
             </div>
           </template>
@@ -194,6 +245,22 @@
                 <CircleClose v-else />
               </el-icon>
               {{ getStatusText(currentRow.status) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="签到状态">
+            <el-tag :type="getCheckinStatusType(currentRow.checkinStatus)" class="status-tag">
+              <el-icon>
+                <CircleCheck v-if="currentRow.checkinStatus === 'CHECKED_IN'" />
+                <CircleCheck v-else-if="currentRow.checkinStatus === 'CHECKED_OUT'" />
+                <Clock v-else-if="currentRow.checkinStatus === 'NOT_CHECKED'" />
+                <CircleClose v-else-if="currentRow.checkinStatus === 'MISSED'" />
+              </el-icon>
+              {{ getCheckinStatusText(currentRow.checkinStatus) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="核销码" v-if="currentRow.verificationCode">
+            <el-tag type="info" effect="plain" size="small" class="verification-code-detail">
+              {{ currentRow.verificationCode }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="管理员备注">
@@ -320,6 +387,42 @@ const handleComplete = (row) => {
   }).catch(() => {});
 };
 
+const handleCheckin = (row) => {
+  ElMessageBox.confirm('确认签到该预约？', '签到确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'info',
+    customClass: 'checkin-confirm-dialog'
+  }).then(async () => {
+    try {
+      await reservationAPI.checkin(row.id);
+      ElMessage.success('签到成功');
+      loadMyReservations();
+    } catch (error) {
+      console.error('签到失败:', error);
+      ElMessage.error(error.response?.data?.message || '签到失败');
+    }
+  }).catch(() => {});
+};
+
+const handleCheckout = (row) => {
+  ElMessageBox.confirm('确认签退该预约？签退后预约将自动完成。', '签退确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'success',
+    customClass: 'checkout-confirm-dialog'
+  }).then(async () => {
+    try {
+      await reservationAPI.checkout(row.id);
+      ElMessage.success('签退成功，预约已完成');
+      loadMyReservations();
+    } catch (error) {
+      console.error('签退失败:', error);
+      ElMessage.error(error.response?.data?.message || '签退失败');
+    }
+  }).catch(() => {});
+};
+
 // 表格样式配置
 const headerCellStyle = {
   backgroundColor: '#f8fafc',
@@ -363,6 +466,26 @@ const getStatusText = (status) => {
     'CANCELLED': '已取消'
   };
   return map[status] || status;
+};
+
+const getCheckinStatusType = (checkinStatus) => {
+  const map = {
+    'NOT_CHECKED': 'info',
+    'CHECKED_IN': 'success',
+    'CHECKED_OUT': 'info',
+    'MISSED': 'danger'
+  };
+  return map[checkinStatus] || '';
+};
+
+const getCheckinStatusText = (checkinStatus) => {
+  const map = {
+    'NOT_CHECKED': '未签到',
+    'CHECKED_IN': '已签到',
+    'CHECKED_OUT': '已签退',
+    'MISSED': '爽约'
+  };
+  return map[checkinStatus] || checkinStatus;
 };
 </script>
 

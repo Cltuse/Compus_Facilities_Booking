@@ -35,4 +35,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     List<Reservation> findByStatusAndCheckinStatus(String status, String checkinStatus);
     List<Reservation> findByCheckinStatusAndStartTimeBetween(String checkinStatus, LocalDateTime startTime, LocalDateTime endTime);
     List<Reservation> findByCheckinStatusAndEndTimeBefore(String checkinStatus, LocalDateTime endTime);
-}
+    
+    // 根据用户ID和状态列表查询预约
+    @Query("SELECT r FROM Reservation r WHERE r.userId = :userId AND r.status IN :statuses")
+    List<Reservation> findByUserIdAndStatusIn(@Param("userId") Long userId, @Param("statuses") List<String> statuses);
+
+    }

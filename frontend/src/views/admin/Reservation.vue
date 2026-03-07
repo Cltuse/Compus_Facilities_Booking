@@ -331,6 +331,49 @@
       </template>
     </el-dialog>
 
+    <!-- 核销对话框 -->
+    <el-dialog
+        v-model="verifyDialogVisible"
+        title="核销预约"
+        width="400px"
+        class="verify-dialog"
+        :close-on-click-modal="false"
+    >
+      <div class="verify-content">
+        <div class="verify-info">
+          <p><strong>设施名称：</strong>{{ currentRow.facilityName }}</p>
+          <p><strong>申请人：</strong>{{ currentRow.userName }}</p>
+          <p><strong>预约时间：</strong>{{ currentRow.startTime }} - {{ currentRow.endTime }}</p>
+          <p><strong>签到状态：</strong>{{ getCheckinStatusText(currentRow.checkinStatus) }}</p>
+        </div>
+        <el-form :model="verifyForm" ref="verifyFormRef" label-width="100px">
+          <el-form-item label="核销码" prop="verificationCode" required>
+            <el-input
+              v-model="verifyForm.verificationCode"
+              placeholder="请输入用户提供的核销码"
+              maxlength="8"
+              show-word-limit
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="verifyDialogVisible = false" size="large">
+            取消
+          </el-button>
+          <el-button
+            type="primary"
+            size="large"
+            :loading="verifyLoading"
+            @click="handleVerifySubmit"
+          >
+            确认核销
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <!-- 审核对话框 -->
     <el-dialog
         v-model="dialogVisible"
@@ -426,14 +469,20 @@ const activeTab = ref('PENDING');
 const reservationList = ref([]);
 const dialogVisible = ref(false);
 const detailDialogVisible = ref(false);
+const verifyDialogVisible = ref(false);
 const dialogTitle = ref('');
 const actionType = ref('');
 const loading = ref(false);
 const submitLoading = ref(false);
+const verifyLoading = ref(false);
 const formRef = ref(null);
+const verifyFormRef = ref(null);
 const currentRow = ref({});
 const form = ref({
   adminRemark: ''
+});
+const verifyForm = ref({
+  verificationCode: ''
 });
 
 // 统计数据
@@ -828,17 +877,33 @@ const handleCheckout = async (row) => {
   }
 };
 
-// 核销处理
-const handleVerify = async (row) => {
+// 核销处理 - 显示核销码输入对话框
+const handleVerify = (row) => {
+  currentRow.value = row;
+  verifyForm.value.verificationCode = '';
+  verifyDialogVisible.value = true;
+};
+
+// 提交核销
+const handleVerifySubmit = async () => {
+  if (!verifyForm.value.verificationCode.trim()) {
+    ElMessage.warning('请输入核销码');
+    return;
+  }
+  
   try {
+    verifyLoading.value = true;
     // 使用管理员ID 1 作为示例，实际应该从登录信息获取
     const adminId = 1;
-    await reservationAPI.verify(row.id, adminId, row.verificationCode);
+    await reservationAPI.verify(currentRow.value.id, adminId, verifyForm.value.verificationCode.trim());
     ElMessage.success('核销成功');
+    verifyDialogVisible.value = false;
     loadReservationList();
   } catch (error) {
     console.error('核销失败:', error);
     ElMessage.error('核销失败: ' + (error.response?.data?.message || '请重试'));
+  } finally {
+    verifyLoading.value = false;
   }
 };
 </script>
@@ -1147,6 +1212,34 @@ const handleVerify = async (row) => {
   color: #4a5568;
   font-size: 14px;
   font-weight: 500;
+}
+
+/* 核销对话框样式 */
+.verify-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+.verify-content {
+  text-align: center;
+}
+
+.verify-info {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.verify-info p {
+  margin: 8px 0;
+  color: #2d3748;
+  font-size: 14px;
+}
+
+.verify-info strong {
+  color: #4a5568;
+  margin-right: 8px;
 }
 
 /* 表格单元格内容样式 */

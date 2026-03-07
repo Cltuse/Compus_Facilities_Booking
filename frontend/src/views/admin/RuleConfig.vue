@@ -56,66 +56,73 @@
 
     <!-- 规则列表 -->
     <div class="table-container">
+      <div class="table-header">
+        <div class="table-title">
+          <el-icon><Document /></el-icon>
+          <span>规则配置列表</span>
+          <el-tag type="info" size="small">{{ filteredRuleConfigs.length }} 条规则</el-tag>
+        </div>
+      </div>
       <el-table :data="filteredRuleConfigs" class="rule-table" v-loading="loading" stripe>
-        <el-table-column prop="categoryName" label="规则类别" width="120">
+        <el-table-column prop="categoryName" label="规则类别" min-width="140">
           <template #default="scope">
             <el-tag :type="scope.row.categoryId ? 'primary' : 'success'">
               {{ scope.row.categoryName || '全局默认' }}
             </el-tag>
           </template>
         </el-table-column>
-        
-        <el-table-column prop="minDurationMinutes" label="最小时长" width="80">
+
+        <el-table-column prop="minDurationMinutes" label="最小时长" width="90">
           <template #default="scope">
             {{ scope.row.minDurationMinutes }}分钟
           </template>
         </el-table-column>
-        
-        <el-table-column prop="maxDurationMinutes" label="最大时长" width="80">
+
+        <el-table-column prop="maxDurationMinutes" label="最大时长" width="90">
           <template #default="scope">
             {{ scope.row.maxDurationMinutes }}分钟
           </template>
         </el-table-column>
-        
-        <el-table-column prop="advanceDaysMax" label="提前天数" width="80">
+
+        <el-table-column prop="advanceDaysMax" label="提前天数" width="90">
           <template #default="scope">
             {{ scope.row.advanceDaysMax }}天
           </template>
         </el-table-column>
-        
-        <el-table-column prop="maxBookingsPerDay" label="每日预约" width="80">
+
+        <el-table-column prop="maxBookingsPerDay" label="每日预约" width="90">
           <template #default="scope">
             {{ scope.row.maxBookingsPerDay }}次
           </template>
         </el-table-column>
-        
-        <el-table-column prop="maxActiveBookings" label="生效预约" width="80">
+
+        <el-table-column prop="maxActiveBookings" label="生效预约" width="90">
           <template #default="scope">
             {{ scope.row.maxActiveBookings }}个
           </template>
         </el-table-column>
-        
-        <el-table-column prop="needApproval" label="需要审核" width="80">
+
+        <el-table-column prop="needApproval" label="需要审核" width="85">
           <template #default="scope">
             <el-tag :type="scope.row.needApproval ? 'warning' : 'info'" size="small">
               {{ scope.row.needApproval ? '是' : '否' }}
             </el-tag>
           </template>
         </el-table-column>
-        
-        <el-table-column prop="openTime" label="开放时间" width="100">
+
+        <el-table-column prop="openTime" label="开放时间" width="110">
           <template #default="scope">
             {{ scope.row.openTime }} - {{ scope.row.closeTime }}
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="createdAt" label="创建时间" width="160">
           <template #default="scope">
             {{ formatDateTime(scope.row.createdAt) }}
           </template>
         </el-table-column>
-        
-        <el-table-column label="操作" width="200" fixed="right">
+
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="scope">
             <el-button type="primary" link @click="handleEdit(scope.row)" :icon="Edit">
               编辑
@@ -133,10 +140,10 @@
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="600px"
+      width="800px"
       :close-on-click-modal="false"
       class="rule-dialog">
-      <el-form :model="ruleForm" :rules="rules" ref="ruleFormRef" label-width="120px">
+      <el-form :model="ruleForm" :rules="rules" ref="ruleFormRef" label-width="140px">
         <el-form-item label="规则类别" prop="categoryId">
           <el-select v-model="ruleForm.categoryId" placeholder="选择设施类别" clearable style="width: 100%">
             <el-option label="全局默认规则" :value="null" />
@@ -148,76 +155,85 @@
           </el-select>
         </el-form-item>
         
-        <el-row :gutter="20">
-          <el-col :span="12">
+        <el-row :gutter="24">
+          <el-col :span="8">
             <el-form-item label="最小预约时长" prop="minDurationMinutes">
               <el-input-number v-model="ruleForm.minDurationMinutes" :min="15" :max="1440" :step="15" style="width: 100%" />
               <div class="form-tip">分钟</div>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="最大预约时长" prop="maxDurationMinutes">
               <el-input-number v-model="ruleForm.maxDurationMinutes" :min="30" :max="1440" :step="30" style="width: 100%" />
               <div class="form-tip">分钟</div>
             </el-form-item>
           </el-col>
+          <el-col :span="8">
+            <el-form-item label="时间片粒度" prop="timeSlotMinutes">
+              <el-input-number v-model="ruleForm.timeSlotMinutes" :min="15" :max="240" :step="15" style="width: 100%" />
+              <div class="form-tip">分钟</div>
+            </el-form-item>
+          </el-col>
         </el-row>
         
-        <el-form-item label="提前天数" prop="advanceDaysMax">
-          <el-input-number v-model="ruleForm.advanceDaysMax" :min="1" :max="365" style="width: 100%" />
-          <div class="form-tip">用户可以提前多少天预约</div>
-        </el-form-item>
+        <el-row :gutter="24">
+          <el-col :span="8">
+            <el-form-item label="提前天数" prop="advanceDaysMax">
+              <el-input-number v-model="ruleForm.advanceDaysMax" :min="1" :max="365" style="width: 100%" />
+              <div class="form-tip">用户可以提前多少天预约</div>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="预约截止时间" prop="advanceCutoffMinutes">
+              <el-input-number v-model="ruleForm.advanceCutoffMinutes" :min="5" :max="1440" :step="5" style="width: 100%" />
+              <div class="form-tip">开始前多少分钟停止预约</div>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="取消截止时间" prop="cancelDeadlineMinutes">
+              <el-input-number v-model="ruleForm.cancelDeadlineMinutes" :min="5" :max="1440" :step="5" style="width: 100%" />
+              <div class="form-tip">开始前多少分钟可取消</div>
+            </el-form-item>
+          </el-col>
+        </el-row>
         
-        <el-form-item label="预约截止时间" prop="advanceCutoffMinutes">
-          <el-input-number v-model="ruleForm.advanceCutoffMinutes" :min="5" :max="1440" :step="5" style="width: 100%" />
-          <div class="form-tip">预约开始前多少分钟停止预约</div>
-        </el-form-item>
-        
-        <el-row :gutter="20">
-          <el-col :span="12">
+        <el-row :gutter="24">
+          <el-col :span="8">
             <el-form-item label="每日预约次数" prop="maxBookingsPerDay">
               <el-input-number v-model="ruleForm.maxBookingsPerDay" :min="1" :max="20" style="width: 100%" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="生效预约数" prop="maxActiveBookings">
               <el-input-number v-model="ruleForm.maxActiveBookings" :min="1" :max="50" style="width: 100%" />
             </el-form-item>
           </el-col>
-        </el-row>
-        
-        <el-form-item label="取消截止时间" prop="cancelDeadlineMinutes">
-          <el-input-number v-model="ruleForm.cancelDeadlineMinutes" :min="5" :max="1440" :step="5" style="width: 100%" />
-          <div class="form-tip">预约开始前多少分钟可取消</div>
-        </el-form-item>
-        
-        <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="开放时间" prop="openTime">
               <el-time-picker v-model="ruleForm.openTime" format="HH:mm" value-format="HH:mm:ss" style="width: 100%" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+        </el-row>
+        
+        <el-row :gutter="24">
+          <el-col :span="8">
             <el-form-item label="关闭时间" prop="closeTime">
               <el-time-picker v-model="ruleForm.closeTime" format="HH:mm" value-format="HH:mm:ss" style="width: 100%" />
             </el-form-item>
           </el-col>
+          <el-col :span="8">
+            <el-form-item label="当天预约" prop="allowSameDayBooking">
+              <el-switch v-model="ruleForm.allowSameDayBooking" />
+              <div class="form-tip">是否允许预约当天的设施</div>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="需要审核" prop="needApproval">
+              <el-switch v-model="ruleForm.needApproval" />
+              <div class="form-tip">预约是否需要管理员审核</div>
+            </el-form-item>
+          </el-col>
         </el-row>
-        
-        <el-form-item label="时间片粒度" prop="timeSlotMinutes">
-          <el-input-number v-model="ruleForm.timeSlotMinutes" :min="15" :max="240" :step="15" style="width: 100%" />
-          <div class="form-tip">预约时间的最小单位（分钟）</div>
-        </el-form-item>
-        
-        <el-form-item label="当天预约" prop="allowSameDayBooking">
-          <el-switch v-model="ruleForm.allowSameDayBooking" />
-          <div class="form-tip">是否允许用户预约当天的设施</div>
-        </el-form-item>
-        
-        <el-form-item label="需要审核" prop="needApproval">
-          <el-switch v-model="ruleForm.needApproval" />
-          <div class="form-tip">预约是否需要管理员审核</div>
-        </el-form-item>
       </el-form>
       
       <template #footer>
@@ -615,11 +631,31 @@ onMounted(() => {
   margin: 0 40px 24px;
 }
 
+.table-header {
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.table-title .el-icon {
+  color: #409eff;
+}
+
 .rule-table :deep(.el-table__header th) {
   background: #f8fafc;
   color: #2d3748;
   font-weight: 600;
   border-bottom: 2px solid #e2e8f0;
+  padding: 12px 8px;
 }
 
 .rule-table :deep(.el-table__row:hover) {
@@ -635,11 +671,16 @@ onMounted(() => {
   border-radius: 6px;
   font-weight: 500;
   transition: all 0.3s ease;
+  padding: 4px 8px;
 }
 
 .rule-table :deep(.el-button:hover) {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rule-table :deep(.el-table__cell) {
+  padding: 12px 8px;
 }
 
 .rule-table {
@@ -648,6 +689,39 @@ onMounted(() => {
 
 .rule-table :deep(.el-table) {
   width: 100% !important;
+}
+
+/* 响应式布局 */
+@media (max-width: 1200px) {
+  .rule-dialog :deep(.el-dialog) {
+    width: 90% !important;
+    max-width: 700px;
+  }
+
+  .rule-dialog :deep(.el-col-8) {
+    span: 12;
+  }
+}
+
+@media (max-width: 768px) {
+  .rule-dialog :deep(.el-dialog) {
+    width: 95% !important;
+    margin-top: 5vh !important;
+  }
+
+  .rule-dialog :deep(.el-col-8) {
+    span: 24;
+  }
+
+  .rule-dialog :deep(.el-form-item__label) {
+    width: 100% !important;
+    text-align: left;
+    padding-bottom: 4px;
+  }
+
+  .rule-dialog :deep(.el-form-item__content) {
+    margin-left: 0 !important;
+  }
 }
 
 /* 动画效果 */
@@ -661,9 +735,10 @@ onMounted(() => {
 }
 
 .form-tip {
-  font-size: 12px;
+  font-size: 11px;
   color: #909399;
-  margin-top: 4px;
+  margin-top: 2px;
+  line-height: 1.3;
 }
 
 .dialog-footer {
@@ -702,6 +777,25 @@ onMounted(() => {
 
 .rule-dialog :deep(.el-dialog__body) {
   padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.rule-dialog :deep(.el-form-item) {
+  margin-bottom: 20px;
+}
+
+.rule-dialog :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.rule-dialog :deep(.el-input-number) {
+  width: 100% !important;
+}
+
+.rule-dialog :deep(.el-time-picker) {
+  width: 100% !important;
 }
 
 .rule-dialog :deep(.el-form-item__label) {

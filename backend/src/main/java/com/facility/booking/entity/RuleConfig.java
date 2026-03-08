@@ -50,6 +50,9 @@ public class RuleConfig {
     @Column(name = "close_time", nullable = false)
     private LocalTime closeTime;
 
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true; // 是否当前生效
+
     @Column(name = "time_slot_minutes", nullable = false)
     private Integer timeSlotMinutes = 30;
 

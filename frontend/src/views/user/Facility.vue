@@ -404,8 +404,8 @@ const handleSubmit = async () => {
   try {
     await formRef.value.validate();
     
-    await reservationAPI.create(form.value);
-    ElMessage.success('预约成功，请等待管理员审核');
+    const response = await reservationAPI.create(form.value);
+    ElMessage.success(response.message || '预约成功');
     
     dialogVisible.value = false;
   } catch (error) {

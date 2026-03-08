@@ -37,4 +37,12 @@ public class Result<T> {
         result.setMessage(message);
         return result;
     }
+
+    /**
+     * 判断操作是否成功
+     * @return 是否成功（code为200表示成功）
+     */
+    public boolean isSuccess() {
+        return code != null && code == 200;
+    }
 }

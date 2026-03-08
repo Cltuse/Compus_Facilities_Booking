@@ -6,6 +6,8 @@ import com.facility.booking.entity.Reservation;
 import com.facility.booking.entity.User;
 import com.facility.booking.repository.FacilityRepository;
 import com.facility.booking.repository.ReservationRepository;
+import com.facility.booking.repository.RuleConfigRepository;
+import com.facility.booking.entity.RuleConfig;
 import com.facility.booking.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.LocalDate;
 import java.util.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -37,6 +41,9 @@ public class ReservationController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RuleConfigRepository ruleConfigRepository;
 
     /**
      * 获取所有预约记录
@@ -127,7 +134,13 @@ public class ReservationController {
                 return Result.error("用户不存在");
             }
             
-            // 4. 检查时间有效性
+            // 4. 验证预约规则
+            Result<String> ruleValidationResult = validateReservationRules(reservation, facility);
+            if (!ruleValidationResult.isSuccess()) {
+                return Result.error(ruleValidationResult.getMessage());
+            }
+            
+            // 5. 检查时间有效性
             if (reservation.getEndTime().isBefore(reservation.getStartTime())) {
                 return Result.error("结束时间不能早于开始时间");
             }
@@ -137,41 +150,32 @@ public class ReservationController {
                 return Result.error("不能预约过去的时间");
             }
             
-            // 检查预约时长限制（最长预约时间不超过24小时）
-            long durationHours = java.time.Duration.between(reservation.getStartTime(), reservation.getEndTime()).toHours();
-            if (durationHours > 24) {
-                return Result.error("单次预约时长不能超过24小时");
-            }
-            
-            // 检查用户是否有未完成的预约（防止重复预约）
-            List<Reservation> userActiveReservations = reservationRepository.findByUserIdAndStatusIn(
-                reservation.getUserId(), 
-                Arrays.asList("PENDING", "APPROVED")
-            );
-            for (Reservation activeRes : userActiveReservations) {
-                if (activeRes.getFacilityId().equals(reservation.getFacilityId())) {
-                    return Result.error("您已有该设施的未完成预约，请先完成或取消之前的预约");
-                }
-            }
-            
-            // 5. 检查时间冲突
+            // 6. 检查时间冲突
             List<Reservation> existingReservations = reservationRepository.findByFacilityId(reservation.getFacilityId());
             for (Reservation existing : existingReservations) {
                 if (isTimeConflict(reservation.getStartTime(), reservation.getEndTime(), 
                                  existing.getStartTime(), existing.getEndTime()) &&
-                    !"REJECTED".equals(existing.getStatus()) && 
-                    !"CANCELLED".equals(existing.getStatus())) {
+                    !("REJECTED".equals(existing.getStatus()) || 
+                      "CANCELLED".equals(existing.getStatus()))) {
                     return Result.error("该时间段已被预约，请选择其他时间");
                 }
             }
             
-            // 6. 设置默认状态并保存
-            reservation.setStatus("PENDING");
+            // 7. 根据规则设置状态并保存
+            RuleConfig ruleConfig = getApplicableRuleConfig(facility);
+            String initialStatus = (ruleConfig != null && ruleConfig.getNeedApproval()) ? "PENDING" : "APPROVED";
+            reservation.setStatus(initialStatus);
             reservation.setCheckinStatus("NOT_CHECKED");
             
             Reservation savedReservation = reservationRepository.save(reservation);
             enrichReservation(savedReservation);
-            return Result.success("预约成功", savedReservation);
+            
+            String message = "预约成功";
+            if ("PENDING".equals(initialStatus)) {
+                message += "，请等待管理员审核";
+            }
+            
+            return Result.success(message, savedReservation);
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("预约失败：" + e.getMessage());
@@ -273,6 +277,13 @@ public class ReservationController {
         }
 
         Reservation existingReservation = resOpt.get();
+        
+        // 验证取消规则
+        Result<String> cancelValidationResult = validateCancelRules(existingReservation);
+        if (!cancelValidationResult.isSuccess()) {
+            return Result.error(cancelValidationResult.getMessage());
+        }
+        
         existingReservation.setStatus("CANCELLED");
 
         Reservation savedReservation = reservationRepository.save(existingReservation);
@@ -346,6 +357,39 @@ public class ReservationController {
         }
         reservationRepository.deleteById(id);
         return Result.success("删除成功", null);
+    }
+
+    /**
+     * 验证取消预约是否符合规则
+     * @param reservation 预约信息
+     * @return 验证结果
+     */
+    private Result<String> validateCancelRules(Reservation reservation) {
+        // 检查当前状态是否允许取消
+        if (!("PENDING".equals(reservation.getStatus()) || "APPROVED".equals(reservation.getStatus()))) {
+            return Result.error("当前状态不允许取消预约");
+        }
+
+        // 获取适用的规则配置
+        Optional<Facility> facilityOpt = facilityRepository.findById(reservation.getFacilityId());
+        if (!facilityOpt.isPresent()) {
+            return Result.error("设施信息不存在");
+        }
+        
+        RuleConfig ruleConfig = getApplicableRuleConfig(facilityOpt.get());
+        if (ruleConfig == null || ruleConfig.getCancelDeadlineMinutes() == null) {
+            return Result.success("无取消时间限制");
+        }
+
+        // 验证取消截止时间
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime cancelDeadline = reservation.getStartTime().minusMinutes(ruleConfig.getCancelDeadlineMinutes());
+        
+        if (now.isAfter(cancelDeadline)) {
+            return Result.error("预约开始时间前" + ruleConfig.getCancelDeadlineMinutes() + "分钟内不允许取消");
+        }
+
+        return Result.success("可以取消");
     }
 
     /**
@@ -759,5 +803,114 @@ public class ReservationController {
         if (missedCount > 0) {
             System.out.println("自动标记爽约预约完成，共标记 " + missedCount + " 条记录，释放 " + facilityReleasedCount + " 个设施");
         }
+    }
+
+    /**
+     * 验证预约是否符合规则配置
+     * @param reservation 预约信息
+     * @param facility 设施信息
+     * @return 验证结果
+     */
+    private Result<String> validateReservationRules(Reservation reservation, Facility facility) {
+        // 获取适用的规则配置
+        RuleConfig ruleConfig = getApplicableRuleConfig(facility);
+        if (ruleConfig == null) {
+            return Result.success("无特定规则限制");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startTime = reservation.getStartTime();
+        LocalDateTime endTime = reservation.getEndTime();
+
+        // 1. 验证预约时长
+        long durationMinutes = java.time.Duration.between(startTime, endTime).toMinutes();
+        if (ruleConfig.getMinDurationMinutes() != null && durationMinutes < ruleConfig.getMinDurationMinutes()) {
+            return Result.error("预约时长不能少于" + ruleConfig.getMinDurationMinutes() + "分钟");
+        }
+        if (ruleConfig.getMaxDurationMinutes() != null && durationMinutes > ruleConfig.getMaxDurationMinutes()) {
+            return Result.error("预约时长不能超过" + ruleConfig.getMaxDurationMinutes() + "分钟");
+        }
+
+        // 2. 验证提前预约时间
+        if (ruleConfig.getAdvanceDaysMax() != null) {
+            LocalDateTime maxAdvanceTime = now.plusDays(ruleConfig.getAdvanceDaysMax());
+            if (startTime.isAfter(maxAdvanceTime)) {
+                return Result.error("只能提前" + ruleConfig.getAdvanceDaysMax() + "天预约");
+            }
+        }
+
+        if (ruleConfig.getAdvanceCutoffMinutes() != null) {
+            LocalDateTime minAdvanceTime = now.plusMinutes(ruleConfig.getAdvanceCutoffMinutes());
+            if (startTime.isBefore(minAdvanceTime)) {
+                return Result.error("需要提前" + ruleConfig.getAdvanceCutoffMinutes() + "分钟预约");
+            }
+        }
+
+        // 3. 验证是否允许当日预约
+        if (ruleConfig.getAllowSameDayBooking() != null && !ruleConfig.getAllowSameDayBooking()) {
+            if (startTime.toLocalDate().equals(now.toLocalDate())) {
+                return Result.error("不允许当日预约");
+            }
+        }
+
+        // 4. 验证开放时间
+        if (ruleConfig.getOpenTime() != null && ruleConfig.getCloseTime() != null) {
+            LocalTime startLocalTime = startTime.toLocalTime();
+            LocalTime endLocalTime = endTime.toLocalTime();
+            
+            if (startLocalTime.isBefore(ruleConfig.getOpenTime()) || endLocalTime.isAfter(ruleConfig.getCloseTime())) {
+                return Result.error("预约时间必须在" + ruleConfig.getOpenTime() + "至" + ruleConfig.getCloseTime() + "之间");
+            }
+        }
+
+        // 5. 验证用户每日预约数量限制
+        if (ruleConfig.getMaxBookingsPerDay() != null) {
+            LocalDate reservationDate = startTime.toLocalDate();
+            List<Reservation> userDailyReservations = reservationRepository.findByUserId(reservation.getUserId());
+            long dailyCount = userDailyReservations.stream()
+                    .filter(r -> r.getStartTime().toLocalDate().equals(reservationDate))
+                    .filter(r -> !("REJECTED".equals(r.getStatus()) || "CANCELLED".equals(r.getStatus())))
+                    .count();
+            
+            if (dailyCount >= ruleConfig.getMaxBookingsPerDay()) {
+                return Result.error("您今日预约次数已达上限（" + ruleConfig.getMaxBookingsPerDay() + "次）");
+            }
+        }
+
+        // 6. 验证用户活跃预约数量限制
+        if (ruleConfig.getMaxActiveBookings() != null) {
+            List<Reservation> userActiveReservations = reservationRepository.findByUserIdAndStatusIn(
+                reservation.getUserId(), 
+                Arrays.asList("PENDING", "APPROVED")
+            );
+            
+            if (userActiveReservations.size() >= ruleConfig.getMaxActiveBookings()) {
+                return Result.error("您的活跃预约数量已达上限（" + ruleConfig.getMaxActiveBookings() + "个）");
+            }
+        }
+
+        return Result.success("规则验证通过");
+    }
+
+    /**
+     * 获取适用的规则配置
+     * 优先使用设施类别的特定规则，如果没有则使用全局默认规则
+     * @param facility 设施信息
+     * @return 适用的规则配置
+     */
+    private RuleConfig getApplicableRuleConfig(Facility facility) {
+        // 1. 尝试获取设施类别的特定规则
+        if (facility.getCategory() != null) {
+            // 首先需要通过设施类别名称找到类别ID
+            // 这里假设可以通过设施类别名称查询到对应的规则
+            Optional<RuleConfig> categoryRuleOpt = ruleConfigRepository.findByCategoryName(facility.getCategory());
+            if (categoryRuleOpt.isPresent()) {
+                return categoryRuleOpt.get();
+            }
+        }
+
+        // 2. 如果没有类别特定规则，使用全局默认规则
+        Optional<RuleConfig> defaultRuleOpt = ruleConfigRepository.findByCategoryIdIsNull();
+        return defaultRuleOpt.orElse(null);
     }
 }

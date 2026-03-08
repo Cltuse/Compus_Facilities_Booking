@@ -31,7 +31,7 @@ public interface RuleConfigRepository extends JpaRepository<RuleConfig, Long> {
     @Query("SELECT r FROM RuleConfig r WHERE r.id IN (SELECT MAX(r2.id) FROM RuleConfig r2 GROUP BY r2.categoryId)")
     List<RuleConfig> findAllCurrentRules();
     
-    // 根据类别名称查询规则
-    @Query("SELECT r FROM RuleConfig r WHERE r.categoryId IN (SELECT c.id FROM FacilityCategory c WHERE c.categoryName = :categoryName)")
+    // 根据类别ID查询规则
+    @Query("SELECT r FROM RuleConfig r WHERE r.categoryId = (SELECT c.id FROM FacilityCategory c WHERE c.categoryName = :categoryName)")
     Optional<RuleConfig> findByCategoryName(@Param("categoryName") String categoryName);
 }

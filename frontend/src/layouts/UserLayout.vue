@@ -32,6 +32,20 @@
             </template>
           </el-menu-item>
 
+          <el-menu-item index="/user/violation-records" class="menu-item">
+            <el-icon class="menu-icon-item"><Warning /></el-icon>
+            <template #title>
+              <span class="menu-text">违规记录</span>
+            </template>
+          </el-menu-item>
+
+          <el-menu-item index="/user/feedback" class="menu-item">
+            <el-icon class="menu-icon-item"><ChatDotRound /></el-icon>
+            <template #title>
+              <span class="menu-text">意见反馈</span>
+            </template>
+          </el-menu-item>
+
           <el-menu-item index="/user/notice" class="menu-item">
             <el-icon class="menu-icon-item"><Bell /></el-icon>
             <template #title>
@@ -64,7 +78,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { Star, Box, Calendar, Bell, User } from '@element-plus/icons-vue';
+import { Star, Box, Calendar, Bell, User, Warning, ChatDotRound } from '@element-plus/icons-vue';
 import Header from '../components/Header.vue';
 
 const router = useRouter();

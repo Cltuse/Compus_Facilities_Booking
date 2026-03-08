@@ -101,6 +101,16 @@ const routes = [
                 component: () => import('../views/user/MyReservation.vue')
             },
             {
+                path: 'violation-records',
+                name: 'ViolationRecords',
+                component: () => import('../views/user/ViolationRecords.vue')
+            },
+            {
+                path: 'feedback',
+                name: 'Feedback',
+                component: () => import('../views/user/Feedback.vue')
+            },
+            {
                 path: 'notice',
                 name: 'UserNotice',
                 component: () => import('../views/user/Notice.vue')

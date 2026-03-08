@@ -56,6 +56,80 @@
       </div>
     </div>
 
+    <!-- 快捷功能入口 -->
+    <div class="quick-actions">
+      <h3 class="section-title">快捷功能</h3>
+      <div class="action-grid">
+        <!-- 违规记录查看 -->
+        <div class="action-card" @click="$router.push('/user/violation-records')">
+          <div class="action-icon warning">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 9V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 17H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="action-content">
+            <h4 class="action-title">违规记录</h4>
+            <p class="action-desc">查看您的历史违规记录和扣分情况</p>
+          </div>
+          <div class="action-arrow">
+            <el-icon><ArrowRight /></el-icon>
+          </div>
+        </div>
+
+        <!-- 反馈建议提交 -->
+        <div class="action-card" @click="$router.push('/user/feedback')">
+          <div class="action-icon primary">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="action-content">
+            <h4 class="action-title">意见反馈</h4>
+            <p class="action-desc">提交建议、投诉或咨询，查看管理员回复</p>
+          </div>
+          <div class="action-arrow">
+            <el-icon><ArrowRight /></el-icon>
+          </div>
+        </div>
+
+        <!-- 我的预约 -->
+        <div class="action-card" @click="$router.push('/user/my-reservation')">
+          <div class="action-icon success">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="action-content">
+            <h4 class="action-title">我的预约</h4>
+            <p class="action-desc">查看和管理您的设施预约记录</p>
+          </div>
+          <div class="action-arrow">
+            <el-icon><ArrowRight /></el-icon>
+          </div>
+        </div>
+
+        <!-- 设施浏览 -->
+        <div class="action-card" @click="$router.push('/user/facility')">
+          <div class="action-icon info">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="action-content">
+            <h4 class="action-title">设施浏览</h4>
+            <p class="action-desc">浏览和预约校园设施</p>
+          </div>
+          <div class="action-arrow">
+            <el-icon><ArrowRight /></el-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 今日心情 -->
     <div class="mood-weather">
       <div class="mood-card">
@@ -89,6 +163,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { ArrowRight } from '@element-plus/icons-vue';
 
 onMounted(() => {
   
@@ -167,6 +243,107 @@ onMounted(() => {
     radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
   animation: float 6s ease-in-out infinite;
+}
+
+/* 快捷功能区域 */
+.quick-actions {
+  margin-bottom: 30px;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 20px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #3498db;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.action-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid #eaeaea;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: #3498db;
+}
+
+.action-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.action-icon.warning {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+}
+
+.action-icon.primary {
+  background: linear-gradient(135deg, #48dbfb 0%, #0abde3 100%);
+  color: white;
+}
+
+.action-icon.success {
+  background: linear-gradient(135deg, #1dd1a1 0%, #10ac84 100%);
+  color: white;
+}
+
+.action-icon.info {
+  background: linear-gradient(135deg, #54a0ff 0%, #2e86de 100%);
+  color: white;
+}
+
+.action-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.action-content {
+  flex: 1;
+}
+
+.action-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 5px 0;
+}
+
+.action-desc {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.action-arrow {
+  color: #bdc3c7;
+  transition: color 0.3s ease;
+}
+
+.action-card:hover .action-arrow {
+  color: #3498db;
 }
 
 /* 心灵鸡汤卡片 */

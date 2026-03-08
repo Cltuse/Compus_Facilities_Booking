@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
@@ -39,5 +40,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     // 根据用户ID和状态列表查询预约
     @Query("SELECT r FROM Reservation r WHERE r.userId = :userId AND r.status IN :statuses")
     List<Reservation> findByUserIdAndStatusIn(@Param("userId") Long userId, @Param("statuses") List<String> statuses);
+
+    // 根据核销码查询预约
+    @Query("SELECT r FROM Reservation r WHERE r.verificationCode = :verificationCode")
+    Optional<Reservation> findByVerificationCode(@Param("verificationCode") String verificationCode);
 
     }

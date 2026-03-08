@@ -15,8 +15,15 @@ public interface RuleConfigRepository extends JpaRepository<RuleConfig, Long> {
     // 根据设施类别ID查询当前生效的规则
     Optional<RuleConfig> findByCategoryId(Long categoryId);
     
+    // 根据设施类别ID查询当前生效的规则
+    Optional<RuleConfig> findByCategoryIdAndIsActiveTrue(Long categoryId);
+    
     // 查询全局默认规则（category_id为NULL）
     Optional<RuleConfig> findByCategoryIdIsNull();
+    
+    // 查询当前生效的全局默认规则
+    @Query("SELECT r FROM RuleConfig r WHERE r.categoryId IS NULL AND r.isActive = true")
+    Optional<RuleConfig> findGlobalDefaultRule();
     
     // 查询全局规则的所有历史版本（按创建时间倒序）
     List<RuleConfig> findByCategoryIdIsNullOrderByCreatedAtDesc();

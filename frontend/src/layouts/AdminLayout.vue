@@ -74,6 +74,13 @@
             </template>
           </el-menu-item>
 
+          <el-menu-item index="/admin/feedback" class="menu-item">
+            <el-icon class="menu-icon-item"><ChatDotSquare /></el-icon>
+            <template #title>
+              <span class="menu-text">意见反馈</span>
+            </template>
+          </el-menu-item>
+
           <el-menu-item index="/admin/operation-log" class="menu-item">
             <el-icon class="menu-icon-item"><Document /></el-icon>
             <template #title>

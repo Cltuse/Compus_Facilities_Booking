@@ -22,6 +22,11 @@ public class User {
     @Column(nullable = false, length = 50)
     private String realName;
 
+    // 提供getName()方法以兼容现有代码
+    public String getName() {
+        return this.realName;
+    }
+
     @Column(nullable = false, length = 20)
     private String role; // USER, ADMIN, TEACHER, STUDENT
 

@@ -199,6 +199,99 @@ public class ReservationController {
         return Result.success("更新成功", savedReservation);
     }
 
+
+
+    /**
+     * 获取预约二维码信息（核销码）
+     */
+    @GetMapping("/{id}/qrcode")
+    public Result<String> getQRCode(@PathVariable Long id) {
+        try {
+            Optional<Reservation> reservationOpt = reservationRepository.findById(id);
+            if (!reservationOpt.isPresent()) {
+                return Result.error("预约不存在");
+            }
+            
+            Reservation reservation = reservationOpt.get();
+            
+            // 检查预约状态
+            if (!"APPROVED".equals(reservation.getStatus())) {
+                return Result.error("只有已批准的预约才能获取二维码");
+            }
+            
+            // 生成或获取核销码
+            String verificationCode = reservation.getVerificationCode();
+            if (verificationCode == null || verificationCode.isEmpty()) {
+                verificationCode = generateVerificationCode(reservation.getId());
+                reservation.setVerificationCode(verificationCode);
+                reservationRepository.save(reservation);
+            }
+            
+            return Result.success("获取二维码成功", verificationCode);
+        } catch (Exception e) {
+            return Result.error("获取二维码失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员扫码核验
+     */
+    @PostMapping("/verify")
+    public Result<Reservation> verifyByCode(@RequestParam String verificationCode, 
+                                           @RequestParam Long adminId) {
+        try {
+            Optional<Reservation> reservationOpt = reservationRepository.findByVerificationCode(verificationCode);
+            if (!reservationOpt.isPresent()) {
+                return Result.error("核销码无效");
+            }
+            
+            Reservation reservation = reservationOpt.get();
+            
+            // 检查预约状态
+            if (!"APPROVED".equals(reservation.getStatus())) {
+                return Result.error("该预约未批准，无法核验");
+            }
+            
+            // 检查预约时间
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime allowCheckinTime = reservation.getStartTime().minusMinutes(15);
+            LocalDateTime allowCheckoutTime = reservation.getEndTime().plusMinutes(15);
+            
+            if (now.isBefore(allowCheckinTime) || now.isAfter(allowCheckoutTime)) {
+                return Result.error("不在预约时间范围内，无法核验");
+            }
+            
+            // 根据当前状态执行相应操作
+            if ("NOT_CHECKED".equals(reservation.getCheckinStatus())) {
+                // 签到
+                reservation.setCheckinStatus("CHECKED_IN");
+                reservation.setCheckinTime(now);
+                reservation.setVerifiedBy(adminId);
+                reservation.setVerifiedTime(now);
+                
+                Reservation savedReservation = reservationRepository.save(reservation);
+                enrichReservation(savedReservation);
+                
+                return Result.success("签到核验成功", savedReservation);
+            } else if ("CHECKED_IN".equals(reservation.getCheckinStatus())) {
+                // 签退
+                reservation.setCheckinStatus("CHECKED_OUT");
+                reservation.setCheckoutTime(now);
+                reservation.setVerifiedBy(adminId);
+                reservation.setVerifiedTime(now);
+                
+                Reservation savedReservation = reservationRepository.save(reservation);
+                enrichReservation(savedReservation);
+                
+                return Result.success("签退核验成功", savedReservation);
+            } else {
+                return Result.error("该预约已完成签到签退流程");
+            }
+        } catch (Exception e) {
+            return Result.error("核验失败: " + e.getMessage());
+        }
+    }
+
     /**
      * 审核通过预约
      * @param id 预约记录ID

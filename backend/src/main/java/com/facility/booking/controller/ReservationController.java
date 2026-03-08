@@ -7,6 +7,7 @@ import com.facility.booking.entity.User;
 import com.facility.booking.repository.FacilityRepository;
 import com.facility.booking.repository.ReservationRepository;
 import com.facility.booking.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -680,15 +681,27 @@ public class ReservationController {
     }
 
     /**
+     * 系统启动时执行一次爽约检测
+     */
+    @PostConstruct
+    public void onStartup() {
+        System.out.println("系统启动，开始执行爽约检测...");
+        autoMarkMissedReservations();
+        System.out.println("系统启动爽约检测完成");
+    }
+
+    /**
      * 定时任务：自动标记爽约的预约并释放设施
-     * 每5分钟执行一次，检查已批准但未签到的预约是否符合爽约条件
+     * 每5分钟执行一次，检查所有预约信息，若有预约符合爽约条件，则将该预约改为爽约，并释放对应的设施
      */
     @Scheduled(cron = "0 0/5 * * * ?")
     public void autoMarkMissedReservations() {
         LocalDateTime now = LocalDateTime.now();
+        System.out.println("开始执行爽约检测，当前时间：" + now);
         
         // 查找所有已批准但未签到的预约
         List<Reservation> missedReservations = reservationRepository.findByStatusAndCheckinStatus("APPROVED", "NOT_CHECKED");
+        System.out.println("找到 " + missedReservations.size() + " 个待检测的预约");
         
         int missedCount = 0;
         int facilityReleasedCount = 0;

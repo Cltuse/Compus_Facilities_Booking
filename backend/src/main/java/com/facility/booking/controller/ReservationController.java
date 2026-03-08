@@ -681,22 +681,47 @@ public class ReservationController {
 
     /**
      * 定时任务：自动标记爽约的预约并释放设施
-     * 每30分钟执行一次，检查已批准但未签到的预约是否已过期
+     * 每5分钟执行一次，检查已批准但未签到的预约是否符合爽约条件
      */
-    @Scheduled(cron = "0 0/30 * * * ?")
+    @Scheduled(cron = "0 0/5 * * * ?")
     public void autoMarkMissedReservations() {
         LocalDateTime now = LocalDateTime.now();
         
-        // 查找所有已批准但未签到的预约，且结束时间已经过去超过30分钟
+        // 查找所有已批准但未签到的预约
         List<Reservation> missedReservations = reservationRepository.findByStatusAndCheckinStatus("APPROVED", "NOT_CHECKED");
         
         int missedCount = 0;
         int facilityReleasedCount = 0;
+        
         for (Reservation reservation : missedReservations) {
-            // 如果预约结束时间已经过去超过30分钟，标记为爽约并释放设施
-            if (now.isAfter(reservation.getEndTime().plusMinutes(30))) {
+            boolean isMissed = false;
+            String missedReason = "";
+            
+            // 条件1：预约结束时间已经过去（无论是否超过30分钟）
+            if (now.isAfter(reservation.getEndTime())) {
+                isMissed = true;
+                missedReason = "预约结束时间已过，用户未签到";
+            }
+            
+            // 条件2：预约开始时间已经过去超过15分钟，但用户仍未签到
+            // 这里假设允许提前15分钟签到，所以开始时间过去15分钟仍未签到视为爽约
+            else if (now.isAfter(reservation.getStartTime().plusMinutes(15))) {
+                isMissed = true;
+                missedReason = "预约开始时间已过15分钟，用户未在规定时间内签到";
+            }
+            
+            if (isMissed) {
+                // 标记为爽约
                 reservation.setCheckinStatus("MISSED");
                 reservation.setStatus("COMPLETED"); // 爽约的预约也标记为已完成
+                
+                // 添加爽约备注
+                if (reservation.getAdminRemark() == null || reservation.getAdminRemark().isEmpty()) {
+                    reservation.setAdminRemark("系统自动标记爽约：" + missedReason);
+                } else {
+                    reservation.setAdminRemark(reservation.getAdminRemark() + " | 系统自动标记爽约：" + missedReason);
+                }
+                
                 reservationRepository.save(reservation);
                 missedCount++;
                 
@@ -708,6 +733,13 @@ public class ReservationController {
                     facilityRepository.save(facility);
                     facilityReleasedCount++;
                 }
+                
+                // 记录爽约日志
+                System.out.println("标记爽约预约：预约ID=" + reservation.getId() + 
+                                 ", 用户ID=" + reservation.getUserId() + 
+                                 ", 设施ID=" + reservation.getFacilityId() + 
+                                 ", 预约时间=" + reservation.getStartTime() + "-" + reservation.getEndTime() +
+                                 ", 爽约原因：" + missedReason);
             }
         }
         

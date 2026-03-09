@@ -65,8 +65,8 @@ public class UserClientController {
             return Result.error("用户不存在");
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "violationTime"));
-        Page<ViolationRecord> violationPage = violationRecordRepository.findByUserIdOrderByViolationTimeDesc(userId, pageable);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
+        Page<ViolationRecord> violationPage = violationRecordRepository.findByUserIdOrderByReportedTimeDesc(userId, pageable);
         
         // 丰富违规记录信息
         List<ViolationRecord> violations = violationPage.getContent();
@@ -308,17 +308,17 @@ public class UserClientController {
         Optional<User> user = userRepository.findById(violation.getUserId());
         user.ifPresent(value -> violation.setUserName(value.getRealName()));
         
-        // 设置操作员名称
-        if (violation.getOperatorId() != null) {
-            Optional<User> operator = userRepository.findById(violation.getOperatorId());
-            operator.ifPresent(value -> violation.setReporterName(value.getRealName()));
-        }
-        
         // 设置上报人名称
         if (violation.getReportedBy() != null) {
             Optional<User> reporter = userRepository.findById(violation.getReportedBy());
-            reporter.ifPresent(value -> violation.setOperatorName(value.getRealName()));
+            reporter.ifPresent(value -> violation.setReporterName(value.getRealName()));
         }
+        
+        // 设置上报人名称
+            if (violation.getReportedBy() != null) {
+                Optional<User> reporter = userRepository.findById(violation.getReportedBy());
+                reporter.ifPresent(value -> violation.setReporterName(value.getRealName()));
+            }
         
         // 设置设施名称（如果有关联的预约）
         if (violation.getReservationId() != null) {

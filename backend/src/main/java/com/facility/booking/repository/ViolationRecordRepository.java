@@ -11,26 +11,37 @@ import java.util.List;
 
 public interface ViolationRecordRepository extends JpaRepository<ViolationRecord, Long> {
     
-    Page<ViolationRecord> findByUserIdOrderByViolationTimeDesc(Long userId, Pageable pageable);
+    Page<ViolationRecord> findByUserIdOrderByReportedTimeDesc(Long userId, Pageable pageable);
+    
+    // 数据库中没有violation_time字段，使用reportedTime代替
     
     Page<ViolationRecord> findByUserId(Long userId, Pageable pageable);
     
-    Page<ViolationRecord> findByUserIdAndStatusOrderByViolationTimeDesc(Long userId, String status, Pageable pageable);
+    Page<ViolationRecord> findByUserIdAndStatusOrderByReportedTimeDesc(Long userId, String status, Pageable pageable);
     
-    @Query("SELECT v FROM ViolationRecord v WHERE v.userId = :userId AND v.violationTime BETWEEN :startTime AND :endTime")
+    // 数据库中没有violation_time字段，使用reportedTime代替
+
+
+    @Query("SELECT v FROM ViolationRecord v WHERE v.userId = :userId AND v.reportedTime BETWEEN :startTime AND :endTime")
     Page<ViolationRecord> findByUserIdAndTimeRange(@Param("userId") Long userId, 
                                                    @Param("startTime") LocalDateTime startTime, 
                                                    @Param("endTime") LocalDateTime endTime, 
                                                    Pageable pageable);
     
-    @Query("SELECT COUNT(v) FROM ViolationRecord v WHERE v.userId = :userId AND v.status = 'ACTIVE'")
+    // 数据库中没有violation_time字段，使用reportedTime代替
+    
+    @Query("SELECT COUNT(v) FROM ViolationRecord v WHERE v.userId = :userId AND v.status = 'PENDING'")
     Long countActiveViolationsByUserId(@Param("userId") Long userId);
     
-    @Query("SELECT SUM(v.creditDeduction) FROM ViolationRecord v WHERE v.userId = :userId AND v.status = 'ACTIVE'")
-    Integer sumActiveCreditDeductionByUserId(@Param("userId") Long userId);
+    @Query("SELECT SUM(v.penaltyPoints) FROM ViolationRecord v WHERE v.userId = :userId")
+    Integer sumPenaltyPointsByUserId(@Param("userId") Long userId);
     
-    List<ViolationRecord> findByUserIdAndStatusOrderByViolationTimeDesc(Long userId, String status);
+    List<ViolationRecord> findByUserIdAndStatusOrderByReportedTimeDesc(Long userId, String status);
     
-    @Query("SELECT v FROM ViolationRecord v WHERE v.expireTime < :now AND v.status = 'ACTIVE'")
-    List<ViolationRecord> findExpiredViolations(@Param("now") LocalDateTime now);
+    @Query("SELECT v FROM ViolationRecord v WHERE v.userId = :userId AND v.status = 'PENDING'")
+    List<ViolationRecord> findPendingViolationsByUserId(@Param("userId") Long userId);
+    
+    Page<ViolationRecord> findAllByOrderByReportedTimeDesc(Pageable pageable);
+    
+    // 数据库中没有violation_time字段，使用reportedTime代替
 }

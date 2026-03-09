@@ -175,12 +175,28 @@ export const adminAPI = {
     // 用户搜索（用于黑名单添加）
     searchUsers: (keyword) => request.get('/user/search', { params: { keyword } }),
     
+    // 违规记录管理
+    getAllViolations: (page = 0, size = 10) => request.get('/violation/all', { params: { page, size } }),
+    recordViolation: (data) => request.post('/violation/record', data),
+    updateViolationStatus: (id, status, reportedBy) => request.put(`/violation/${id}/status`, null, {
+        params: { status, reportedBy }
+    }),
+    
     // 统计数据
     getDashboardStats: () => request.get('/admin/stats/dashboard'),
     getUserStats: () => request.get('/admin/stats/users'),
     getReservationStats: () => request.get('/admin/reservation-stats'),
     getReservationTrends: () => request.get('/admin/reservation-trends'),
     getFacilityStats: () => request.get('/admin/stats/facilities')
+};
+
+// 违规记录管理API
+export const violationAPI = {
+    getAllViolations: () => request.get('/violation/all'),
+    recordViolation: (data) => request.post('/violation/record', data),
+    updateViolationStatus: (id, status, reportedBy) => request.put(`/violation/${id}/status`, null, {
+        params: { status, reportedBy }
+    })
 };
 
 // 用户端相关API

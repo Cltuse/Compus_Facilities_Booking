@@ -30,7 +30,7 @@ public class ViolationRecordService {
      * 记录违规
      */
     public ViolationRecord recordViolation(ViolationRecord violationRecord) {
-        violationRecord.setStatus("ACTIVE");
+        violationRecord.setStatus("PENDING");
         return violationRecordRepository.save(violationRecord);
     }
 
@@ -38,14 +38,14 @@ public class ViolationRecordService {
      * 获取用户的违规记录
      */
     public Page<ViolationRecord> getUserViolations(Long userId, Pageable pageable) {
-        Page<ViolationRecord> violations = violationRecordRepository.findByUserIdOrderByViolationTimeDesc(userId, pageable);
+        Page<ViolationRecord> violations = violationRecordRepository.findByUserIdOrderByReportedTimeDesc(userId, pageable);
         // 设置用户名和操作员名
         violations.forEach(violation -> {
             userRepository.findById(violation.getUserId()).ifPresent(user -> 
                 violation.setUserName(user.getName()));
-            if (violation.getOperatorId() != null) {
-                userRepository.findById(violation.getOperatorId()).ifPresent(user -> 
-                    violation.setOperatorName(user.getName()));
+            if (violation.getReportedBy() != null) {
+                userRepository.findById(violation.getReportedBy()).ifPresent(user -> 
+                    violation.setReporterName(user.getName()));
             }
             // 设置设施名称（如果有预约ID）
             if (violation.getReservationId() != null) {
@@ -63,11 +63,11 @@ public class ViolationRecordService {
     }
 
     /**
-     * 获取用户的总扣分
+     * 获取用户的总处罚分
      */
-    public Integer getTotalCreditDeduction(Long userId) {
-        Integer deduction = violationRecordRepository.sumActiveCreditDeductionByUserId(userId);
-        return deduction != null ? deduction : 0;
+    public Integer getTotalPenaltyPoints(Long userId) {
+        Integer penalty = violationRecordRepository.sumPenaltyPointsByUserId(userId);
+        return penalty != null ? penalty : 0;
     }
 
     /**
@@ -79,9 +79,9 @@ public class ViolationRecordService {
             ViolationRecord violation = violationOpt.get();
             userRepository.findById(violation.getUserId()).ifPresent(user -> 
                 violation.setUserName(user.getName()));
-            if (violation.getOperatorId() != null) {
-                userRepository.findById(violation.getOperatorId()).ifPresent(user -> 
-                    violation.setOperatorName(user.getName()));
+            if (violation.getReportedBy() != null) {
+                userRepository.findById(violation.getReportedBy()).ifPresent(user -> 
+                    violation.setReporterName(user.getName()));
             }
         }
         return violationOpt;
@@ -91,45 +91,58 @@ public class ViolationRecordService {
      * 更新违规记录状态
      */
     @Transactional
-    public boolean updateViolationStatus(Long id, String status, Long operatorId) {
+    public boolean updateViolationStatus(Long id, String status, Long reportedBy) {
         Optional<ViolationRecord> violationOpt = violationRecordRepository.findById(id);
         if (violationOpt.isPresent()) {
             ViolationRecord violation = violationOpt.get();
             violation.setStatus(status);
-            violation.setOperatorId(operatorId);
+            violation.setReportedBy(reportedBy);
             violationRecordRepository.save(violation);
             return true;
         }
         return false;
     }
 
-    /**
-     * 定时任务：检查并更新过期的违规记录
-     */
-    @Scheduled(cron = "0 0 0 * * ?") // 每天午夜执行
-    @Transactional
-    public void checkAndUpdateExpiredViolations() {
-        List<ViolationRecord> expiredViolations = violationRecordRepository.findExpiredViolations(LocalDateTime.now());
-        for (ViolationRecord violation : expiredViolations) {
-            violation.setStatus("EXPIRED");
-            violationRecordRepository.save(violation);
-        }
-    }
+
 
     /**
      * 获取用户某段时间内的违规记录
      */
     public Page<ViolationRecord> getUserViolationsByTimeRange(Long userId, LocalDateTime startTime, LocalDateTime endTime, Pageable pageable) {
         Page<ViolationRecord> violations = violationRecordRepository.findByUserIdAndTimeRange(userId, startTime, endTime, pageable);
-        // 设置用户名
+        // 设置用户名和上报人名称
         violations.forEach(violation -> {
             userRepository.findById(violation.getUserId()).ifPresent(user -> 
                 violation.setUserName(user.getName()));
-            if (violation.getOperatorId() != null) {
-                userRepository.findById(violation.getOperatorId()).ifPresent(user -> 
-                    violation.setOperatorName(user.getName()));
+            // 设置上报人名称
+            if (violation.getReportedBy() != null) {
+                userRepository.findById(violation.getReportedBy()).ifPresent(user -> 
+                    violation.setReporterName(user.getName()));
             }
         });
         return violations;
+    }
+
+    /**
+     * 获取所有违规记录（管理员使用）
+     */
+    public Page<ViolationRecord> getAllViolations(Pageable pageable) {
+        try {
+            Page<ViolationRecord> violations = violationRecordRepository.findAllByOrderByReportedTimeDesc(pageable);
+            // 丰富违规记录信息
+            violations.forEach(violation -> {
+                userRepository.findById(violation.getUserId()).ifPresent(user -> 
+                    violation.setUserName(user.getName()));
+                // 设置上报人名称
+                if (violation.getReportedBy() != null) {
+                    userRepository.findById(violation.getReportedBy()).ifPresent(user -> 
+                        violation.setReporterName(user.getName()));
+                }
+            });
+            return violations;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("获取所有违规记录失败: " + e.getMessage());
+        }
     }
 }

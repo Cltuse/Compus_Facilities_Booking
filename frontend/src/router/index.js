@@ -63,10 +63,15 @@ const routes = [
                 component: () => import('../views/admin/OperationLog.vue')
             },
             {
-                path: 'user',
-                name: 'AdminUser',
-                component: () => import('../views/admin/User.vue')
-            },
+            path: 'user',
+            name: 'AdminUser',
+            component: () => import('../views/admin/User.vue')
+          },
+          {
+            path: 'violation-records',
+            name: 'AdminViolationRecords',
+            component: () => import('../views/admin/ViolationRecords.vue')
+          },
             {
                 path: 'notice',
                 name: 'AdminNotice',

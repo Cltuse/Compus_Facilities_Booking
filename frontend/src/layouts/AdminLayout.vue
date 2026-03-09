@@ -53,6 +53,13 @@
             </template>
           </el-menu-item>
 
+          <el-menu-item index="/admin/violation-records" class="menu-item">
+            <el-icon class="menu-icon-item"><Warning /></el-icon>
+            <template #title>
+              <span class="menu-text">违规记录</span>
+            </template>
+          </el-menu-item>
+
           <el-menu-item index="/admin/notice" class="menu-item">
             <el-icon class="menu-icon-item"><Bell /></el-icon>
             <template #title>
@@ -114,7 +121,7 @@
 import { ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Header from '../components/Header.vue';
-import { Setting, Warning, Document } from '@element-plus/icons-vue';
+import { Setting, Warning, Document, User, Bell, ChatDotSquare, DataAnalysis, Box, Collection, Calendar, Tools } from '@element-plus/icons-vue';
 
 const router = useRouter();
 const route = useRoute();

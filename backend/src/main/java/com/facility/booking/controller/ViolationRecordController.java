@@ -41,7 +41,7 @@ public class ViolationRecordController {
                                     @RequestParam(defaultValue = "0") int page,
                                     @RequestParam(defaultValue = "10") int size) {
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "violationTime"));
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
             Page<ViolationRecord> violations = violationRecordService.getUserViolations(userId, pageable);
             return Result.success("获取违规记录成功", violations);
         } catch (Exception e) {
@@ -80,15 +80,15 @@ public class ViolationRecordController {
     }
 
     /**
-     * 获取用户的总扣分
+     * 获取用户的总处罚分
      */
-    @GetMapping("/user/{userId}/total-deduction")
-    public Result getTotalCreditDeduction(@PathVariable Long userId) {
+    @GetMapping("/user/{userId}/total-penalty")
+    public Result getTotalPenaltyPoints(@PathVariable Long userId) {
         try {
-            Integer deduction = violationRecordService.getTotalCreditDeduction(userId);
-            return Result.success("获取总扣分成功", deduction);
+            Integer penalty = violationRecordService.getTotalPenaltyPoints(userId);
+            return Result.success("获取总处罚分成功", penalty);
         } catch (Exception e) {
-            return Result.error("获取总扣分失败: " + e.getMessage());
+            return Result.error("获取总处罚分失败: " + e.getMessage());
         }
     }
 
@@ -98,9 +98,9 @@ public class ViolationRecordController {
     @PutMapping("/{id}/status")
     public Result updateViolationStatus(@PathVariable Long id,
                                        @RequestParam String status,
-                                       @RequestParam Long operatorId) {
+                                       @RequestParam Long reportedBy) {
         try {
-            boolean success = violationRecordService.updateViolationStatus(id, status, operatorId);
+            boolean success = violationRecordService.updateViolationStatus(id, status, reportedBy);
             if (success) {
                 return Result.success("更新违规记录状态成功");
             } else {
@@ -121,11 +121,26 @@ public class ViolationRecordController {
                                               @RequestParam(defaultValue = "0") int page,
                                               @RequestParam(defaultValue = "10") int size) {
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "violationTime"));
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
             Page<ViolationRecord> violations = violationRecordService.getUserViolationsByTimeRange(userId, startTime, endTime, pageable);
             return Result.success("获取时间段内违规记录成功", violations);
         } catch (Exception e) {
             return Result.error("获取时间段内违规记录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取所有违规记录（管理员使用）
+     */
+    @GetMapping("/all")
+    public Result getAllViolations(@RequestParam(defaultValue = "0") int page,
+                                  @RequestParam(defaultValue = "10") int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
+            Page<ViolationRecord> violations = violationRecordService.getAllViolations(pageable);
+            return Result.success("获取所有违规记录成功", violations);
+        } catch (Exception e) {
+            return Result.error("获取所有违规记录失败: " + e.getMessage());
         }
     }
 }

@@ -109,11 +109,11 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="violationTime" label="违规时间" width="210">
+        <el-table-column prop="reportedTime" label="上报时间" width="180">
           <template #default="{ row }">
             <div class="time-info">
               <el-icon><Calendar /></el-icon>
-              <span>{{ formatDateTime(row.violationTime) }}</span>
+              <span>{{ formatDateTime(row.reportedTime) }}</span>
             </div>
           </template>
         </el-table-column>
@@ -123,14 +123,6 @@
             <div class="time-info">
               <el-icon><Clock /></el-icon>
               <span>{{ formatDateTime(row.reportedTime) }}</span>
-            </div>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="creditDeduction" label="扣分" width="120" align="center">
-          <template #default="{ row }">
-            <div class="deduction-info">
-              <span class="deduction-value">-{{ row.creditDeduction }}分</span>
             </div>
           </template>
         </el-table-column>
@@ -211,16 +203,12 @@
               </span>
             </div>
             <div class="detail-item">
-              <label>违规时间：</label>
-              <span>{{ formatDateTime(currentViolation.violationTime) || '暂无数据' }}</span>
+              <label>上报人：</label>
+              <span>{{ currentViolation.reporterName || '系统记录' }}</span>
             </div>
             <div class="detail-item">
               <label>上报时间：</label>
               <span>{{ formatDateTime(currentViolation.reportedTime) || '暂无数据' }}</span>
-            </div>
-            <div class="detail-item">
-              <label>扣分：</label>
-              <span class="deduction-text">-{{ currentViolation.creditDeduction || 0 }}分</span>
             </div>
             <div class="detail-item">
               <label>处罚分：</label>
@@ -312,12 +300,12 @@ const loadMyViolations = async () => {
     
     // 根据后端实际返回的数据结构处理
     if (res && res.data) {
-      // 后端返回的数据结构：{ violations: [...], total: 20, page: 0, size: 10 }
-      if (Array.isArray(res.data.violations)) {
-        violationList.value = res.data.violations
-      } else if (Array.isArray(res.data)) {
+      if (Array.isArray(res.data)) {
         // 如果直接返回数组
         violationList.value = res.data
+      } else if (res.data.violations && Array.isArray(res.data.violations)) {
+        // 后端返回的数据结构：{ violations: [...], total: 20, page: 0, size: 10 }
+        violationList.value = res.data.violations
       } else {
         // 其他情况，设置为空数组
         violationList.value = []
@@ -360,7 +348,7 @@ const activeViolations = computed(() => {
 })
 
 const totalDeduction = computed(() => {
-  return violationList.value.reduce((sum, v) => sum + (v.creditDeduction || 0), 0)
+  return violationList.value.reduce((sum, v) => sum + (v.penaltyPoints || 0), 0)
 })
 
 // 处理搜索

@@ -27,25 +27,11 @@ public class ViolationRecord {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private Integer creditDeduction = 0;
-
     @Column(name = "penalty_points")
     private Integer penaltyPoints = 0;
 
     @Column(length = 20)
-    private String status = "PENDING"; // PENDING-待处理/PROCESSED-已处理/EXPIRED-已过期
-
-    @Column(name = "violation_time")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
-    private LocalDateTime violationTime;
-
-    @Column(name = "expire_time")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
-    private LocalDateTime expireTime;
-
-    @Column(name = "operator_id")
-    private Long operatorId;
+    private String status = "PENDING"; // PENDING-待处理/PROCESSED-已处理
 
     @Column(name = "reported_by")
     private Long reportedBy;
@@ -69,8 +55,7 @@ public class ViolationRecord {
     @Transient
     private String facilityName;
 
-    @Transient
-    private String operatorName;
+
 
     @Transient
     private String reporterName;

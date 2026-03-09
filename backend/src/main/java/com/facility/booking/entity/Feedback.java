@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "feedback")
+@Table(name = "`feedback`")
 public class Feedback {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,24 +31,28 @@ public class Feedback {
     @Column(columnDefinition = "TEXT")
     private String reply;
 
-    @Column(name = "reply_time")
+    @Column(name = "`reply_time`")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private LocalDateTime replyTime;
 
-    @Column(name = "reply_by")
+    @Column(name = "`reply_by`")
     private Long replyBy;
 
     @Basic
-    @Column(updatable = false)
+    @Column(name = "created_at", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private LocalDateTime createdAt;
 
     @Basic
+    @Column(name = "updated_at")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private LocalDateTime updatedAt;
 
     @Transient
     private String userName;
+
+    @Transient
+    private String userRole;
 
     @Transient
     private String replyByName;

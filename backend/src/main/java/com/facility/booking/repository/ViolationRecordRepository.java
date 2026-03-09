@@ -43,5 +43,30 @@ public interface ViolationRecordRepository extends JpaRepository<ViolationRecord
     
     Page<ViolationRecord> findAllByOrderByReportedTimeDesc(Pageable pageable);
     
+    // 根据用户名模糊查询（不区分大小写）
+    @Query("SELECT v FROM ViolationRecord v JOIN User u ON v.userId = u.id WHERE LOWER(u.realName) LIKE LOWER(CONCAT('%', :userName, '%'))")
+    Page<ViolationRecord> findByUserNameContainingIgnoreCase(@Param("userName") String userName, Pageable pageable);
+    
+    // 根据违规类型查询
+    Page<ViolationRecord> findByViolationType(String violationType, Pageable pageable);
+    
+    // 根据状态查询
+    Page<ViolationRecord> findByStatus(String status, Pageable pageable);
+    
+    // 根据用户名和违规类型查询（不区分大小写）
+    @Query("SELECT v FROM ViolationRecord v JOIN User u ON v.userId = u.id WHERE LOWER(u.realName) LIKE LOWER(CONCAT('%', :userName, '%')) AND v.violationType = :violationType")
+    Page<ViolationRecord> findByUserNameAndViolationType(@Param("userName") String userName, @Param("violationType") String violationType, Pageable pageable);
+    
+    // 根据用户名和状态查询（不区分大小写）
+    @Query("SELECT v FROM ViolationRecord v JOIN User u ON v.userId = u.id WHERE LOWER(u.realName) LIKE LOWER(CONCAT('%', :userName, '%')) AND v.status = :status")
+    Page<ViolationRecord> findByUserNameAndStatus(@Param("userName") String userName, @Param("status") String status, Pageable pageable);
+    
+    // 根据违规类型和状态查询
+    Page<ViolationRecord> findByViolationTypeAndStatus(String violationType, String status, Pageable pageable);
+    
+    // 根据所有条件查询（不区分大小写）
+    @Query("SELECT v FROM ViolationRecord v JOIN User u ON v.userId = u.id WHERE LOWER(u.realName) LIKE LOWER(CONCAT('%', :userName, '%')) AND v.violationType = :violationType AND v.status = :status")
+    Page<ViolationRecord> findByFilters(@Param("userName") String userName, @Param("violationType") String violationType, @Param("status") String status, Pageable pageable);
+    
     // 数据库中没有violation_time字段，使用reportedTime代替
 }

@@ -93,6 +93,32 @@ public class ViolationRecordController {
     }
 
     /**
+     * 获取用户的当前信用分
+     */
+    @GetMapping("/user/{userId}/credit-score")
+    public Result getUserCurrentCreditScore(@PathVariable Long userId) {
+        try {
+            Integer creditScore = violationRecordService.getUserCurrentCreditScore(userId);
+            return Result.success("获取用户当前信用分成功", creditScore);
+        } catch (Exception e) {
+            return Result.error("获取用户当前信用分失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取用户的违规次数
+     */
+    @GetMapping("/user/{userId}/violation-count")
+    public Result getUserViolationCount(@PathVariable Long userId) {
+        try {
+            Integer violationCount = violationRecordService.getUserViolationCount(userId);
+            return Result.success("获取用户违规次数成功", violationCount);
+        } catch (Exception e) {
+            return Result.error("获取用户违规次数失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 更新违规记录状态
      */
     @PutMapping("/{id}/status")
@@ -134,12 +160,19 @@ public class ViolationRecordController {
      */
     @GetMapping("/all")
     public Result getAllViolations(@RequestParam(defaultValue = "0") int page,
-                                  @RequestParam(defaultValue = "10") int size) {
+                                  @RequestParam(defaultValue = "10") int size,
+                                  @RequestParam(required = false) String userName,
+                                  @RequestParam(required = false) String violationType,
+                                  @RequestParam(required = false) String status) {
         try {
+            System.out.println("Getting all violations - page: " + page + ", size: " + size + ", userName: " + userName + ", violationType: " + violationType + ", status: " + status);
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
-            Page<ViolationRecord> violations = violationRecordService.getAllViolations(pageable);
+            Page<ViolationRecord> violations = violationRecordService.getAllViolations(pageable, userName, violationType, status);
+            System.out.println("Successfully retrieved " + violations.getTotalElements() + " violations");
             return Result.success("获取所有违规记录成功", violations);
         } catch (Exception e) {
+            System.err.println("Error getting all violations: " + e.getMessage());
+            e.printStackTrace();
             return Result.error("获取所有违规记录失败: " + e.getMessage());
         }
     }

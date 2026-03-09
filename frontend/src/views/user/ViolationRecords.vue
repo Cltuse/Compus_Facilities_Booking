@@ -45,6 +45,20 @@
     <!-- 统计卡片 -->
     <div class="stats-cards">
       <div class="stat-card">
+        <div class="stat-icon info">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 8V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ violationCount }}</div>
+          <div class="stat-label">累计违规次数</div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
         <div class="stat-icon warning">
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -69,6 +83,19 @@
         <div class="stat-info">
           <div class="stat-value">{{ totalDeduction }}</div>
           <div class="stat-label">累计扣分</div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon success">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ currentCreditScore }}</div>
+          <div class="stat-label">当前信用分</div>
         </div>
       </div>
     </div>
@@ -194,6 +221,20 @@
     >
       <div v-if="currentViolation" class="violation-detail">
         <div class="detail-section">
+          <h4>信用信息</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>当前信用分：</label>
+              <span class="credit-score">{{ currentCreditScore }}</span>
+            </div>
+            <div class="detail-item">
+              <label>累计违规次数：</label>
+              <span>{{ violationCount }}次</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
           <h4>基本信息</h4>
           <div class="detail-grid">
             <div class="detail-item">
@@ -243,6 +284,20 @@
             有效期至：{{ formatDateTime(currentViolation.expireTime) }}
           </div>
         </div>
+
+        <div class="detail-section">
+          <h4>信用信息</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>当前信用分：</label>
+              <span class="credit-score">{{ currentCreditScore }}</span>
+            </div>
+            <div class="detail-item">
+              <label>累计违规次数：</label>
+              <span>{{ violationCount }}次</span>
+            </div>
+          </div>
+        </div>
       </div>
       
       <template #footer>
@@ -258,7 +313,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Refresh, Calendar, Clock, CircleCheck, CircleClose, Close, Warning, QuestionFilled, View } from '@element-plus/icons-vue'
-import { userClientAPI } from '../../api'
+import { userClientAPI, violationAPI } from '../../api'
 import { formatDateTime } from '@/utils/date'
 
 const userInfo = ref({})
@@ -266,6 +321,8 @@ const violationList = ref([])
 const currentViolation = ref({})
 const detailDialogVisible = ref(false)
 const searchDescription = ref('')
+const currentCreditScore = ref(100)
+const violationCount = ref(0)
 
 // 分页相关
 const currentPage = ref(1)
@@ -279,6 +336,8 @@ onMounted(() => {
       console.log('用户信息:', userInfo.value)
       if (userInfo.value.id) {
         loadMyViolations()
+        loadCurrentCreditScore()
+        loadViolationCount()
       } else {
         console.error('用户ID不存在')
         ElMessage.error('用户信息不完整，请重新登录')
@@ -292,6 +351,30 @@ onMounted(() => {
     ElMessage.error('请先登录')
   }
 })
+
+// 加载当前违规次数
+const loadViolationCount = async () => {
+  try {
+    const res = await violationAPI.getUserViolationCount(userInfo.value.id)
+    if (res && res.code === 200) {
+      violationCount.value = res.data || 0
+    }
+  } catch (error) {
+    console.error('加载违规次数失败:', error)
+  }
+}
+
+// 加载当前信用分
+const loadCurrentCreditScore = async () => {
+  try {
+    const res = await violationAPI.getUserCurrentCreditScore(userInfo.value.id)
+    if (res && res.code === 200) {
+      currentCreditScore.value = res.data || 100
+    }
+  } catch (error) {
+    console.error('加载信用分失败:', error)
+  }
+}
 
 const loadMyViolations = async () => {
   try {
@@ -404,6 +487,8 @@ const handleCloseDetail = () => {
 const refreshData = () => {
   currentPage.value = 1
   loadMyViolations()
+  loadCurrentCreditScore()
+  loadViolationCount()
 }
 
 // 违规类型相关方法

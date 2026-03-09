@@ -97,9 +97,22 @@ public class UserController {
      */
     @GetMapping("/list")
     public Result<List<User>> list() {
-        List<User> users = userRepository.findAll();
-        users.forEach(user -> user.setPassword("******")); // 隐藏密码
-        return Result.success(users);
+        try {
+            System.out.println("Getting all users list");
+            List<User> users = userRepository.findAll();
+            if (users != null) {
+                users.forEach(user -> user.setPassword("******")); // 隐藏密码
+                System.out.println("Successfully retrieved " + users.size() + " users");
+            } else {
+                System.out.println("No users found or null result");
+                users = new ArrayList<>();
+            }
+            return Result.success(users);
+        } catch (Exception e) {
+            System.err.println("Error getting user list: " + e.getMessage());
+            e.printStackTrace();
+            return Result.error("获取用户列表失败: " + e.getMessage());
+        }
     }
 
     /**

@@ -25,4 +25,24 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     Long countByUserIdAndStatus(@Param("userId") Long userId, @Param("status") String status);
     
     List<Feedback> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, String status);
+    
+    // 管理员获取所有反馈
+    Page<Feedback> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    
+    @Query("SELECT f FROM Feedback f WHERE f.status = :status AND f.type = :type ORDER BY f.createdAt DESC")
+    Page<Feedback> findByStatusAndTypeOrderByCreatedAtDesc(@Param("status") String status, @Param("type") String type, Pageable pageable);
+    
+    @Query("SELECT f FROM Feedback f WHERE f.title LIKE %:keyword% OR f.content LIKE %:keyword% ORDER BY f.createdAt DESC")
+    Page<Feedback> findByKeywordOrderByCreatedAtDesc(@Param("keyword") String keyword, Pageable pageable);
+    
+    @Query("SELECT f FROM Feedback f WHERE f.status = :status AND (f.title LIKE %:keyword% OR f.content LIKE %:keyword%) ORDER BY f.createdAt DESC")
+    Page<Feedback> findByStatusAndKeywordOrderByCreatedAtDesc(@Param("status") String status, @Param("keyword") String keyword, Pageable pageable);
+    
+    @Query("SELECT f FROM Feedback f WHERE f.type = :type AND (f.title LIKE %:keyword% OR f.content LIKE %:keyword%) ORDER BY f.createdAt DESC")
+    Page<Feedback> findByTypeAndKeywordOrderByCreatedAtDesc(@Param("type") String type, @Param("keyword") String keyword, Pageable pageable);
+    
+    @Query("SELECT f FROM Feedback f WHERE f.status = :status AND f.type = :type AND (f.title LIKE %:keyword% OR f.content LIKE %:keyword%) ORDER BY f.createdAt DESC")
+    Page<Feedback> findByStatusAndTypeAndKeywordOrderByCreatedAtDesc(@Param("status") String status, @Param("type") String type, @Param("keyword") String keyword, Pageable pageable);
+    
+    Long countByStatus(String status);
 }

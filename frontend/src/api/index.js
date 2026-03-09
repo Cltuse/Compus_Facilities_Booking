@@ -13,6 +13,39 @@ export const userAPI = {
     searchUsers: (keyword) => request.get('/user/search', { params: { keyword } })
 };
 
+// 管理员反馈相关API
+export const feedbackAPI = {
+    // 获取所有反馈
+    getFeedbacks: (page = 0, size = 10) => 
+        request.get('/feedback/list', { 
+            params: { page, size } 
+        }),
+    
+    // 获取反馈详情
+    getFeedbackDetail: (id) => 
+        request.get(`/feedback/${id}`),
+    
+    // 回复反馈
+    replyFeedback: (id, data) => {
+        // 后端接口需要reply和adminId参数
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        return request.post(`/feedback/${id}/reply`, null, { 
+            params: { 
+                reply: data.replyContent, 
+                adminId: userInfo.id 
+            } 
+        });
+    },
+    
+    // 更新反馈状态
+    updateFeedbackStatus: (id, status) => 
+        request.put(`/feedback/${id}/status`, { status }),
+    
+    // 删除反馈
+    deleteFeedback: (id) => 
+        request.delete(`/feedback/${id}`)
+};
+
 // 设备相关API
 export const facilityAPI = {
     list: () => request.get('/facility/list'),
@@ -176,7 +209,8 @@ export const adminAPI = {
     searchUsers: (keyword) => request.get('/user/search', { params: { keyword } }),
     
     // 违规记录管理
-    getAllViolations: (page = 0, size = 10) => request.get('/violation/all', { params: { page, size } }),
+    getAllViolations: (page = 0, size = 10, userName = '', violationType = '', status = '') => 
+        request.get('/violation/all', { params: { page, size, userName, violationType, status } }),
     recordViolation: (data) => request.post('/violation/record', data),
     updateViolationStatus: (id, status, reportedBy) => request.put(`/violation/${id}/status`, null, {
         params: { status, reportedBy }
@@ -192,11 +226,14 @@ export const adminAPI = {
 
 // 违规记录管理API
 export const violationAPI = {
-    getAllViolations: () => request.get('/violation/all'),
+    getAllViolations: (page = 0, size = 10, userName = '', violationType = '', status = '') => 
+        request.get('/violation/all', { params: { page, size, userName, violationType, status } }),
     recordViolation: (data) => request.post('/violation/record', data),
     updateViolationStatus: (id, status, reportedBy) => request.put(`/violation/${id}/status`, null, {
         params: { status, reportedBy }
-    })
+    }),
+    getUserCurrentCreditScore: (userId) => request.get(`/violation/user/${userId}/credit-score`),
+    getUserViolationCount: (userId) => request.get(`/violation/user/${userId}/violation-count`)
 };
 
 // 用户端相关API

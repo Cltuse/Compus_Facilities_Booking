@@ -43,6 +43,11 @@ const routes = [
                 component: () => import('../views/admin/Maintenance.vue')
             },
             {
+                path: 'feedback',
+                name: 'AdminFeedback',
+                component: () => import('../views/admin/Feedback.vue')
+            },
+            {
                 path: 'profile',
                 name: 'AdminProfile',
                 component: () => import('../views/admin/Profile.vue')

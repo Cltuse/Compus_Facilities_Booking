@@ -88,7 +88,7 @@ public class FeedbackService {
      * 获取待处理的反馈数量
      */
     public Long getPendingFeedbackCount() {
-        return feedbackRepository.countByUserIdAndStatus(null, "PENDING");
+        return feedbackRepository.countByStatus("PENDING");
     }
 
     /**
@@ -106,5 +106,179 @@ public class FeedbackService {
             }
         });
         return feedbacks;
+    }
+    
+    /**
+     * 管理员获取所有反馈
+     */
+    public Page<Feedback> getAllFeedbacks(Pageable pageable) {
+        System.out.println("Getting all feedbacks with pageable: " + pageable);
+        try {
+            Page<Feedback> feedbacks = feedbackRepository.findAllByOrderByCreatedAtDesc(pageable);
+            System.out.println("Found " + feedbacks.getTotalElements() + " feedbacks");
+            // 设置用户名
+            feedbacks.forEach(feedback -> {
+                userRepository.findById(feedback.getUserId()).ifPresent(user -> {
+                    feedback.setUserName(user.getName());
+                    feedback.setUserRole(user.getRole());
+                });
+                if (feedback.getReplyBy() != null) {
+                    userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
+                        feedback.setReplyByName(user.getName()));
+                }
+            });
+            return feedbacks;
+        } catch (Exception e) {
+            System.out.println("Error getting all feedbacks: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+    
+    /**
+     * 根据状态获取反馈
+     */
+    public Page<Feedback> getFeedbacksByStatus(String status, Pageable pageable) {
+        // 使用JPA的命名查询方法
+        Page<Feedback> feedbacks = feedbackRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+        // 设置用户名
+        feedbacks.forEach(feedback -> {
+            userRepository.findById(feedback.getUserId()).ifPresent(user -> {
+                feedback.setUserName(user.getName());
+                feedback.setUserRole(user.getRole());
+            });
+            if (feedback.getReplyBy() != null) {
+                userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
+                    feedback.setReplyByName(user.getName()));
+            }
+        });
+        return feedbacks;
+    }
+    
+    /**
+     * 根据类型获取反馈
+     */
+    public Page<Feedback> getFeedbacksByType(String type, Pageable pageable) {
+        // 使用JPA的命名查询方法
+        Page<Feedback> feedbacks = feedbackRepository.findByTypeOrderByCreatedAtDesc(type, pageable);
+        // 设置用户名
+        feedbacks.forEach(feedback -> {
+            userRepository.findById(feedback.getUserId()).ifPresent(user -> {
+                feedback.setUserName(user.getName());
+                feedback.setUserRole(user.getRole());
+            });
+            if (feedback.getReplyBy() != null) {
+                userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
+                    feedback.setReplyByName(user.getName()));
+            }
+        });
+        return feedbacks;
+    }
+    
+    /**
+     * 根据状态和类型获取反馈
+     */
+    public Page<Feedback> getFeedbacksByStatusAndType(String status, String type, Pageable pageable) {
+        Page<Feedback> feedbacks = feedbackRepository.findByStatusAndTypeOrderByCreatedAtDesc(status, type, pageable);
+        // 设置用户名
+        feedbacks.forEach(feedback -> {
+            userRepository.findById(feedback.getUserId()).ifPresent(user -> {
+                feedback.setUserName(user.getName());
+                feedback.setUserRole(user.getRole());
+            });
+            if (feedback.getReplyBy() != null) {
+                userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
+                    feedback.setReplyByName(user.getName()));
+            }
+        });
+        return feedbacks;
+    }
+    
+    /**
+     * 搜索反馈
+     */
+    public Page<Feedback> searchFeedbacks(String keyword, Pageable pageable) {
+        Page<Feedback> feedbacks = feedbackRepository.findByKeywordOrderByCreatedAtDesc(keyword, pageable);
+        // 设置用户名
+        feedbacks.forEach(feedback -> {
+            userRepository.findById(feedback.getUserId()).ifPresent(user -> {
+                feedback.setUserName(user.getName());
+                feedback.setUserRole(user.getRole());
+            });
+            if (feedback.getReplyBy() != null) {
+                userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
+                    feedback.setReplyByName(user.getName()));
+            }
+        });
+        return feedbacks;
+    }
+    
+    /**
+     * 根据状态和关键词搜索反馈
+     */
+    public Page<Feedback> searchFeedbacksByStatusAndKeyword(String status, String keyword, Pageable pageable) {
+        Page<Feedback> feedbacks = feedbackRepository.findByStatusAndKeywordOrderByCreatedAtDesc(status, keyword, pageable);
+        // 设置用户名
+        feedbacks.forEach(feedback -> {
+            userRepository.findById(feedback.getUserId()).ifPresent(user -> {
+                feedback.setUserName(user.getName());
+                feedback.setUserRole(user.getRole());
+            });
+            if (feedback.getReplyBy() != null) {
+                userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
+                    feedback.setReplyByName(user.getName()));
+            }
+        });
+        return feedbacks;
+    }
+    
+    /**
+     * 根据类型和关键词搜索反馈
+     */
+    public Page<Feedback> searchFeedbacksByTypeAndKeyword(String type, String keyword, Pageable pageable) {
+        Page<Feedback> feedbacks = feedbackRepository.findByTypeAndKeywordOrderByCreatedAtDesc(type, keyword, pageable);
+        // 设置用户名
+        feedbacks.forEach(feedback -> {
+            userRepository.findById(feedback.getUserId()).ifPresent(user -> {
+                feedback.setUserName(user.getName());
+                feedback.setUserRole(user.getRole());
+            });
+            if (feedback.getReplyBy() != null) {
+                userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
+                    feedback.setReplyByName(user.getName()));
+            }
+        });
+        return feedbacks;
+    }
+    
+    /**
+     * 根据状态、类型和关键词搜索反馈
+     */
+    public Page<Feedback> searchFeedbacksByStatusAndTypeAndKeyword(String status, String type, String keyword, Pageable pageable) {
+        Page<Feedback> feedbacks = feedbackRepository.findByStatusAndTypeAndKeywordOrderByCreatedAtDesc(status, type, keyword, pageable);
+        // 设置用户名
+        feedbacks.forEach(feedback -> {
+            userRepository.findById(feedback.getUserId()).ifPresent(user -> {
+                feedback.setUserName(user.getName());
+                feedback.setUserRole(user.getRole());
+            });
+            if (feedback.getReplyBy() != null) {
+                userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
+                    feedback.setReplyByName(user.getName()));
+            }
+        });
+        return feedbacks;
+    }
+    
+    /**
+     * 删除反馈
+     */
+    public boolean deleteFeedback(Long id) {
+        try {
+            feedbackRepository.deleteById(id);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

@@ -39,6 +39,12 @@ public class User {
     @Column(length = 20)
     private String status = "ACTIVE"; // ACTIVE, INACTIVE
 
+    @Column(name = "credit_score")
+    private Integer creditScore = 100;
+
+    @Column(name = "violation_count")
+    private Integer violationCount = 0;
+
     @Column(updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private LocalDateTime createdAt;

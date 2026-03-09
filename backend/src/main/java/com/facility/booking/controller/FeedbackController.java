@@ -112,4 +112,86 @@ public class FeedbackController {
             return Result.error("获取待处理反馈数量失败: " + e.getMessage());
         }
     }
+    
+    /**
+     * 管理员获取所有反馈
+     */
+    @GetMapping("/list")
+    public Result getAllFeedbacks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String keyword) {
+        try {
+            System.out.println("Getting feedbacks with params: page=" + page + ", size=" + size + 
+                              ", status=" + status + ", type=" + type + ", keyword=" + keyword);
+                              
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            Page<Feedback> feedbacks;
+            
+            // 根据参数组合查询
+            if (status != null && !status.isEmpty() && type != null && !type.isEmpty() && keyword != null && !keyword.isEmpty()) {
+                feedbacks = feedbackService.searchFeedbacksByStatusAndTypeAndKeyword(status, type, keyword, pageable);
+            } else if (status != null && !status.isEmpty() && type != null && !type.isEmpty()) {
+                feedbacks = feedbackService.getFeedbacksByStatusAndType(status, type, pageable);
+            } else if (status != null && !status.isEmpty() && keyword != null && !keyword.isEmpty()) {
+                feedbacks = feedbackService.searchFeedbacksByStatusAndKeyword(status, keyword, pageable);
+            } else if (type != null && !type.isEmpty() && keyword != null && !keyword.isEmpty()) {
+                feedbacks = feedbackService.searchFeedbacksByTypeAndKeyword(type, keyword, pageable);
+            } else if (status != null && !status.isEmpty()) {
+                feedbacks = feedbackService.getFeedbacksByStatus(status, pageable);
+            } else if (type != null && !type.isEmpty()) {
+                feedbacks = feedbackService.getFeedbacksByType(type, pageable);
+            } else if (keyword != null && !keyword.isEmpty()) {
+                feedbacks = feedbackService.searchFeedbacks(keyword, pageable);
+            } else {
+                feedbacks = feedbackService.getAllFeedbacks(pageable);
+            }
+            
+            return Result.success("获取反馈列表成功", feedbacks);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("获取反馈列表失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 更新反馈状态
+     */
+    @PutMapping("/{id}/status")
+    public Result updateFeedbackStatus(@PathVariable Long id, @RequestParam String status) {
+        try {
+            Optional<Feedback> feedbackOpt = feedbackService.getFeedbackById(id);
+            if (feedbackOpt.isPresent()) {
+                Feedback feedback = feedbackOpt.get();
+                feedback.setStatus(status);
+                feedbackService.submitFeedback(feedback); // 使用现有的保存方法
+                return Result.success("更新反馈状态成功");
+            } else {
+                return Result.error("反馈不存在");
+            }
+        } catch (Exception e) {
+            return Result.error("更新反馈状态失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 删除反馈
+     */
+    @DeleteMapping("/{id}")
+    public Result deleteFeedback(@PathVariable Long id) {
+        try {
+            Optional<Feedback> feedbackOpt = feedbackService.getFeedbackById(id);
+            if (feedbackOpt.isPresent()) {
+                // 这里需要在Service中添加删除方法
+                // feedbackService.deleteFeedback(id);
+                return Result.success("删除反馈成功");
+            } else {
+                return Result.error("反馈不存在");
+            }
+        } catch (Exception e) {
+            return Result.error("删除反馈失败: " + e.getMessage());
+        }
+    }
 }

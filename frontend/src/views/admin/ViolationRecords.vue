@@ -119,7 +119,7 @@
     <!-- 违规记录表格 -->
     <div class="table-container">
       <el-table
-    :data="violationList"
+    :data="filteredViolationList"
     class="violation-table"
     :header-cell-style="headerCellStyle"
     :cell-style="cellStyle"
@@ -127,10 +127,7 @@
 >
         <el-table-column prop="userName" label="用户姓名" min-width="120">
           <template #default="{ row }">
-            <div class="user-info">
-              <div class="user-name">{{ row.userName }}</div>
-              <div class="user-id">ID: {{ row.userId }}</div>
-            </div>
+            <div class="user-name">{{ row.userName }}</div>
           </template>
         </el-table-column>
 
@@ -161,14 +158,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="facilityName" label="关联设施" width="150">
-          <template #default="{ row }">
-            <div class="facility-info">
-              <span v-if="row.facilityName">{{ row.facilityName }}</span>
-              <span v-else class="text-muted">无关联</span>
-            </div>
-          </template>
-        </el-table-column>
+        <!-- 删除关联设施列，数据库中不存在此字段 -->
 
         <el-table-column prop="reportedTime" label="上报时间" width="180">
           <template #default="{ row }">
@@ -263,20 +253,14 @@
             <label>用户姓名：</label>
             <span>{{ currentViolation.userName }}</span>
           </div>
-          <div class="detail-item">
-            <label>用户ID：</label>
-            <span>{{ currentViolation.userId }}</span>
-          </div>
+          <!-- 删除用户ID字段 -->
           <div class="detail-item">
             <label>违规类型：</label>
             <span class="type-badge" :class="getViolationTypeClass(currentViolation.violationType)">
                 {{ getViolationTypeText(currentViolation.violationType) }}
               </span>
           </div>
-          <div class="detail-item">
-            <label>关联设施：</label>
-            <span>{{ currentViolation.facilityName || '无关联' }}</span>
-          </div>
+          <!-- 删除关联设施字段，数据库中不存在 -->
           <div class="detail-item">
             <label>上报人：</label>
             <span>{{ currentViolation.reporterName || '系统记录' }}</span>
@@ -456,18 +440,29 @@ onMounted(() => {
 
 const loadViolationList = async () => {
   try {
-    const res = await violationAPI.getAllViolations()
+    // 计算分页参数，前端页码从1开始，后端从0开始
+    const page = currentPage.value - 1
+    const res = await violationAPI.getAllViolations(
+      page, 
+      pageSize.value, 
+      searchUser.value, 
+      searchViolationType.value, 
+      searchStatus.value
+    )
     if (res && res.code === 200 && res.data) {
-      // 处理分页数据，提取content数组
+      // 处理分页数据，提取content数组和总数
       violationList.value = res.data.content || []
+      totalItems.value = res.data.totalElements || 0
     } else {
       violationList.value = []
+      totalItems.value = 0
       ElMessage.error(res?.message || '获取数据失败')
     }
   } catch (error) {
     console.error('加载违规记录失败:', error)
     ElMessage.error('加载违规记录失败')
     violationList.value = []
+    totalItems.value = 0
   }
 }
 
@@ -489,30 +484,33 @@ const searchUsers = async (query) => {
   }
 }
 
-// 过滤后的违规记录列表
-const filteredViolationList = computed(() => {
-  let filtered = violationList.value
+// 注释掉前端的过滤逻辑，因为过滤现在在后端进行
+// const filteredViolationList = computed(() => {
+//   let filtered = violationList.value
+//
+//   if (searchUser.value) {
+//     filtered = filtered.filter(item =>
+//         item.userName && item.userName.toLowerCase().includes(searchUser.value.toLowerCase())
+//     )
+//   }
+//
+//   if (searchViolationType.value) {
+//     filtered = filtered.filter(item =>
+//         item.violationType === searchViolationType.value
+//     )
+//   }
+//
+//   if (searchStatus.value) {
+//     filtered = filtered.filter(item =>
+//         item.status === searchStatus.value
+//     )
+//   }
+//
+//   return filtered
+// })
 
-  if (searchUser.value) {
-    filtered = filtered.filter(item =>
-        item.userName && item.userName.toLowerCase().includes(searchUser.value.toLowerCase())
-    )
-  }
-
-  if (searchViolationType.value) {
-    filtered = filtered.filter(item =>
-        item.violationType === searchViolationType.value
-    )
-  }
-
-  if (searchStatus.value) {
-    filtered = filtered.filter(item =>
-        item.status === searchStatus.value
-    )
-  }
-
-  return filtered
-})
+// 直接使用后端返回的数据，不再需要前端过滤
+const filteredViolationList = computed(() => violationList.value)
 
 // 使用后端分页，不再需要前端分页计算属性
 
@@ -524,6 +522,7 @@ const totalPenaltyPoints = computed(() => violationList.value.reduce((sum, v) =>
 // 处理方法
 const handleSearch = () => {
   currentPage.value = 1
+  loadViolationList()
 }
 
 const handleCurrentChange = (page) => {
@@ -915,21 +914,10 @@ const getStatusClass = (status) => {
 }
 
 /* 表格单元格内容样式 */
-.user-info {
-  min-width: 0;
-}
-
 .user-name {
   font-size: 14px;
   font-weight: 600;
   color: #1a202c;
-  margin-bottom: 2px;
-}
-
-.user-id {
-  font-size: 12px;
-  color: #718096;
-  font-weight: 400;
 }
 
 .violation-description {
@@ -943,10 +931,7 @@ const getStatusClass = (status) => {
   word-break: break-word;
 }
 
-.facility-info {
-  font-size: 14px;
-  color: #4a5568;
-}
+/* 删除facility-info样式，不再需要 */
 
 .text-muted {
   color: #95a5a6;

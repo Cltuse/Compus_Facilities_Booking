@@ -22,11 +22,15 @@
       <!-- 个人信息卡片 -->
       <div class="profile-card" @click="handleEditProfile">
         <div class="card-header">
-          <div class="card-icon personal-info-icon">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+          <div class="avatar-section">
+            <div class="avatar-wrapper">
+              <img v-if="userInfo.avatar" :src="userInfo.avatar" class="avatar-image" alt="用户头像" />
+              <div v-else class="avatar-placeholder">{{ userInfo.realName ? userInfo.realName.charAt(0) : 'U' }}</div>
+              <div class="avatar-upload-overlay" @click.stop="handleAvatarUpload">
+                <el-icon><Camera /></el-icon>
+                <span>更换头像</span>
+              </div>
+            </div>
           </div>
           <div class="card-title">
             <h3>个人信息</h3>
@@ -112,6 +116,27 @@
           label-position="top"
           class="profile-form"
       >
+        <el-form-item label="头像" class="avatar-form-item">
+          <div class="avatar-upload-section">
+            <div class="current-avatar">
+              <img v-if="profileForm.avatar" :src="profileForm.avatar" class="avatar-preview" alt="当前头像" />
+              <div v-else class="avatar-preview-placeholder">{{ profileForm.realName ? profileForm.realName.charAt(0) : 'U' }}</div>
+            </div>
+            <div class="upload-actions">
+              <el-upload
+                class="avatar-uploader"
+                :show-file-list="false"
+                :before-upload="beforeAvatarUpload"
+                :on-change="handleAvatarChange"
+                accept="image/*"
+                :auto-upload="false"
+              >
+                <el-button type="primary" :icon="Upload">选择图片</el-button>
+              </el-upload>
+              <p class="upload-tip">支持 JPG、PNG 格式，大小不超过 2MB</p>
+            </div>
+          </div>
+        </el-form-item>
         <el-form-item label="用户名" prop="username">
           <el-input v-model="profileForm.username" placeholder="请输入用户名" :disabled="true" />
         </el-form-item>
@@ -191,8 +216,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { userAPI } from '../../api';
-import { Edit, Lock } from '@element-plus/icons-vue';
+import { userAPI, fileAPI } from '../../api';
+import { Edit, Lock, Camera, Upload } from '@element-plus/icons-vue';
 
 const profileDialogVisible = ref(false);
 const passwordDialogVisible = ref(false);
@@ -208,8 +233,11 @@ const userInfo = ref({
 const profileForm = ref({
   username: '',
   realName: '',
-  id: null
+  id: null,
+  avatar: ''
 });
+
+const avatarFile = ref(null);
 
 const passwordForm = ref({
   oldPassword: '',
@@ -255,7 +283,12 @@ const loadUserInfo = async () => {
   try {
     const storedUserInfo = JSON.parse(localStorage.getItem('userInfo'));
     userInfo.value = { ...storedUserInfo };
-    profileForm.value = { ...storedUserInfo };
+    profileForm.value = {
+      username: storedUserInfo.username || '',
+      realName: storedUserInfo.realName || '',
+      id: storedUserInfo.id || null,
+      avatar: storedUserInfo.avatar || ''
+    };
   } catch (error) {
     console.error('加载用户信息失败:', error);
     ElMessage.error('加载用户信息失败');
@@ -270,6 +303,7 @@ const cancelEditProfile = () => {
   profileDialogVisible.value = false;
   // 重置表单
   profileFormRef.value?.resetFields();
+  avatarFile.value = null;
   loadUserInfo(); // 恢复原始数据
 };
 
@@ -277,8 +311,23 @@ const saveProfile = async () => {
   try {
     await profileFormRef.value.validate();
 
+    // 如果有新头像，先上传头像
+    if (avatarFile.value) {
+      try {
+        const uploadResult = await fileAPI.uploadAvatar(avatarFile.value);
+        if (uploadResult.code === 200) {
+          profileForm.value.avatar = uploadResult.data;
+        }
+      } catch (error) {
+        console.error('头像上传失败:', error);
+        ElMessage.error('头像上传失败，请重试');
+        return;
+      }
+    }
+
     const result = await userAPI.update(profileForm.value.id, {
-      realName: profileForm.value.realName
+      realName: profileForm.value.realName,
+      avatar: profileForm.value.avatar
     });
 
     if (result.code === 200) {
@@ -287,12 +336,15 @@ const saveProfile = async () => {
       // 更新本地存储
       const storedUserInfo = JSON.parse(localStorage.getItem('userInfo'));
       storedUserInfo.realName = profileForm.value.realName;
+      storedUserInfo.avatar = profileForm.value.avatar;
       localStorage.setItem('userInfo', JSON.stringify(storedUserInfo));
 
       // 更新显示信息
       userInfo.value.realName = profileForm.value.realName;
+      userInfo.value.avatar = profileForm.value.avatar;
 
       profileDialogVisible.value = false;
+      avatarFile.value = null;
     } else {
       ElMessage.error(result.message || '更新失败');
     }
@@ -334,6 +386,36 @@ const updatePassword = async () => {
     }
   } catch (error) {
     console.error('修改密码失败:', error);
+  }
+};
+
+const handleAvatarUpload = () => {
+  profileDialogVisible.value = true;
+};
+
+const beforeAvatarUpload = (file) => {
+  const isImage = file.type.startsWith('image/');
+  const isLt2M = file.size / 1024 / 1024 < 2;
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件！');
+    return false;
+  }
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过 2MB！');
+    return false;
+  }
+  return true;
+};
+
+const handleAvatarChange = (file) => {
+  if (beforeAvatarUpload(file.raw)) {
+    avatarFile.value = file.raw;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      profileForm.value.avatar = e.target.result;
+    };
+    reader.readAsDataURL(file.raw);
   }
 };
 </script>
@@ -557,6 +639,126 @@ const updatePassword = async () => {
 .profile-form,
 .password-form {
   padding: 20px 0;
+}
+
+/* 头像样式 */
+.avatar-section {
+  flex-shrink: 0;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.avatar-wrapper:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #409eff;
+}
+
+.avatar-upload-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+
+.avatar-wrapper:hover .avatar-upload-overlay {
+  opacity: 1;
+}
+
+.avatar-upload-overlay .el-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.avatar-upload-overlay span {
+  font-size: 12px;
+}
+
+/* 头像上传表单样式 */
+.avatar-form-item :deep(.el-form-item__content) {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.avatar-upload-section {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.current-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.avatar-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-preview-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 700;
+  color: #409eff;
+}
+
+.upload-actions {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upload-tip {
+  margin: 0;
+  font-size: 12px;
+  color: #718096;
 }
 
 .profile-form :deep(.el-form-item__label),

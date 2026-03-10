@@ -81,7 +81,9 @@
         <el-table-column prop="username" label="提交用户" width="220" align="left">
           <template #default="{ row }">
             <div class="user-info">
-              <el-avatar :size="28" :src="row.userAvatar" />
+              <el-avatar :size="28" :src="row.userAvatar">
+                {{ (row.userName || '未知').charAt(0) }}
+              </el-avatar>
               <span class="username">{{ row.userName || '未知用户' }}</span>
             </div>
           </template>
@@ -181,7 +183,9 @@
       <div class="dialog-body">
         <div class="feedback-info">
           <div class="info-user">
-            <el-avatar :size="48" :src="currentFeedback.userAvatar" />
+            <el-avatar :size="48" :src="currentFeedback.userAvatar">
+              {{ (currentFeedback.userName || '未知').charAt(0) }}
+            </el-avatar>
             <div class="user-details">
               <div class="user-name">{{ currentFeedback.userName || '未知用户' }}</div>
               </div>

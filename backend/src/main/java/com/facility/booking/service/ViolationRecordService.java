@@ -57,16 +57,29 @@ public class ViolationRecordService {
         // 保存违规记录
         ViolationRecord savedViolation = violationRecordRepository.save(violationRecord);
         
-        // 更新用户信用分和违规次数
-        userRepository.findById(violationRecord.getUserId()).ifPresent(user -> {
-            // 减少信用分
-            user.setCreditScore(user.getCreditScore() - (violationRecord.getPenaltyPoints() != null ? violationRecord.getPenaltyPoints() : 0));
-            // 增加违规次数
-            user.setViolationCount(user.getViolationCount() + 1);
-            userRepository.save(user);
-        });
+        // 重新计算用户信用分和违规次数
+        recalculateUserCreditScoreAndViolationCount(violationRecord.getUserId());
         
         return savedViolation;
+    }
+    
+    /**
+     * 重新计算用户信用分和违规次数
+     * 信用分 = 100 - 所有违规记录处罚分总和
+     * 违规次数 = 所有违规记录总数
+     */
+    @Transactional
+    public void recalculateUserCreditScoreAndViolationCount(Long userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            // 获取所有违规记录的处罚分总和
+            Integer totalPenaltyPoints = getTotalPenaltyPoints(userId);
+            // 信用分 = 100 - 所有违规记录处罚分总和
+            user.setCreditScore(100 - totalPenaltyPoints);
+            // 违规次数 = 所有违规记录总数
+            Integer totalViolationCount = violationRecordRepository.countAllViolationsByUserId(userId);
+            user.setViolationCount(totalViolationCount);
+            userRepository.save(user);
+        });
     }
 
     /**
@@ -261,12 +274,20 @@ public class ViolationRecordService {
     }
     
     /**
-     * 获取用户的违规次数
+     * 获取用户的违规次数（所有状态的违规记录总数）
      */
     public Integer getUserViolationCount(Long userId) {
         return userRepository.findById(userId)
                 .map(user -> user.getViolationCount() != null ? user.getViolationCount() : 0)
                 .orElse(0);
+    }
+    
+    /**
+     * 获取用户的生效中违规数（所有状态的违规记录总数）
+     */
+    public Integer getUserActiveViolationCount(Long userId) {
+        Integer count = violationRecordRepository.countAllViolationsByUserId(userId);
+        return count != null ? count : 0;
     }
 
     /**

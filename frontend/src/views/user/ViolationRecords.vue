@@ -285,19 +285,6 @@
           </div>
         </div>
 
-        <div class="detail-section">
-          <h4>信用信息</h4>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <label>当前信用分：</label>
-              <span class="credit-score">{{ currentCreditScore }}</span>
-            </div>
-            <div class="detail-item">
-              <label>累计违规次数：</label>
-              <span>{{ violationCount }}次</span>
-            </div>
-          </div>
-        </div>
       </div>
       
       <template #footer>
@@ -427,7 +414,8 @@ const paginatedViolationList = computed(() => {
 
 // 计算属性
 const activeViolations = computed(() => {
-  return violationList.value.filter(v => v.status === 'PENDING').length
+  // 生效中违规数 = 当前用户违规总数（不分状态）
+  return violationList.value.length
 })
 
 const totalDeduction = computed(() => {

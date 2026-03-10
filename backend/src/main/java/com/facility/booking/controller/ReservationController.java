@@ -4,11 +4,13 @@ import com.facility.booking.common.Result;
 import com.facility.booking.entity.Facility;
 import com.facility.booking.entity.Reservation;
 import com.facility.booking.entity.User;
+import com.facility.booking.entity.ViolationRecord;
 import com.facility.booking.repository.FacilityRepository;
 import com.facility.booking.repository.ReservationRepository;
 import com.facility.booking.repository.RuleConfigRepository;
 import com.facility.booking.entity.RuleConfig;
 import com.facility.booking.repository.UserRepository;
+import com.facility.booking.service.ViolationRecordService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -44,6 +46,9 @@ public class ReservationController {
 
     @Autowired
     private RuleConfigRepository ruleConfigRepository;
+
+    @Autowired
+    private ViolationRecordService violationRecordService;
 
     /**
      * 获取所有预约记录
@@ -874,6 +879,25 @@ public class ReservationController {
                 
                 reservationRepository.save(reservation);
                 missedCount++;
+                
+                // 自动创建违规记录
+                try {
+                    ViolationRecord violationRecord = new ViolationRecord();
+                    violationRecord.setUserId(reservation.getUserId());
+                    violationRecord.setReservationId(reservation.getId());
+                    violationRecord.setViolationType("NO_SHOW");
+                    violationRecord.setDescription("爽约记录：" + missedReason + "。预约时间：" + reservation.getStartTime() + " 至 " + reservation.getEndTime());
+                    violationRecord.setPenaltyPoints(5); // 爽约默认扣5分
+                    violationRecord.setReportedBy(76L); // reported_by固定为76
+                violationRecord.setReportedTime(LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                    
+                    violationRecordService.recordViolation(violationRecord);
+                    System.out.println("已自动创建违规记录：预约ID=" + reservation.getId() + 
+                                     ", 用户ID=" + reservation.getUserId());
+                } catch (Exception e) {
+                    System.err.println("创建违规记录失败：" + e.getMessage());
+                    e.printStackTrace();
+                }
                 
                 // 释放设施，将设施状态设置为可用
                 Optional<Facility> facilityOpt = facilityRepository.findById(reservation.getFacilityId());

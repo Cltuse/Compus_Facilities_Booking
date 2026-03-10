@@ -94,4 +94,10 @@ public interface ViolationRecordRepository extends JpaRepository<ViolationRecord
      * 根据上报人ID、违规类型和状态查询违规记录
      */
     Page<ViolationRecord> findByReportedByAndViolationTypeAndStatusOrderByReportedTimeDesc(Long reportedBy, String violationType, String status, Pageable pageable);
+    
+    /**
+     * 计算用户的所有违规记录总数（不分状态）
+     */
+    @Query("SELECT COUNT(v) FROM ViolationRecord v WHERE v.userId = :userId")
+    Integer countAllViolationsByUserId(@Param("userId") Long userId);
 }

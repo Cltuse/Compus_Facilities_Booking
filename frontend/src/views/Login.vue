@@ -288,10 +288,14 @@ const goToRegister = () => {
 
 .login-form {
   padding: 20px 48px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .input-wrapper {
   position: relative;
+  width: 100%;
 }
 
 /* 重写Element Plus表单样式 */
@@ -338,6 +342,11 @@ const goToRegister = () => {
 
 .login-form :deep(.el-form-item) {
   margin-bottom: 20px;
+  width: 100%;
+}
+
+.login-form :deep(.el-form-item__content) {
+  width: 100%;
 }
 
 .login-button {

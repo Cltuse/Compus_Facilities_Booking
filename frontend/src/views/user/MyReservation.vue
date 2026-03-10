@@ -122,7 +122,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -136,7 +136,7 @@
                 查看
               </el-button>
               <el-button
-                v-if="row.status === 'PENDING'"
+                v-if="(row.status === 'PENDING' || row.status === 'APPROVED') && row.checkinStatus === 'NOT_CHECKED'"
                 size="small"
                 type="warning"
                 :plain="true"

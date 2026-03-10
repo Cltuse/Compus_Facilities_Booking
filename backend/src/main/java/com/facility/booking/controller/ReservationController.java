@@ -468,6 +468,19 @@ public class ReservationController {
             return Result.error("当前状态不允许取消预约");
         }
 
+        // 检查签到状态，只有未签到的预约才能取消
+        if (!"NOT_CHECKED".equals(reservation.getCheckinStatus())) {
+            if ("MISSED".equals(reservation.getCheckinStatus())) {
+                return Result.error("爽约的预约不能取消");
+            } else if ("CHECKED_IN".equals(reservation.getCheckinStatus())) {
+                return Result.error("已签到的预约不能取消");
+            } else if ("CHECKED_OUT".equals(reservation.getCheckinStatus())) {
+                return Result.error("已签退的预约不能取消");
+            } else {
+                return Result.error("当前签到状态不允许取消预约");
+            }
+        }
+
         // 获取适用的规则配置
         Optional<Facility> facilityOpt = facilityRepository.findById(reservation.getFacilityId());
         if (!facilityOpt.isPresent()) {

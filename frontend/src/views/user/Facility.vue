@@ -18,19 +18,118 @@
       </div>
     </div>
 
-    <!-- 搜索区域 -->
-    <div class="search-container">
-      <el-input
-        v-model="searchKeyword"
-        placeholder="搜索设施名称、型号或类别..."
-        class="search-input"
-        clearable
-        @input="handleSearchInput"
-      >
-        <template #prefix>
-          <el-icon class="search-icon"><Search /></el-icon>
-        </template>
-      </el-input>
+    <!-- 快捷功能和搜索区域 -->
+    <div class="quick-search-section">
+      <!-- 搜索和筛选区域 -->
+        <div class="search-filter-container">
+          <div class="search-row">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索设施名称、型号、位置或描述..."
+              class="search-input enhanced"
+              clearable
+              @input="handleSearchInput"
+              @clear="handleSearchClear"
+            >
+            <template #prefix>
+              <el-icon class="search-icon"><Search /></el-icon>
+            </template>
+            <template #suffix>
+              <el-icon 
+                v-if="searchKeyword" 
+                class="clear-icon" 
+                @click="clearSearch"
+              ><CircleClose /></el-icon>
+            </template>
+          </el-input>
+          <el-button 
+            type="primary" 
+            class="search-btn"
+            @click="handleSearch"
+          >
+            <el-icon><Search /></el-icon>
+            搜索
+          </el-button>
+        </div>
+
+        <!-- 分类筛选 -->
+        <div class="filter-row">
+          <div class="filter-group">
+            <span class="filter-label">设施类别：</span>
+            <el-select 
+              v-model="selectedCategory" 
+              placeholder="全部类别"
+              class="category-select"
+              clearable
+              @change="handleCategoryChange"
+            >
+              <el-option
+                v-for="category in categories"
+                :key="category.id"
+                :label="category.categoryName"
+                :value="category.categoryName"
+              >
+                <div class="category-option">
+                  <span>{{ category.categoryName }}</span>
+                  <span class="category-count">({{ getCategoryCount(category.categoryName) }})</span>
+                </div>
+              </el-option>
+            </el-select>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label">设施状态：</span>
+            <el-radio-group 
+              v-model="selectedStatus" 
+              size="small"
+              @change="handleStatusChange"
+            >
+              <el-radio-button label="">全部</el-radio-button>
+              <el-radio-button label="AVAILABLE">可用</el-radio-button>
+              <el-radio-button label="IN_USE">使用中</el-radio-button>
+              <el-radio-button label="MAINTENANCE">维护中</el-radio-button>
+            </el-radio-group>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label">排序方式：</span>
+            <el-select 
+              v-model="sortBy" 
+              placeholder="默认排序"
+              class="sort-select"
+              @change="handleSortChange"
+            >
+              <el-option label="默认排序" value="" />
+              <el-option label="名称升序" value="nameAsc" />
+              <el-option label="名称降序" value="nameDesc" />
+              <el-option label="状态排序" value="status" />
+            </el-select>
+          </div>
+        </div>
+
+        <!-- 搜索结果统计 -->
+        <div class="search-stats" v-if="searchKeyword || selectedCategory || selectedStatus">
+          <span class="stats-text">
+            找到 <strong>{{ filteredFacilityList.length }}</strong> 个设施
+            <template v-if="searchKeyword">
+              ，关键词: "<strong>{{ searchKeyword }}</strong>"
+            </template>
+            <template v-if="selectedCategory">
+              ，类别: "<strong>{{ selectedCategory }}</strong>"
+            </template>
+            <template v-if="selectedStatus">
+              ，状态: "<strong>{{ getStatusText(selectedStatus) }}</strong>"
+            </template>
+          </span>
+          <el-button 
+            type="text" 
+            class="clear-filters"
+            @click="clearAllFilters"
+          >
+            清除筛选
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 加载状态 -->
@@ -201,13 +300,6 @@
 
     <!-- 空状态 -->
     <div class="empty-state" v-if="!loading && filteredFacilityList.length === 0">
-      <div class="empty-icon">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
       <h3 class="empty-title">暂无设施</h3>
       <p class="empty-description">当前没有任何设施信息</p>
     </div>
@@ -230,8 +322,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Search, Calendar, Check, CircleCheck, Timer, Tools, CircleClose, Picture, Loading } from '@element-plus/icons-vue';
-import { facilityAPI, reservationAPI } from '../../api';
+import { Search, Calendar, Check, CircleCheck, Timer, Tools, CircleClose, Picture, Loading, Warning, ChatDotRound } from '@element-plus/icons-vue';
+import { facilityAPI, reservationAPI, facilityCategoryAPI } from '../../api';
 
 const facilityList = ref([]);
 const allFacilityList = ref([]); // 存储所有设施数据
@@ -241,6 +333,11 @@ const formRef = ref(null);
 const currentFacility = ref({});
 const userInfo = ref({});
 const loading = ref(true); // 加载状态
+const categories = ref([]); // 设施类别列表
+const selectedCategory = ref(''); // 选中的类别
+const selectedStatus = ref(''); // 选中的状态
+const sortBy = ref(''); // 排序方式
+const activeCollapse = ref([]); // 折叠面板状态
 
 // 分页相关
 const currentPage = ref(1);
@@ -323,6 +420,7 @@ onMounted(() => {
     userInfo.value = JSON.parse(info);
   }
   loadFacilityList();
+  loadCategories();
 });
 
 const loadFacilityList = async () => {
@@ -338,10 +436,11 @@ const loadFacilityList = async () => {
   }
 };
 
-// 过滤后的设施列表（搜索筛选）
+// 过滤后的设施列表（搜索+筛选）
 const filteredFacilityList = computed(() => {
   let filtered = allFacilityList.value;
 
+  // 搜索关键词过滤
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase().trim();
     filtered = filtered.filter(item => {
@@ -355,6 +454,37 @@ const filteredFacilityList = computed(() => {
     });
   }
 
+  // 类别过滤
+  if (selectedCategory.value) {
+    filtered = filtered.filter(item => 
+      item.category === selectedCategory.value
+    );
+  }
+
+  // 状态过滤
+  if (selectedStatus.value) {
+    filtered = filtered.filter(item => 
+      item.status === selectedStatus.value
+    );
+  }
+
+  // 排序
+  if (sortBy.value) {
+    filtered = [...filtered].sort((a, b) => {
+      switch (sortBy.value) {
+        case 'nameAsc':
+          return a.name.localeCompare(b.name, 'zh-CN');
+        case 'nameDesc':
+          return b.name.localeCompare(a.name, 'zh-CN');
+        case 'status':
+          const statusOrder = { 'AVAILABLE': 1, 'IN_USE': 2, 'MAINTENANCE': 3, 'DAMAGED': 4 };
+          return (statusOrder[a.status] || 5) - (statusOrder[b.status] || 5);
+        default:
+          return 0;
+      }
+    });
+  }
+
   return filtered;
 });
 
@@ -365,8 +495,68 @@ const paginatedFacilityList = computed(() => {
   return filteredFacilityList.value.slice(start, end);
 });
 
-// 处理搜索
+// 加载设施类别
+const loadCategories = async () => {
+  try {
+    const res = await facilityCategoryAPI.active();
+    categories.value = res.data;
+  } catch (error) {
+    console.error('加载设施类别失败:', error);
+  }
+};
+
+// 获取类别设施数量
+const getCategoryCount = (categoryName) => {
+  return allFacilityList.value.filter(item => item.category === categoryName).length;
+};
+
+// 处理搜索输入
 const handleSearchInput = () => {
+  currentPage.value = 1;
+  facilityList.value = filteredFacilityList.value;
+};
+
+// 处理搜索按钮点击
+const handleSearch = () => {
+  currentPage.value = 1;
+  facilityList.value = filteredFacilityList.value;
+};
+
+// 清除搜索
+const clearSearch = () => {
+  searchKeyword.value = '';
+  handleSearchInput();
+};
+
+// 处理搜索清除
+const handleSearchClear = () => {
+  clearSearch();
+};
+
+// 处理类别变化
+const handleCategoryChange = () => {
+  currentPage.value = 1;
+  facilityList.value = filteredFacilityList.value;
+};
+
+// 处理状态变化
+const handleStatusChange = () => {
+  currentPage.value = 1;
+  facilityList.value = filteredFacilityList.value;
+};
+
+// 处理排序变化
+const handleSortChange = () => {
+  currentPage.value = 1;
+  facilityList.value = filteredFacilityList.value;
+};
+
+// 清除所有筛选
+const clearAllFilters = () => {
+  searchKeyword.value = '';
+  selectedCategory.value = '';
+  selectedStatus.value = '';
+  sortBy.value = '';
   currentPage.value = 1;
   facilityList.value = filteredFacilityList.value;
 };
@@ -594,17 +784,73 @@ const handleCardClick = (item) => {
   opacity: 0.8;
 }
 
-/* 搜索区域 */
-.search-container {
+/* 快捷功能和搜索区域 */
+.quick-search-section {
   margin-bottom: 32px;
 }
 
-.search-input {
-  max-width: 400px;
-  width: 100%;
+.quick-actions {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e4e7ed;
+  margin-bottom: 24px;
 }
 
-.search-input :deep(.el-input__wrapper) {
+.section-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #3498db;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.quick-btn {
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* 搜索和筛选区域 */
+.search-filter-container {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e4e7ed;
+}
+
+.search-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.search-input.enhanced {
+  flex: 1;
+  max-width: none;
+}
+
+.search-input.enhanced :deep(.el-input__wrapper) {
   border-radius: 12px;
   border: 2px solid #e2e8f0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -614,14 +860,100 @@ const handleCardClick = (item) => {
   height: 48px;
 }
 
-.search-input :deep(.el-input__wrapper:hover) {
+.search-input.enhanced :deep(.el-input__wrapper:hover) {
   border-color: #cbd5e0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.search-input :deep(.el-input__wrapper.is-focus) {
+.search-input.enhanced :deep(.el-input__wrapper.is-focus) {
   border-color: #409eff;
   box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+}
+
+.search-btn {
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(64, 158, 255, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clear-icon {
+  cursor: pointer;
+  color: #a0aec0;
+  transition: color 0.3s ease;
+}
+
+.clear-icon:hover {
+  color: #e53e3e;
+}
+
+.filter-row {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a5568;
+  white-space: nowrap;
+}
+
+.category-select,
+.sort-select {
+  min-width: 160px;
+}
+
+.category-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.category-count {
+  color: #a0aec0;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.search-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.stats-text {
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.stats-text strong {
+  color: #2d3748;
+  font-weight: 700;
+}
+
+.clear-filters {
+  color: #e53e3e;
+  font-weight: 600;
+}
+
+.clear-filters:hover {
+  color: #c53030;
 }
 
 .search-icon {
@@ -1044,6 +1376,69 @@ const handleCardClick = (item) => {
     font-size: 24px;
   }
 
+  .quick-search-section {
+    margin-bottom: 24px;
+  }
+
+  .quick-actions {
+    padding: 20px;
+  }
+
+  .action-buttons {
+    justify-content: center;
+  }
+
+  .quick-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .search-filter-container {
+    padding: 20px;
+  }
+
+  .search-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .search-input.enhanced {
+    width: 100%;
+  }
+
+  .search-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filter-row {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .filter-label {
+    text-align: left;
+    width: 100%;
+  }
+
+  .category-select,
+  .sort-select {
+    width: 100%;
+  }
+
+  .search-stats {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
   .facility-grid {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -1084,6 +1479,10 @@ const handleCardClick = (item) => {
   .form-row {
     flex-direction: column;
     gap: 0;
+  }
+
+  .el-pagination {
+    justify-content: center;
   }
 }
 

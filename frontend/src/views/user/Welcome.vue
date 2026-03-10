@@ -14,44 +14,33 @@
       <div class="banner-decoration"></div>
     </div>
 
-    <!-- 心灵鸡汤卡片 -->
-    <div class="inspiration-cards">
-      <div class="card-grid">
-        <!-- 每日箴言 -->
-        <div class="inspiration-card daily-quote">
-          <div class="card-header">
-            <div class="card-icon quote-icon">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M3 12C3 13.1046 3.89543 14 5 14C6.10457 14 7 13.1046 7 12C7 10.8954 6.10457 10 5 10C3.89543 10 3 10.8954 3 12Z" stroke="currentColor" stroke-width="2"/>
-                <path d="M17 12C17 13.1046 17.8954 14 19 14C20.1046 14 21 13.1046 21 12C21 10.8954 20.1046 10 19 10C17.8954 10 17 10.8954 17 12Z" stroke="currentColor" stroke-width="2"/>
-                <path d="M5 12H7C7 12 10 12 12 14C14 16 17 16 17 16H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <h3 class="card-title">每日箴言</h3>
-          </div>
-          <div class="card-content">
-            <p class="quote-text">"成功的路上并不拥挤，因为坚持的人不多。每一个不曾起舞的日子，都是对生命的辜负。"</p>
-            <div class="quote-author">— 尼采</div>
-          </div>
-        </div>
 
-        <!-- 励志短句 -->
-        <div class="inspiration-card motivation">
-          <div class="card-header">
-            <div class="card-icon motivation-icon">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <h3 class="card-title">今日激励</h3>
+
+    <!-- 今日心情 -->
+    <div class="mood-weather">
+      <div class="mood-card">
+        <div class="mood-header">
+          <div class="mood-icon">
+            <svg viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+              <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
           </div>
-          <div class="card-content">
-            <ul class="motivation-list">
-              <li>相信自己，你比想象中更强大</li>
-              <li>每一个小进步都在成就更好的自己</li>
-              <li>保持热爱，奔赴下一场山海</li>
-            </ul>
+          <h3 class="mood-title">今日心情</h3>
+        </div>
+        <div class="mood-content">
+          <div class="weather-display">
+            <div class="weather-emoji">🌤️</div>
+            <div class="weather-desc">晴转多云</div>
           </div>
+          <p class="mood-message">愿你拥有如阳光般明媚的心情，温暖而充满力量。无论遇到什么，都要保持微笑和善良。</p>
         </div>
       </div>
     </div>
@@ -60,6 +49,40 @@
     <div class="quick-actions">
       <h3 class="section-title">快捷功能</h3>
       <div class="action-grid">
+        <!-- 设施浏览 -->
+        <div class="action-card" @click="$router.push('/user/facility')">
+          <div class="action-icon info">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="action-content">
+            <h4 class="action-title">设施浏览</h4>
+            <p class="action-desc">浏览和预约校园设施</p>
+          </div>
+          <div class="action-arrow">
+            <el-icon><ArrowRight /></el-icon>
+          </div>
+        </div>
+
+        <!-- 我的预约 -->
+        <div class="action-card" @click="$router.push('/user/my-reservation')">
+          <div class="action-icon success">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="action-content">
+            <h4 class="action-title">我的预约</h4>
+            <p class="action-desc">查看和管理您的设施预约记录</p>
+          </div>
+          <div class="action-arrow">
+            <el-icon><ArrowRight /></el-icon>
+          </div>
+        </div>
+
         <!-- 违规记录查看 -->
         <div class="action-card" @click="$router.push('/user/violation-records')">
           <div class="action-icon warning">
@@ -92,69 +115,6 @@
           <div class="action-arrow">
             <el-icon><ArrowRight /></el-icon>
           </div>
-        </div>
-
-        <!-- 我的预约 -->
-        <div class="action-card" @click="$router.push('/user/my-reservation')">
-          <div class="action-icon success">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="action-content">
-            <h4 class="action-title">我的预约</h4>
-            <p class="action-desc">查看和管理您的设施预约记录</p>
-          </div>
-          <div class="action-arrow">
-            <el-icon><ArrowRight /></el-icon>
-          </div>
-        </div>
-
-        <!-- 设施浏览 -->
-        <div class="action-card" @click="$router.push('/user/facility')">
-          <div class="action-icon info">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="action-content">
-            <h4 class="action-title">设施浏览</h4>
-            <p class="action-desc">浏览和预约校园设施</p>
-          </div>
-          <div class="action-arrow">
-            <el-icon><ArrowRight /></el-icon>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 今日心情 -->
-    <div class="mood-weather">
-      <div class="mood-card">
-        <div class="mood-header">
-          <div class="mood-icon">
-            <svg viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
-              <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <h3 class="mood-title">今日心情</h3>
-        </div>
-        <div class="mood-content">
-          <div class="weather-display">
-            <div class="weather-emoji">🌤️</div>
-            <div class="weather-desc">晴转多云</div>
-          </div>
-          <p class="mood-message">愿你拥有如阳光般明媚的心情，温暖而充满力量。无论遇到什么，都要保持微笑和善良。</p>
         </div>
       </div>
     </div>

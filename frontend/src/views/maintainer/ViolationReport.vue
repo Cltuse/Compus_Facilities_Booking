@@ -315,17 +315,24 @@ const submitViolation = async () => {
     
     submitting.value = true;
     
-    const violationData = {
-      ...violationForm,
-      reportedTime: new Date().toISOString()
+    // 将中文违规类型转换为数据库枚举值
+    const violationTypeMap = {
+      '破坏设施': 'DAMAGE',
+      '超时使用': 'OVERDUE',
+      '未按时归还': 'OTHER',
+      '违规操作': 'OTHER',
+      '其他违规': 'OTHER'
     };
+    
+    const mappedViolationType = violationTypeMap[violationForm.violationType] || 'OTHER';
     
     // 获取当前用户信息
     const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
     const violationDataWithReporter = {
       ...violationForm,
+      violationType: mappedViolationType,
       reportedBy: userInfo.id,
-      reportedTime: new Date().toISOString()
+      reportedTime: formatDateTimeForBackend(new Date())
     };
     
     await violationAPI.reportViolation(violationDataWithReporter);
@@ -424,6 +431,18 @@ const formatDateTime = (dateTime) => {
 const formatDate = (dateTime) => {
   if (!dateTime) return '';
   return new Date(dateTime).toLocaleDateString('zh-CN');
+};
+
+const formatDateTimeForBackend = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const seconds = String(d.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 </script>
 

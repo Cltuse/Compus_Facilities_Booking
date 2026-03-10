@@ -32,7 +32,27 @@ public class ViolationRecordService {
      */
     @Transactional
     public ViolationRecord recordViolation(ViolationRecord violationRecord) {
+        // 参数验证
+        if (violationRecord == null) {
+            throw new IllegalArgumentException("违规记录不能为空");
+        }
+        if (violationRecord.getUserId() == null) {
+            throw new IllegalArgumentException("用户ID不能为空");
+        }
+        
+        // 设置默认状态
         violationRecord.setStatus("PENDING");
+        
+        // 验证违规类型是否在允许范围内
+        String[] allowedTypes = {"NO_SHOW", "OVERDUE", "CANCEL_FREQ", "DAMAGE", "OTHER"};
+        if (violationRecord.getViolationType() != null && !java.util.Arrays.asList(allowedTypes).contains(violationRecord.getViolationType())) {
+            violationRecord.setViolationType("OTHER");
+        }
+        
+        // 设置默认处罚分
+        if (violationRecord.getPenaltyPoints() == null) {
+            violationRecord.setPenaltyPoints(0);
+        }
         
         // 保存违规记录
         ViolationRecord savedViolation = violationRecordRepository.save(violationRecord);

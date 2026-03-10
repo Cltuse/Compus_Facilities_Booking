@@ -26,9 +26,14 @@ public class ViolationRecordController {
     @PostMapping("/record")
     public Result recordViolation(@RequestBody ViolationRecord violationRecord) {
         try {
+            System.out.println("Received violation record request: " + violationRecord);
+            System.out.println("Reported time: " + violationRecord.getReportedTime());
+            
             ViolationRecord savedViolation = violationRecordService.recordViolation(violationRecord);
             return Result.success("违规记录成功", savedViolation);
         } catch (Exception e) {
+            System.err.println("Error recording violation: " + e.getMessage());
+            e.printStackTrace();
             return Result.error("违规记录失败: " + e.getMessage());
         }
     }

@@ -71,7 +71,6 @@
         </el-form>
       </div>
     </div>
-  </div>
     <!-- 我的反馈列表 -->
     <div class="content-card">
       <div class="card-header">
@@ -164,13 +163,23 @@
                 </div>
               </div>
               
-              <div class="admin-reply" v-if="feedback.adminReply">
+              <div class="admin-reply" v-if="feedback.reply && feedback.reply.trim() !== ''">
                 <div class="reply-header">
                   <el-icon><ChatDotRound /></el-icon>
                   <span class="reply-title">管理员回复</span>
                 </div>
                 <div class="reply-content">
-                  {{ feedback.adminReply }}
+                  {{ feedback.reply }}
+                </div>
+                <div class="feedback-meta" v-if="feedback.replyTime">
+                  <div class="meta-item">
+                    <el-icon><Calendar /></el-icon>
+                    <span>回复时间：{{ formatDateTime(feedback.replyTime) }}</span>
+                  </div>
+                  <div class="meta-item" v-if="feedback.replyByName">
+                    <el-icon><User /></el-icon>
+                    <span>回复人：{{ feedback.replyByName }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -191,7 +200,7 @@
         </div>
       </div>
     </div>
-
+  </div>
 </template>
 
 <script>
@@ -199,7 +208,7 @@ import { ref, onMounted, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { userClientAPI } from '@/api'
 import { formatDateTime } from '@/utils/date'
-import { Check, Refresh, Loading, ChatDotRound, Calendar, Clock, CircleCheck, CircleClose, Warning, QuestionFilled } from '@element-plus/icons-vue'
+import { Check, Refresh, Loading, ChatDotRound, Calendar, Clock, CircleCheck, CircleClose, Warning, QuestionFilled, User } from '@element-plus/icons-vue'
 
 export default {
   name: 'Feedback',
@@ -495,7 +504,7 @@ export default {
   border: 1px solid #e4e7ed;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   transition: all 0.3s ease;
 }
 

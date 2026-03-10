@@ -176,4 +176,23 @@ public class ViolationRecordController {
             return Result.error("获取所有违规记录失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 获取维护人员上报的违规记录
+     */
+    @GetMapping("/maintainer")
+    public Result getMaintainerViolations(@RequestParam(defaultValue = "0") int page,
+                                         @RequestParam(defaultValue = "10") int size,
+                                         @RequestParam(required = false) Long maintainerId,
+                                         @RequestParam(required = false) String userName,
+                                         @RequestParam(required = false) String violationType,
+                                         @RequestParam(required = false) String status) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
+            Page<ViolationRecord> violations = violationRecordService.getMaintainerViolations(pageable, maintainerId, userName, violationType, status);
+            return Result.success("获取维护人员违规记录成功", violations);
+        } catch (Exception e) {
+            return Result.error("获取维护人员违规记录失败: " + e.getMessage());
+        }
+    }
 }

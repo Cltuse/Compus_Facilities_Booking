@@ -154,6 +154,11 @@ const routes = [
                 component: () => import('../views/maintainer/Facility.vue')
             },
             {
+                path: 'violation-report',
+                name: 'MaintainerViolationReport',
+                component: () => import('../views/maintainer/ViolationReport.vue')
+            },
+            {
                 path: 'profile',
                 name: 'MaintainerProfile',
                 component: () => import('../views/maintainer/Profile.vue')

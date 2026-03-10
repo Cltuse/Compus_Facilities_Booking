@@ -69,4 +69,29 @@ public interface ViolationRecordRepository extends JpaRepository<ViolationRecord
     Page<ViolationRecord> findByFilters(@Param("userName") String userName, @Param("violationType") String violationType, @Param("status") String status, Pageable pageable);
     
     // 数据库中没有violation_time字段，使用reportedTime代替
+    
+    /**
+     * 根据上报人ID查询违规记录，按上报时间倒序排列
+     */
+    Page<ViolationRecord> findByReportedByOrderByReportedTimeDesc(Long reportedBy, Pageable pageable);
+    
+    /**
+     * 查询所有有上报人的违规记录（即维护人员上报的记录），按上报时间倒序排列
+     */
+    Page<ViolationRecord> findByReportedByIsNotNullOrderByReportedTimeDesc(Pageable pageable);
+    
+    /**
+     * 根据上报人ID和状态查询违规记录
+     */
+    Page<ViolationRecord> findByReportedByAndStatusOrderByReportedTimeDesc(Long reportedBy, String status, Pageable pageable);
+    
+    /**
+     * 根据上报人ID和违规类型查询违规记录
+     */
+    Page<ViolationRecord> findByReportedByAndViolationTypeOrderByReportedTimeDesc(Long reportedBy, String violationType, Pageable pageable);
+    
+    /**
+     * 根据上报人ID、违规类型和状态查询违规记录
+     */
+    Page<ViolationRecord> findByReportedByAndViolationTypeAndStatusOrderByReportedTimeDesc(Long reportedBy, String violationType, String status, Pageable pageable);
 }

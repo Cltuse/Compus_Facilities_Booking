@@ -248,4 +248,95 @@ public class ViolationRecordService {
                 .map(user -> user.getViolationCount() != null ? user.getViolationCount() : 0)
                 .orElse(0);
     }
+
+    /**
+     * 获取维护人员上报的违规记录
+     */
+    public Page<ViolationRecord> getMaintainerViolations(Pageable pageable, Long maintainerId, String userName, String violationType, String status) {
+        try {
+            // 如果指定了维护人员ID，则只获取该维护人员上报的记录
+            Page<ViolationRecord> violations;
+            if (maintainerId != null) {
+                violations = violationRecordRepository.findByReportedByOrderByReportedTimeDesc(maintainerId, pageable);
+            } else {
+                // 获取所有维护人员上报的记录（即reportedBy不为空的记录）
+                violations = violationRecordRepository.findByReportedByIsNotNullOrderByReportedTimeDesc(pageable);
+            }
+            
+            // 丰富违规记录信息
+            violations.forEach(violation -> {
+                try {
+                    // 设置用户名
+                    userRepository.findById(violation.getUserId()).ifPresent(user -> {
+                        if (user.getName() != null) {
+                            violation.setUserName(user.getName());
+                        } else {
+                            violation.setUserName("未知用户");
+                        }
+                    });
+                    
+                    // 设置上报人名称
+                    if (violation.getReportedBy() != null) {
+                        userRepository.findById(violation.getReportedBy()).ifPresent(user -> {
+                            if (user.getName() != null) {
+                                violation.setReporterName(user.getName());
+                            } else {
+                                violation.setReporterName("未知上报人");
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    // 记录日志但不中断流程
+                    System.err.println("Error enriching violation record " + violation.getId() + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+            
+            // 如果有过滤条件，在内存中进行过滤
+            if ((userName != null && !userName.trim().isEmpty()) || 
+                (violationType != null && !violationType.trim().isEmpty()) || 
+                (status != null && !status.trim().isEmpty())) {
+                
+                List<ViolationRecord> filteredList = violations.getContent().stream()
+                    .filter(violation -> {
+                        // 用户名过滤
+                        if (userName != null && !userName.trim().isEmpty()) {
+                            if (violation.getUserName() == null || 
+                                !violation.getUserName().toLowerCase().contains(userName.toLowerCase())) {
+                                return false;
+                            }
+                        }
+                        
+                        // 违规类型过滤
+                        if (violationType != null && !violationType.trim().isEmpty()) {
+                            if (!violationType.equals(violation.getViolationType())) {
+                                return false;
+                            }
+                        }
+                        
+                        // 状态过滤
+                        if (status != null && !status.trim().isEmpty()) {
+                            if (!status.equals(violation.getStatus())) {
+                                return false;
+                            }
+                        }
+                        
+                        return true;
+                    })
+                    .collect(Collectors.toList());
+                
+                // 创建新的Page对象
+                return new org.springframework.data.domain.PageImpl<>(
+                    filteredList, 
+                    pageable, 
+                    filteredList.size()
+                );
+            }
+            
+            return violations;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("获取维护人员违规记录失败: " + e.getMessage());
+        }
+    }
 }

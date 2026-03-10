@@ -32,6 +32,13 @@
             </template>
           </el-menu-item>
 
+          <el-menu-item index="/maintainer/violation-report" class="menu-item">
+            <el-icon class="menu-icon-item"><Warning /></el-icon>
+            <template #title>
+              <span class="menu-text">违规上报</span>
+            </template>
+          </el-menu-item>
+
           <el-menu-item index="/maintainer/profile" class="menu-item">
             <el-icon class="menu-icon-item"><Setting /></el-icon>
             <template #title>
@@ -58,7 +65,7 @@
 import { ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Header from '../components/Header.vue';
-import { DataAnalysis, Box, Tools, Setting } from '@element-plus/icons-vue';
+import { DataAnalysis, Box, Tools, Setting, Warning } from '@element-plus/icons-vue';
 
 const router = useRouter();
 const route = useRoute();

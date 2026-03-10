@@ -42,7 +42,7 @@
         <el-select v-model="filterStatus" placeholder="状态筛选" size="large" class="filter-select">
           <el-option label="全部" value="" />
           <el-option label="待处理" value="PENDING" />
-          <el-option label="已处理" value="RESOLVED" />
+          <el-option label="已处理" value="PROCESSED" />
           <el-option label="已关闭" value="CLOSED" />
         </el-select>
         <el-select v-model="filterType" placeholder="类型筛选" size="large" class="filter-select">
@@ -78,16 +78,16 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="username" label="提交用户" width="150">
+        <el-table-column prop="username" label="提交用户" width="220" align="left">
           <template #default="{ row }">
             <div class="user-info">
               <el-avatar :size="28" :src="row.userAvatar" />
-              <span class="username">{{ row.realName || row.username }}</span>
+              <span class="username">{{ row.userName || '未知用户' }}</span>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="type" label="反馈类型" width="100" align="center">
+        <el-table-column prop="type" label="反馈类型" width="140" align="center">
           <template #default="{ row }">
             <span class="type-badge" :class="getFeedbackTypeClass(row.type)">
               {{ getFeedbackTypeText(row.type) }}
@@ -95,9 +95,12 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="createTime" label="提交时间" width="160">
+        <el-table-column prop="created_at" label="提交时间" width="220" align="center">
           <template #default="{ row }">
-            <span class="create-time">{{ formatTime(row.createTime) || '-' }}</span>
+            <!--
+            <span class="create-time">{{ formatTime(row.created_at) || '-' }}</span>
+            -->
+            <span class="meta-value">{{ formatTime(currentFeedback.createdAt) }}</span>
           </template>
         </el-table-column>
 
@@ -108,13 +111,13 @@
               class="status-tag"
               effect="light"
             >
-              <el-icon><CircleCheck v-if="row.status === 'RESOLVED'" /><Clock v-else-if="row.status === 'PENDING'" /><Close v-else /></el-icon>
+              <el-icon><CircleCheck v-if="row.status === 'PROCESSED'" /><Clock v-else-if="row.status === 'PENDING'" /><Close v-else /></el-icon>
               {{ getStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -180,9 +183,8 @@
           <div class="info-user">
             <el-avatar :size="48" :src="currentFeedback.userAvatar" />
             <div class="user-details">
-              <div class="user-name">{{ currentFeedback.realName || currentFeedback.username }}</div>
-              <div class="user-role">{{ currentFeedback.userRole }}</div>
-            </div>
+              <div class="user-name">{{ currentFeedback.userName || '未知用户' }}</div>
+              </div>
           </div>
           
           <div class="info-meta">
@@ -192,12 +194,12 @@
             </div>
             <div class="meta-item">
               <span class="meta-label">提交时间：</span>
-              <span class="meta-value">{{ formatTime(currentFeedback.createTime) }}</span>
+              <span class="meta-value">{{ formatTime(currentFeedback.createdAt) }}</span>
             </div>
             <div class="meta-item">
               <span class="meta-label">状态：</span>
               <span class="meta-value">
-                <el-tag :type="currentFeedback.status === 'PENDING' ? 'warning' : currentFeedback.status === 'RESOLVED' ? 'success' : 'info'">
+                <el-tag :type="currentFeedback.status === 'PENDING' ? 'warning' : currentFeedback.status === 'PROCESSED' ? 'success' : 'info'">
                   {{ getStatusText(currentFeedback.status) }}
                 </el-tag>
               </span>
@@ -292,8 +294,7 @@ const filteredFeedbackList = computed(() => {
     result = result.filter(feedback =>
       feedback.title.toLowerCase().includes(keyword) ||
       feedback.content.toLowerCase().includes(keyword) ||
-      (feedback.username && feedback.username.toLowerCase().includes(keyword)) ||
-      (feedback.realName && feedback.realName.toLowerCase().includes(keyword))
+      (feedback.userName && feedback.userName.toLowerCase().includes(keyword))
     );
   }
   
@@ -347,20 +348,20 @@ const getFeedbackTypeText = (type) => {
 const getStatusText = (status) => {
   const statusMap = {
     'PENDING': '待处理',
-    'RESOLVED': '已解决',
+    'PROCESSED': '已处理',
     'CLOSED': '已关闭'
   };
-  return statusMap[status] || '未知';
+  return statusMap[status] || '待处理';
 };
 
 // 获取状态类型
 const getStatusType = (status) => {
   const map = {
-    'RESOLVED': 'success',
+    'PROCESSED': 'success',
     'PENDING': 'warning',
     'CLOSED': 'info'
   };
-  return map[status] || '';
+  return map[status] || 'info';
 };
 
 // 获取内容预览

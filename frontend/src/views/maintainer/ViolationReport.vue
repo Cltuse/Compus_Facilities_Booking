@@ -320,7 +320,15 @@ const submitViolation = async () => {
       reportedTime: new Date().toISOString()
     };
     
-    await violationAPI.reportViolation(violationData);
+    // 获取当前用户信息
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+    const violationDataWithReporter = {
+      ...violationForm,
+      reportedBy: userInfo.id,
+      reportedTime: new Date().toISOString()
+    };
+    
+    await violationAPI.reportViolation(violationDataWithReporter);
     
     ElMessage.success('违规记录上报成功');
     resetForm();
@@ -346,9 +354,13 @@ const resetForm = () => {
 const loadViolationRecords = async () => {
   try {
     loading.value = true;
+    // 获取当前用户信息
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+    
     const response = await violationAPI.getMaintainerViolations({
       page: currentPage.value - 1,
-      size: pageSize.value
+      size: pageSize.value,
+      maintainerId: userInfo.id
     });
     
     if (response.data) {

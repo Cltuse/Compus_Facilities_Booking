@@ -42,6 +42,7 @@ public class UserController {
             data.put("role", foundUser.getRole());
             data.put("phone", foundUser.getPhone());
             data.put("email", foundUser.getEmail());
+            data.put("avatar", foundUser.getAvatar());
             return Result.success("登录成功", data);
         } else {
             return Result.error("用户名或密码错误");
@@ -87,6 +88,7 @@ public class UserController {
         data.put("role", savedUser.getRole());
         data.put("phone", savedUser.getPhone());
         data.put("email", savedUser.getEmail());
+        data.put("avatar", savedUser.getAvatar());
 
         return Result.success("注册成功", data);
     }
@@ -167,6 +169,7 @@ public class UserController {
         existingUser.setEmail(user.getEmail());
         existingUser.setRole(user.getRole());
         existingUser.setStatus(user.getStatus());
+        existingUser.setAvatar(user.getAvatar());
 
         // 只有密码不为null且不为空字符串时才更新密码
         if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {

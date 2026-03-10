@@ -36,6 +36,9 @@ public class User {
     @Column(length = 100)
     private String email;
 
+    @Column(length = 500)
+    private String avatar;
+
     @Column(length = 20)
     private String status = "ACTIVE"; // ACTIVE, INACTIVE
 

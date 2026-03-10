@@ -55,6 +55,9 @@ public class Feedback {
     private String userRole;
 
     @Transient
+    private String userAvatar;
+
+    @Transient
     private String replyByName;
 
     @PrePersist

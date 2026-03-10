@@ -323,8 +323,8 @@ const handleProfileSubmit = async () => {
     // 更新个人信息
     const updatedUser = { ...userInfo.value, ...profileForm.value };
 
-    // 这里应该调用API更新用户信息
-    // await userAPI.update(userInfo.value.id, updatedUser);
+    // 调用API更新用户信息
+    await userAPI.update(userInfo.value.id, updatedUser);
 
     // 更新本地存储
     localStorage.setItem('userInfo', JSON.stringify(updatedUser));

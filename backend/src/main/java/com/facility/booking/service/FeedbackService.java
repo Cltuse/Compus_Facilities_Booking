@@ -37,10 +37,12 @@ public class FeedbackService {
      */
     public Page<Feedback> getUserFeedbacks(Long userId, Pageable pageable) {
         Page<Feedback> feedbacks = feedbackRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-        // 设置用户名
+        // 设置用户名和头像
         feedbacks.forEach(feedback -> {
-            userRepository.findById(feedback.getUserId()).ifPresent(user -> 
-                feedback.setUserName(user.getName()));
+            userRepository.findById(feedback.getUserId()).ifPresent(user -> {
+                feedback.setUserName(user.getName());
+                feedback.setUserAvatar(user.getAvatar());
+            });
             if (feedback.getReplyBy() != null) {
                 userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
                     feedback.setReplyByName(user.getName()));
@@ -56,8 +58,10 @@ public class FeedbackService {
         Optional<Feedback> feedbackOpt = feedbackRepository.findById(id);
         if (feedbackOpt.isPresent()) {
             Feedback feedback = feedbackOpt.get();
-            userRepository.findById(feedback.getUserId()).ifPresent(user -> 
-                feedback.setUserName(user.getName()));
+            userRepository.findById(feedback.getUserId()).ifPresent(user -> {
+                feedback.setUserName(user.getName());
+                feedback.setUserAvatar(user.getAvatar());
+            });
             if (feedback.getReplyBy() != null) {
                 userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
                     feedback.setReplyByName(user.getName()));
@@ -96,10 +100,12 @@ public class FeedbackService {
      */
     public Page<Feedback> searchUserFeedbacks(Long userId, String keyword, Pageable pageable) {
         Page<Feedback> feedbacks = feedbackRepository.findByUserIdAndKeyword(userId, keyword, pageable);
-        // 设置用户名
+        // 设置用户名和头像
         feedbacks.forEach(feedback -> {
-            userRepository.findById(feedback.getUserId()).ifPresent(user -> 
-                feedback.setUserName(user.getName()));
+            userRepository.findById(feedback.getUserId()).ifPresent(user -> {
+                feedback.setUserName(user.getName());
+                feedback.setUserAvatar(user.getAvatar());
+            });
             if (feedback.getReplyBy() != null) {
                 userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
                     feedback.setReplyByName(user.getName()));
@@ -116,11 +122,12 @@ public class FeedbackService {
         try {
             Page<Feedback> feedbacks = feedbackRepository.findAllByOrderByCreatedAtDesc(pageable);
             System.out.println("Found " + feedbacks.getTotalElements() + " feedbacks");
-            // 设置用户名
+            // 设置用户名和头像
             feedbacks.forEach(feedback -> {
                 userRepository.findById(feedback.getUserId()).ifPresent(user -> {
                     feedback.setUserName(user.getName());
                     feedback.setUserRole(user.getRole());
+                    feedback.setUserAvatar(user.getAvatar());
                 });
                 if (feedback.getReplyBy() != null) {
                     userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
@@ -141,11 +148,12 @@ public class FeedbackService {
     public Page<Feedback> getFeedbacksByStatus(String status, Pageable pageable) {
         // 使用JPA的命名查询方法
         Page<Feedback> feedbacks = feedbackRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
-        // 设置用户名
+        // 设置用户名和头像
         feedbacks.forEach(feedback -> {
             userRepository.findById(feedback.getUserId()).ifPresent(user -> {
                 feedback.setUserName(user.getName());
                 feedback.setUserRole(user.getRole());
+                feedback.setUserAvatar(user.getAvatar());
             });
             if (feedback.getReplyBy() != null) {
                 userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
@@ -161,11 +169,12 @@ public class FeedbackService {
     public Page<Feedback> getFeedbacksByType(String type, Pageable pageable) {
         // 使用JPA的命名查询方法
         Page<Feedback> feedbacks = feedbackRepository.findByTypeOrderByCreatedAtDesc(type, pageable);
-        // 设置用户名
+        // 设置用户名和头像
         feedbacks.forEach(feedback -> {
             userRepository.findById(feedback.getUserId()).ifPresent(user -> {
                 feedback.setUserName(user.getName());
                 feedback.setUserRole(user.getRole());
+                feedback.setUserAvatar(user.getAvatar());
             });
             if (feedback.getReplyBy() != null) {
                 userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
@@ -180,11 +189,12 @@ public class FeedbackService {
      */
     public Page<Feedback> getFeedbacksByStatusAndType(String status, String type, Pageable pageable) {
         Page<Feedback> feedbacks = feedbackRepository.findByStatusAndTypeOrderByCreatedAtDesc(status, type, pageable);
-        // 设置用户名
+        // 设置用户名和头像
         feedbacks.forEach(feedback -> {
             userRepository.findById(feedback.getUserId()).ifPresent(user -> {
                 feedback.setUserName(user.getName());
                 feedback.setUserRole(user.getRole());
+                feedback.setUserAvatar(user.getAvatar());
             });
             if (feedback.getReplyBy() != null) {
                 userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
@@ -199,11 +209,12 @@ public class FeedbackService {
      */
     public Page<Feedback> searchFeedbacks(String keyword, Pageable pageable) {
         Page<Feedback> feedbacks = feedbackRepository.findByKeywordOrderByCreatedAtDesc(keyword, pageable);
-        // 设置用户名
+        // 设置用户名和头像
         feedbacks.forEach(feedback -> {
             userRepository.findById(feedback.getUserId()).ifPresent(user -> {
                 feedback.setUserName(user.getName());
                 feedback.setUserRole(user.getRole());
+                feedback.setUserAvatar(user.getAvatar());
             });
             if (feedback.getReplyBy() != null) {
                 userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
@@ -218,11 +229,12 @@ public class FeedbackService {
      */
     public Page<Feedback> searchFeedbacksByStatusAndKeyword(String status, String keyword, Pageable pageable) {
         Page<Feedback> feedbacks = feedbackRepository.findByStatusAndKeywordOrderByCreatedAtDesc(status, keyword, pageable);
-        // 设置用户名
+        // 设置用户名和头像
         feedbacks.forEach(feedback -> {
             userRepository.findById(feedback.getUserId()).ifPresent(user -> {
                 feedback.setUserName(user.getName());
                 feedback.setUserRole(user.getRole());
+                feedback.setUserAvatar(user.getAvatar());
             });
             if (feedback.getReplyBy() != null) {
                 userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
@@ -237,11 +249,12 @@ public class FeedbackService {
      */
     public Page<Feedback> searchFeedbacksByTypeAndKeyword(String type, String keyword, Pageable pageable) {
         Page<Feedback> feedbacks = feedbackRepository.findByTypeAndKeywordOrderByCreatedAtDesc(type, keyword, pageable);
-        // 设置用户名
+        // 设置用户名和头像
         feedbacks.forEach(feedback -> {
             userRepository.findById(feedback.getUserId()).ifPresent(user -> {
                 feedback.setUserName(user.getName());
                 feedback.setUserRole(user.getRole());
+                feedback.setUserAvatar(user.getAvatar());
             });
             if (feedback.getReplyBy() != null) {
                 userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 
@@ -256,11 +269,12 @@ public class FeedbackService {
      */
     public Page<Feedback> searchFeedbacksByStatusAndTypeAndKeyword(String status, String type, String keyword, Pageable pageable) {
         Page<Feedback> feedbacks = feedbackRepository.findByStatusAndTypeAndKeywordOrderByCreatedAtDesc(status, type, keyword, pageable);
-        // 设置用户名
+        // 设置用户名和头像
         feedbacks.forEach(feedback -> {
             userRepository.findById(feedback.getUserId()).ifPresent(user -> {
                 feedback.setUserName(user.getName());
                 feedback.setUserRole(user.getRole());
+                feedback.setUserAvatar(user.getAvatar());
             });
             if (feedback.getReplyBy() != null) {
                 userRepository.findById(feedback.getReplyBy()).ifPresent(user -> 

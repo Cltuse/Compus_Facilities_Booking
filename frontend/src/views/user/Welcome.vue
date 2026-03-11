@@ -37,10 +37,16 @@
         </div>
         <div class="mood-content">
           <div class="weather-display">
-            <div class="weather-emoji">🌤️</div>
-            <div class="weather-desc">晴转多云</div>
+            <div class="weather-emoji">{{ weatherInfo.weatherIcon }}</div>
+            <div class="weather-desc">{{ weatherInfo.weatherType }} {{ weatherInfo.temperature }}</div>
+            <div class="weather-city">{{ weatherInfo.city }}</div>
+            <div class="weather-time">{{ weatherInfo.updateTime }}</div>
           </div>
-          <p class="mood-message">愿你拥有如阳光般明媚的心情，温暖而充满力量。无论遇到什么，都要保持微笑和善良。</p>
+          <p class="mood-message">{{ weatherInfo.moodQuote }}</p>
+          <div class="refresh-btn" @click="fetchWeather" :disabled="loading">
+            <el-icon v-if="loading"><Loading /></el-icon>
+            <span>{{ loading ? '更新中...' : '刷新天气' }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -124,10 +130,45 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowRight } from '@element-plus/icons-vue';
+import { ArrowRight, Loading } from '@element-plus/icons-vue';
+import { weatherAPI } from '../../api/weather';
+
+const weatherInfo = ref({
+  weatherType: '晴',
+  temperature: '25℃',
+  weatherIcon: '☀️',
+  moodQuote: '愿你拥有如阳光般明媚的心情，温暖而充满力量。无论遇到什么，都要保持微笑和善良。',
+  city: '北京',
+  updateTime: ''
+});
+
+const loading = ref(false);
+
+const fetchWeather = async () => {
+  try {
+    loading.value = true;
+    const response = await weatherAPI.getWeather('北京');
+    if (response.data && response.data.data) {
+      weatherInfo.value = response.data.data;
+    }
+  } catch (error) {
+    console.error('获取天气信息失败:', error);
+    // 如果获取失败，使用默认的晴天信息
+    weatherInfo.value = {
+      weatherType: '晴',
+      temperature: '25℃',
+      weatherIcon: '☀️',
+      moodQuote: '网络连接失败，但愿你依然拥有阳光般的心情！',
+      city: '北京',
+      updateTime: new Date().toLocaleString()
+    };
+  } finally {
+    loading.value = false;
+  }
+};
 
 onMounted(() => {
-  
+  fetchWeather();
 });
 </script>
 
@@ -306,9 +347,154 @@ onMounted(() => {
   color: #3498db;
 }
 
-/* 心灵鸡汤卡片 */
-.inspiration-cards {
-  margin-bottom: 24px;
+/* 心情天气 */
+.mood-weather {
+  margin-bottom: 0;
+}
+
+.mood-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e4e7ed;
+  transition: all 0.3s ease;
+}
+
+.mood-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(64, 158, 255, 0.12);
+  border-color: #bae7ff;
+}
+
+.mood-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.mood-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+}
+
+.mood-icon svg {
+  width: 24px;
+  height: 24px;
+  color: #409eff;
+}
+
+.mood-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+}
+
+.mood-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.weather-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.weather-emoji {
+  font-size: 48px;
+}
+
+.weather-desc {
+  font-size: 14px;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.weather-city {
+  font-size: 12px;
+  color: #718096;
+  margin-top: 4px;
+}
+
+.weather-time {
+  font-size: 10px;
+  color: #a0aec0;
+  margin-top: 2px;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 12px;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #edf2f7;
+  border-color: #cbd5e0;
+}
+
+.refresh-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.mood-message {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #2d3748;
+  margin: 0;
+  flex: 1;
+}
+
+/* 动画效果 */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .welcome-page {
+    padding: 16px;
+  }
+
+  .welcome-banner {
+    padding: 20px;
+  }
+
+  .welcome-title {
+    font-size: 24px;
+  }
+
+  .welcome-subtitle {
+    font-size: 14px;
+  }
 }
 
 .card-grid {

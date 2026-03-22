@@ -136,14 +136,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="reportedTime" label="上报时间" width="180">
-          <template #default="{ row }">
-            <div class="time-info">
-              <el-icon><Calendar /></el-icon>
-              <span>{{ formatDateTime(row.reportedTime) }}</span>
-            </div>
-          </template>
-        </el-table-column>
+
 
         <el-table-column prop="reportedTime" label="上报时间" width="210">
           <template #default="{ row }">

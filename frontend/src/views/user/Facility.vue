@@ -328,9 +328,12 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Search, Calendar, Check, CircleCheck, Timer, Tools, CircleClose, Picture, Loading, Warning, ChatDotRound, InfoFilled } from '@element-plus/icons-vue';
 import { facilityAPI, reservationAPI, facilityCategoryAPI } from '../../api';
+
+const router = useRouter();
 
 const facilityList = ref([]);
 const allFacilityList = ref([]); // 存储所有设施数据

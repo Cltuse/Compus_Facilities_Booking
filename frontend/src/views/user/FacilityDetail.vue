@@ -310,33 +310,6 @@ const form = ref({
   purpose: ''
 });
 
-const rules = {
-  startTime: [
-    { required: true, message: '请选择开始时间', trigger: 'change' },
-    { validator: validateStartTime, trigger: 'change' }
-  ],
-  endTime: [
-    { required: true, message: '请选择结束时间', trigger: 'change' },
-    { validator: validateEndTime, trigger: 'change' }
-  ],
-  purpose: [{ required: true, message: '请输入使用目的', trigger: 'blur' }]
-};
-
-const disabledStartDate = (time) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return time.getTime() < today.getTime();
-};
-
-const disabledEndDate = (time) => {
-  if (!form.value.startTime) {
-    return false;
-  }
-  const startDate = new Date(form.value.startTime);
-  startDate.setHours(0, 0, 0, 0);
-  return time.getTime() < startDate.getTime();
-};
-
 function validateStartTime(rule, value, callback) {
   if (!value) {
     callback(new Error('请选择开始时间'));
@@ -365,6 +338,33 @@ function validateEndTime(rule, value, callback) {
   }
   callback();
 }
+
+const rules = {
+  startTime: [
+    { required: true, message: '请选择开始时间', trigger: 'change' },
+    { validator: validateStartTime, trigger: 'change' }
+  ],
+  endTime: [
+    { required: true, message: '请选择结束时间', trigger: 'change' },
+    { validator: validateEndTime, trigger: 'change' }
+  ],
+  purpose: [{ required: true, message: '请输入使用目的', trigger: 'blur' }]
+};
+
+const disabledStartDate = (time) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return time.getTime() < today.getTime();
+};
+
+const disabledEndDate = (time) => {
+  if (!form.value.startTime) {
+    return false;
+  }
+  const startDate = new Date(form.value.startTime);
+  startDate.setHours(0, 0, 0, 0);
+  return time.getTime() < startDate.getTime();
+};
 
 onMounted(() => {
   const info = localStorage.getItem('userInfo');
@@ -404,7 +404,7 @@ const timelineDays = computed(() => {
 
     const dateStr = `${date.getMonth() + 1}-${date.getDate()}`;
     const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-    const weekDay = weekDays[date.getDate() % 7 === 0 ? 0 : (date.getDate() % 7)];
+    const weekDay = weekDays[date.getDay()];
 
     const slots = hours.map(hour => {
       const slotStart = new Date(date);

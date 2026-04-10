@@ -116,9 +116,9 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="createdAt" label="创建时间" width="160">
+        <el-table-column prop="createdAt" label="更新时间" width="160">
           <template #default="scope">
-            {{ formatDateTime(scope.row.createdAt) }}
+            {{ formatDateTime(scope.row.updatedAt) }}
           </template>
         </el-table-column>
 
@@ -140,7 +140,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="800px"
+      width="1200px"
       :close-on-click-modal="false"
       class="rule-dialog">
       <el-form :model="ruleForm" :rules="rules" ref="ruleFormRef" label-width="140px">

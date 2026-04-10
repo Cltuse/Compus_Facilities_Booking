@@ -26,10 +26,13 @@ public class Notice {
     private String publisherName;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
-  private LocalDateTime publishTime;
+    private LocalDateTime publishTime;
 
     @Column(length = 20)
-    private String status = "PUBLISHED"; // DRAFT, PUBLISHED
+    private String status = "PUBLISHED"; // DRAFT, PUBLISHED, SCHEDULED
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
+    private LocalDateTime scheduledTime; // 定时发布时间
 
     @Column(updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")

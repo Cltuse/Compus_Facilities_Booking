@@ -4,6 +4,9 @@ import com.facility.booking.common.Result;
 import com.facility.booking.entity.User;
 import com.facility.booking.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -94,21 +97,19 @@ public class UserController {
     }
 
     /**
-     * 获取所有用户列表
+     * 获取所有用户列表（分页）
      * @return 用户列表，密码已隐藏
      */
     @GetMapping("/list")
-    public Result<List<User>> list() {
+    public Result<Page<User>> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         try {
-            System.out.println("Getting all users list");
-            List<User> users = userRepository.findAll();
-            if (users != null) {
-                users.forEach(user -> user.setPassword("******")); // 隐藏密码
-                System.out.println("Successfully retrieved " + users.size() + " users");
-            } else {
-                System.out.println("No users found or null result");
-                users = new ArrayList<>();
-            }
+            System.out.println("Getting users list with pagination: page=" + page + ", size=" + size);
+            PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+            Page<User> users = userRepository.findAll(pageRequest);
+            users.forEach(user -> user.setPassword("******"));
+            System.out.println("Successfully retrieved " + users.getNumberOfElements() + " users, total: " + users.getTotalElements());
             return Result.success(users);
         } catch (Exception e) {
             System.err.println("Error getting user list: " + e.getMessage());

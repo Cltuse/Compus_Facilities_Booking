@@ -120,6 +120,20 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-container" v-if="total > 0">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.size"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          class="custom-pagination"
+        />
+      </div>
     </div>
 
     <!-- 添加/编辑对话框 -->
@@ -140,8 +154,20 @@
         <el-form-item label="状态" prop="status">
           <el-select v-model="form.status" style="width: 100%;" placeholder="请选择状态">
             <el-option label="草稿" value="DRAFT" />
-            <el-option label="发布" value="PUBLISHED" />
+            <el-option label="定时发布" value="SCHEDULED" />
+            <el-option label="已发布" value="PUBLISHED" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="定时发布时间" prop="scheduledTime" v-if="form.status === 'SCHEDULED'">
+          <el-date-picker
+            v-model="form.scheduledTime"
+            type="datetime"
+            placeholder="选择定时发布时间"
+            format="YYYY-MM-DD HH:mm:ss"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+            style="width: 100%;"
+            :disabled-date="disabledDate"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -168,6 +194,12 @@ const dialogTitle = ref('发布通知');
 const formRef = ref(null);
 const isEdit = ref(false);
 const userInfo = ref({});
+const total = ref(0);
+
+const pagination = reactive({
+  page: 1,
+  size: 10
+});
 
 const form = ref({
   id: null,
@@ -175,7 +207,8 @@ const form = ref({
   content: '',
   publisherId: null,
   publisherName: '',
-  status: 'PUBLISHED'
+  status: 'PUBLISHED',
+  scheduledTime: null
 });
 
 const rules = {
@@ -219,8 +252,12 @@ onMounted(() => {
 const loadNoticeList = async () => {
   try {
     loading.value = true;
-    const res = await noticeAPI.list();
-    noticeList.value = res.data || [];
+    const res = await noticeAPI.list({
+      page: pagination.page - 1,
+      size: pagination.size
+    });
+    noticeList.value = res.data?.content || res.data || [];
+    total.value = res.data?.totalElements || res.data?.length || 0;
   } catch (error) {
     console.error('加载通知列表失败:', error);
     ElMessage.error('网络错误，请重试');
@@ -237,7 +274,23 @@ const handleSearch = async () => {
   }
 };
 
-// 清除搜索
+// 分页大小变化
+const handleSizeChange = (size) => {
+  pagination.size = size;
+  pagination.page = 1;
+  loadNoticeList();
+};
+
+// 页码变化
+const handleCurrentChange = (page) => {
+  pagination.page = page;
+  loadNoticeList();
+};
+
+// 禁用过去的日期
+const disabledDate = (time) => {
+  return time.getTime() < Date.now() - 8.64e7;
+};
 const handleClearSearch = () => {
   searchKeyword.value = '';
   isSearchMode.value = false;
@@ -307,7 +360,8 @@ const handleDelete = (row) => {
 const getStatusType = (status) => {
   const map = {
     'PUBLISHED': 'success',
-    'DRAFT': 'warning'
+    'DRAFT': 'warning',
+    'SCHEDULED': 'info'
   };
   return map[status] || '';
 };
@@ -315,7 +369,8 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   const map = {
     'PUBLISHED': '已发布',
-    'DRAFT': '草稿'
+    'DRAFT': '草稿',
+    'SCHEDULED': '待发布'
   };
   return map[status] || status;
 };
@@ -701,5 +756,53 @@ const formatTime = (time) => {
   .action-btn {
     width: 100%;
   }
+}
+
+/* 分页容器 */
+.pagination-container {
+  padding: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.custom-pagination :deep(.el-pagination) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-pagination :deep(.el-pagination__total) {
+  color: #4a5568;
+  font-weight: 500;
+  margin-right: 16px;
+}
+
+.custom-pagination :deep(.el-pager) {
+  display: flex;
+  gap: 4px;
+}
+
+.custom-pagination :deep(.el-pager li) {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.custom-pagination :deep(.el-pager li.is-active) {
+  background: linear-gradient(135deg, #409eff 0%, #1976d2 100%);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.custom-pagination :deep(.el-select) {
+  margin: 0 8px;
+}
+
+.custom-pagination :deep(.el-input__wrapper) {
+  border-radius: 6px;
+  border-color: #e2e8f0;
+}
+
+.custom-pagination :deep(.el-input__inner) {
+  font-size: 13px;
 }
 </style>

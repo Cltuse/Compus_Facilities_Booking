@@ -4,7 +4,7 @@ import request from '../utils/request';
 export const userAPI = {
     login: (data) => request.post('/user/login', data),
     register: (data) => request.post('/user/register', data),
-    list: () => request.get('/user/list'),
+    list: (params) => request.get('/user/list', { params }),
     getById: (id) => request.get(`/user/${id}`),
     create: (data) => request.post('/user', data),
     update: (id, data) => request.put(`/user/${id}`, data),
@@ -131,7 +131,7 @@ export const maintenanceAPI = {
 
 // 通知相关API
 export const noticeAPI = {
-    list: () => request.get('/notice/list'),
+    list: (params) => request.get('/notice/list', { params }),
     published: () => request.get('/notice/published'),
     getById: (id) => request.get(`/notice/${id}`),
     create: (data) => request.post('/notice', data),

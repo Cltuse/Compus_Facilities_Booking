@@ -4,8 +4,12 @@ import com.facility.booking.common.Result;
 import com.facility.booking.entity.Notice;
 import com.facility.booking.repository.NoticeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,14 +26,15 @@ public class NoticeController {
 
 
     /**
-     * 获取所有通知公告
+     * 获取所有通知公告（分页）
      * @return 通知公告列表
      */
     @GetMapping("/list")
-    public Result<List<Notice>> list() {
-        List<Notice> notices = noticeRepository.findAll();
-        // 按发布时间倒序排列
-        notices.sort((a, b) -> b.getPublishTime().compareTo(a.getPublishTime()));
+    public Result<Page<Notice>> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishTime"));
+        Page<Notice> notices = noticeRepository.findAll(pageRequest);
         return Result.success(notices);
     }
 
@@ -68,6 +73,12 @@ public class NoticeController {
      */
     @PostMapping
     public Result<Notice> create(@RequestBody Notice notice) {
+        // 处理定时发布
+        if ("SCHEDULED".equals(notice.getStatus()) && notice.getScheduledTime() != null) {
+            notice.setPublishTime(notice.getScheduledTime());
+        } else if ("PUBLISHED".equals(notice.getStatus())) {
+            notice.setPublishTime(LocalDateTime.now());
+        }
         Notice savedNotice = noticeRepository.save(notice);
         return Result.success("创建成功", savedNotice);
     }
@@ -84,6 +95,12 @@ public class NoticeController {
             return Result.error("通知不存在");
         }
         notice.setId(id);
+        // 处理定时发布
+        if ("SCHEDULED".equals(notice.getStatus()) && notice.getScheduledTime() != null) {
+            notice.setPublishTime(notice.getScheduledTime());
+        } else if ("PUBLISHED".equals(notice.getStatus())) {
+            notice.setPublishTime(LocalDateTime.now());
+        }
         Notice savedNotice = noticeRepository.save(notice);
         return Result.success("更新成功", savedNotice);
     }
@@ -100,5 +117,15 @@ public class NoticeController {
         }
         noticeRepository.deleteById(id);
         return Result.success("删除成功", null);
+    }
+
+    /**
+     * 定时发布任务 - 检查并发布已到时的定时通知
+     * @return 发布结果
+     */
+    @PostMapping("/publish-scheduled")
+    public Result<Integer> publishScheduled() {
+        int count = noticeRepository.publishScheduledNotices(LocalDateTime.now());
+        return Result.success("发布" + count + "条定时通知", count);
     }
 }

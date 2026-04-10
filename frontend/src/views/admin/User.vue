@@ -97,20 +97,34 @@
                 编辑
               </el-button>
               <el-button
-                size="small"
-                type="danger"
-                :plain="true"
-                class="action-btn delete-btn"
-                @click.stop="handleDelete(row)"
-              >
-                <el-icon><Delete /></el-icon>
-                删除
-              </el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
-    </div>
+                  size="small"
+                  type="danger"
+                  :plain="true"
+                  class="action-btn delete-btn"
+                  @click.stop="handleDelete(row)"
+                >
+                  <el-icon><Delete /></el-icon>
+                  删除
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- 分页 -->
+        <div class="pagination-container" v-if="total > 0">
+          <el-pagination
+            v-model:current-page="pagination.page"
+            v-model:page-size="pagination.size"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            class="custom-pagination"
+          />
+        </div>
+      </div>
 
     <!-- 编辑对话框 -->
     <el-dialog
@@ -197,7 +211,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { userAPI } from '../../api';
 import { getRoleDisplayName, getRoleOptions } from '../../utils/roleMapping';
@@ -209,6 +223,12 @@ const dialogTitle = ref('添加用户');
 const formRef = ref(null);
 const isEdit = ref(false);
 const roleOptions = ref(getRoleOptions());
+const total = ref(0);
+
+const pagination = reactive({
+  page: 1,
+  size: 10
+});
 
 const form = ref({
   id: null,
@@ -237,11 +257,26 @@ onMounted(() => {
 
 const loadUserList = async () => {
   try {
-    const res = await userAPI.list();
-    userList.value = res.data;
+    const res = await userAPI.list({
+      page: pagination.page - 1,
+      size: pagination.size
+    });
+    userList.value = res.data?.content || res.data || [];
+    total.value = res.data?.totalElements || res.data?.length || 0;
   } catch (error) {
     console.error('加载用户列表失败:', error);
   }
+};
+
+const handleSizeChange = (size) => {
+  pagination.size = size;
+  pagination.page = 1;
+  loadUserList();
+};
+
+const handleCurrentChange = (page) => {
+  pagination.page = page;
+  loadUserList();
 };
 
 const handleAdd = () => {
@@ -886,5 +921,53 @@ const handleRowClick = (row) => {
     flex-direction: column;
     gap: 0;
   }
+}
+
+/* 分页容器 */
+.pagination-container {
+  padding: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.custom-pagination :deep(.el-pagination) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-pagination :deep(.el-pagination__total) {
+  color: #4a5568;
+  font-weight: 500;
+  margin-right: 16px;
+}
+
+.custom-pagination :deep(.el-pager) {
+  display: flex;
+  gap: 4px;
+}
+
+.custom-pagination :deep(.el-pager li) {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.custom-pagination :deep(.el-pager li.is-active) {
+  background: linear-gradient(135deg, #409eff 0%, #1976d2 100%);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.custom-pagination :deep(.el-select) {
+  margin: 0 8px;
+}
+
+.custom-pagination :deep(.el-input__wrapper) {
+  border-radius: 6px;
+  border-color: #e2e8f0;
+}
+
+.custom-pagination :deep(.el-input__inner) {
+  font-size: 13px;
 }
 </style>

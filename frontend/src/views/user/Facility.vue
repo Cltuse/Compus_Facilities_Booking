@@ -207,6 +207,13 @@
 
         <div class="card-actions">
           <el-button
+            class="detail-btn"
+            @click.stop="handleViewDetail(item)"
+          >
+            <el-icon><InfoFilled /></el-icon>
+            查看详情
+          </el-button>
+          <el-button
             type="primary"
             class="reserve-btn"
             :disabled="item.status !== 'AVAILABLE'"
@@ -322,7 +329,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Search, Calendar, Check, CircleCheck, Timer, Tools, CircleClose, Picture, Loading, Warning, ChatDotRound } from '@element-plus/icons-vue';
+import { Search, Calendar, Check, CircleCheck, Timer, Tools, CircleClose, Picture, Loading, Warning, ChatDotRound, InfoFilled } from '@element-plus/icons-vue';
 import { facilityAPI, reservationAPI, facilityCategoryAPI } from '../../api';
 
 const facilityList = ref([]);
@@ -633,6 +640,10 @@ const handleCardClick = (item) => {
   if (item.status === 'AVAILABLE') {
     handleReserve(item);
   }
+};
+
+const handleViewDetail = (item) => {
+  router.push(`/user/facility/${item.id}`);
 };
 </script>
 
@@ -1174,6 +1185,29 @@ const handleCardClick = (item) => {
   transform: none;
   box-shadow: none;
   background: #e2e8f0;
+}
+
+.detail-btn {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-weight: 600;
+  color: #495057;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-right: 12px;
+}
+
+.detail-btn:hover {
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+  border-color: #adb5bd;
+  color: #343a40;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.detail-btn .el-icon {
+  margin-right: 4px;
 }
 
 /* 预约对话框 */

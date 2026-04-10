@@ -2,7 +2,9 @@ package com.facility.booking.controller;
 
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.Facility;
+import com.facility.booking.entity.Reservation;
 import com.facility.booking.repository.FacilityRepository;
+import com.facility.booking.repository.ReservationRepository;
 import com.facility.booking.service.FileUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -12,10 +14,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /**
  * 设备控制器
@@ -27,6 +27,9 @@ public class FacilityController {
 
     @Autowired
     private FacilityRepository facilityRepository;
+
+    @Autowired
+    private ReservationRepository reservationRepository;
 
     @Autowired
     private FileUploadService fileUploadService;
@@ -63,6 +66,57 @@ public class FacilityController {
             return Result.success(facility.get());
         }
         return Result.error("设备不存在");
+    }
+
+    /**
+     * 获取设施详情及未来占用情况
+     * @param id 设施ID
+     * @param days 展望天数，默认7天
+     * @return 设施详情和未来占用时间轴
+     */
+    @GetMapping("/{id}/detail")
+    public Result<Map<String, Object>> getFacilityDetail(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "7") int days) {
+        Optional<Facility> facilityOpt = facilityRepository.findById(id);
+        if (!facilityOpt.isPresent()) {
+            return Result.error("设施不存在");
+        }
+
+        Facility facility = facilityOpt.get();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime endDate = now.plusDays(days);
+
+        List<Reservation> reservations = reservationRepository.findByFacilityId(id);
+        List<Map<String, Object>> timeline = new ArrayList<>();
+
+        for (Reservation reservation : reservations) {
+            if (reservation.getStartTime().isAfter(now) && reservation.getStartTime().isBefore(endDate)) {
+                if (!"REJECTED".equals(reservation.getStatus()) && !"CANCELLED".equals(reservation.getStatus())) {
+                    Map<String, Object> reservationInfo = new HashMap<>();
+                    reservationInfo.put("id", reservation.getId());
+                    reservationInfo.put("startTime", reservation.getStartTime());
+                    reservationInfo.put("endTime", reservation.getEndTime());
+                    reservationInfo.put("status", reservation.getStatus());
+                    reservationInfo.put("purpose", reservation.getPurpose());
+                    reservationInfo.put("userName", reservation.getUserName());
+                    timeline.add(reservationInfo);
+                }
+            }
+        }
+
+        timeline.sort((a, b) -> {
+            LocalDateTime startA = (LocalDateTime) a.get("startTime");
+            LocalDateTime startB = (LocalDateTime) b.get("startTime");
+            return startA.compareTo(startB);
+        });
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("facility", facility);
+        response.put("reservations", timeline);
+        response.put("queryDays", days);
+
+        return Result.success(response);
     }
 
     /**

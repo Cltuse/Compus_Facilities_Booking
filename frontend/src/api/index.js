@@ -51,6 +51,7 @@ export const facilityAPI = {
     list: () => request.get('/facility/list'),
     available: () => request.get('/facility/available'),
     getById: (id) => request.get(`/facility/${id}`),
+    getDetail: (id, days = 7) => request.get(`/facility/${id}/detail`, { params: { days } }),
     search: (keyword) => request.get('/facility/search', { params: { keyword } }),
     // 分页接口
     listPage: (params) => request.get('/facility/listPage', { params }),

@@ -219,6 +219,12 @@
         <el-form-item label="设施描述" prop="description">
           <el-input type="textarea" v-model="form.description" :rows="3" placeholder="请输入设施描述信息" maxlength="200" show-word-limit />
         </el-form-item>
+        <el-form-item label="容纳人数" prop="capacity">
+          <el-input-number v-model="form.capacity" :min="1" :max="10000" style="width: 100%;" placeholder="请输入容纳人数" />
+        </el-form-item>
+        <el-form-item label="设备清单" prop="equipment">
+          <el-input type="textarea" v-model="form.equipment" :rows="3" placeholder="请输入设备清单，例如：投影仪、音响系统、空调等" maxlength="500" show-word-limit />
+        </el-form-item>
         
         <!-- 设施图片 -->
         <el-form-item label="设施图片" prop="imageUrl">

@@ -39,6 +39,12 @@ public class Facility {
     @Column(precision = 10, scale = 2)
     private BigDecimal price;
 
+    @Column(name = "capacity")
+    private Integer capacity;
+
+    @Column(columnDefinition = "TEXT")
+    private String equipment;
+
     @Column(length = 500)
     private String imageUrl;
 

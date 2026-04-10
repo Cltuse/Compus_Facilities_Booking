@@ -106,6 +106,11 @@ const routes = [
                 component: () => import('../views/user/Facility.vue')
             },
             {
+                path: 'facility/:id',
+                name: 'UserFacilityDetail',
+                component: () => import('../views/user/FacilityDetail.vue')
+            },
+            {
                 path: 'my-reservation',
                 name: 'MyReservation',
                 component: () => import('../views/user/MyReservation.vue')

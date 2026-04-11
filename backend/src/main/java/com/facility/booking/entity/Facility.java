@@ -28,7 +28,7 @@ public class Facility {
     private String location;
 
     @Column(length = 20)
-    private String status = "AVAILABLE"; // AVAILABLE, IN_USE, MAINTENANCE, DAMAGED
+    private String status = "AVAILABLE"; // AVAILABLE, MAINTENANCE, DAMAGED
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -47,6 +47,12 @@ public class Facility {
 
     @Column(length = 500)
     private String imageUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String damageDescription;
+
+    @Column(length = 500)
+    private String damageImageUrl;
 
     @Column(updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")

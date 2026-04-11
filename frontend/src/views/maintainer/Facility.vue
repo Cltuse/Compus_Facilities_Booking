@@ -100,7 +100,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="220" align="center" fixed="right">
+        <el-table-column label="操作" width="330" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -220,11 +220,11 @@
         <el-form-item label="维护描述" prop="description">
           <el-input type="textarea" v-model="maintenanceForm.description" :rows="3" placeholder="请输入维护描述信息" maxlength="200" show-word-limit />
         </el-form-item>
-        <el-form-item label="计划时间" prop="scheduledTime">
+        <el-form-item label="计划开始时间" prop="startTime">
           <el-date-picker
-              v-model="maintenanceForm.scheduledTime"
+              v-model="maintenanceForm.startTime"
               type="datetime"
-              placeholder="选择计划时间"
+              placeholder="选择计划开始时间"
               style="width: 100%;"
               value-format="YYYY-MM-DD HH:mm:ss"
           />
@@ -244,7 +244,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { facilityAPI, maintenanceAPI } from '../../api';
-import { View, CircleCheck, CircleClose, Tools, Timer, Search, Plus, Edit, Delete } from '@element-plus/icons-vue';
+import { View, CircleCheck, CircleClose, Tools, Timer, Search, Plus, Edit, Delete, Upload } from '@element-plus/icons-vue';
 
 const loading = ref(false);
 const facilityList = ref([]);
@@ -254,6 +254,7 @@ const detailDialogVisible = ref(false);
 const maintenanceDialogVisible = ref(false);
 const currentFacility = ref({});
 const maintenanceFormRef = ref(null);
+const currentUser = ref({});
 
 // 搜索和分页
 const total = ref(0);
@@ -266,15 +267,16 @@ const pagination = reactive({
 
 const maintenanceForm = ref({
   facilityId: null,
+  maintainerId: null,
   maintenanceType: '',
   description: '',
-  scheduledTime: ''
+  startTime: ''
 });
 
 const maintenanceRules = {
   maintenanceType: [{ required: true, message: '请选择维护类型', trigger: 'change' }],
   description: [{ required: true, message: '请输入维护描述', trigger: 'blur' }],
-  scheduledTime: [{ required: true, message: '请选择计划时间', trigger: 'change' }]
+  startTime: [{ required: true, message: '请选择计划开始时间', trigger: 'change' }]
 };
 
 // 表格样式
@@ -291,6 +293,10 @@ const cellStyle = {
 };
 
 onMounted(() => {
+  const userInfo = localStorage.getItem('userInfo');
+  if (userInfo) {
+    currentUser.value = JSON.parse(userInfo);
+  }
   loadFacilityList();
 });
 
@@ -370,9 +376,10 @@ const handleStartMaintenance = (row) => {
   currentFacility.value = { ...row };
   maintenanceForm.value = {
     facilityId: row.id,
+    maintainerId: currentUser.value.id || null,
     maintenanceType: '',
     description: '',
-    scheduledTime: ''
+    startTime: ''
   };
   maintenanceDialogVisible.value = true;
 };
@@ -385,7 +392,6 @@ const submitMaintenance = async () => {
     if (result.code === 200) {
       ElMessage.success('维护任务创建成功');
       maintenanceDialogVisible.value = false;
-      // 更新设施状态
       loadFacilityList();
     } else {
       ElMessage.error(result.message || '维护任务创建失败');
@@ -399,7 +405,6 @@ const submitMaintenance = async () => {
 const getStatusType = (status) => {
   const map = {
     'AVAILABLE': 'success',
-    'IN_USE': 'warning',
     'MAINTENANCE': 'info',
     'DAMAGED': 'danger'
   };
@@ -409,7 +414,6 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   const map = {
     'AVAILABLE': '可用',
-    'IN_USE': '使用中',
     'MAINTENANCE': '维护中',
     'DAMAGED': '损坏'
   };
@@ -798,5 +802,64 @@ const getStatusText = (status) => {
 
 .dialog-footer .el-button {
   border-radius: 8px;
+}
+
+.damage-image-upload .image-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.damage-image-upload .preview-img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.damage-image-upload .image-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.damage-image-upload .image-upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.damage-image-upload .image-upload-area:hover {
+  border-color: #409eff;
+  background: #f0f9ff;
+}
+
+.damage-image-upload .upload-icon {
+  font-size: 48px;
+  color: #a0aec0;
+  margin-bottom: 12px;
+}
+
+.damage-image-upload .upload-text {
+  text-align: center;
+}
+
+.damage-image-upload .upload-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #4a5568;
+  margin-bottom: 4px;
+}
+
+.damage-image-upload .upload-hint {
+  font-size: 12px;
+  color: #a0aec0;
 }
 </style>

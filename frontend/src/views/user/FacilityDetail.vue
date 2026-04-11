@@ -32,7 +32,6 @@
             >
               <el-icon>
                 <CircleCheck v-if="facility.status === 'AVAILABLE'" />
-                <Timer v-else-if="facility.status === 'IN_USE'" />
                 <Tools v-else-if="facility.status === 'MAINTENANCE'" />
                 <CircleClose v-else />
               </el-icon>
@@ -174,7 +173,6 @@
             type="primary"
             size="large"
             class="reserve-btn"
-            :disabled="facility.status !== 'AVAILABLE'"
             @click="handleReserve"
         >
           <el-icon><Calendar /></el-icon>
@@ -233,6 +231,7 @@
                 value-format="YYYY-MM-DD HH:mm:ss"
                 format="YYYY-MM-DD HH:mm"
                 :disabled-date="disabledStartDate"
+                @change="checkAvailability"
             />
           </el-form-item>
           <el-form-item label="结束时间" prop="endTime">
@@ -244,26 +243,45 @@
                 value-format="YYYY-MM-DD HH:mm:ss"
                 format="YYYY-MM-DD HH:mm"
                 :disabled-date="disabledEndDate"
+                @change="checkAvailability"
             />
           </el-form-item>
           <el-form-item label="使用目的" prop="purpose">
-            <el-input
-                type="textarea"
-                v-model="form.purpose"
-                :rows="4"
-                placeholder="请简要描述使用目的和实验内容..."
-                show-word-limit
-                maxlength="500"
-            />
-          </el-form-item>
-        </el-form>
+              <el-input
+                  type="textarea"
+                  v-model="form.purpose"
+                  :rows="4"
+                  placeholder="请简要描述使用目的和实验内容..."
+                  show-word-limit
+                  maxlength="500"
+              />
+            </el-form-item>
+
+            <el-form-item v-if="form.startTime && form.endTime">
+              <div class="availability-check">
+                <el-icon v-if="checkingAvailability" class="is-loading"><Loading /></el-icon>
+                <el-icon v-else-if="isTimeAvailable" class="available-icon"><CircleCheck /></el-icon>
+                <el-icon v-else class="unavailable-icon"><CircleClose /></el-icon>
+                <span :class="['availability-text', isTimeAvailable ? 'available' : 'unavailable']">
+                  {{ availabilityMessage }}
+                </span>
+              </div>
+            </el-form-item>
+          </el-form>
       </div>
 
       <template #footer>
         <div class="dialog-footer">
           <el-button size="large" @click="dialogVisible = false" class="cancel-btn">取消</el-button>
-          <el-button type="primary" size="large" @click="handleSubmit" class="submit-btn">
-            <el-icon><Check /></el-icon>
+          <el-button
+            type="primary"
+            size="large"
+            :loading="submitLoading"
+            :disabled="!isTimeAvailable || checkingAvailability"
+            @click="handleSubmit"
+            class="submit-btn"
+          >
+            <el-icon v-if="!submitLoading"><Check /></el-icon>
             提交预约
           </el-button>
         </div>
@@ -301,6 +319,9 @@ const loading = ref(true);
 const dialogVisible = ref(false);
 const formRef = ref(null);
 const userInfo = ref({});
+const checkingAvailability = ref(false);
+const isTimeAvailable = ref(true);
+const availabilityMessage = ref('');
 
 const form = ref({
   facilityId: null,
@@ -309,6 +330,34 @@ const form = ref({
   endTime: '',
   purpose: ''
 });
+
+const checkAvailability = async () => {
+  if (!form.value.startTime || !form.value.endTime) {
+    isTimeAvailable.value = true;
+    availabilityMessage.value = '';
+    return;
+  }
+
+  try {
+    checkingAvailability.value = true;
+    const response = await reservationAPI.checkAvailability(
+      form.value.facilityId,
+      form.value.startTime,
+      form.value.endTime
+    );
+
+    if (response.data) {
+      isTimeAvailable.value = response.data.available;
+      availabilityMessage.value = response.data.message || (response.data.available ? '该时间段可用' : '该时段已被预约');
+    }
+  } catch (error) {
+    console.error('检查可用性失败:', error);
+    isTimeAvailable.value = true;
+    availabilityMessage.value = '';
+  } finally {
+    checkingAvailability.value = false;
+  }
+};
 
 function validateStartTime(rule, value, callback) {
   if (!value) {
@@ -439,7 +488,6 @@ const timelineDays = computed(() => {
 const getStatusType = (status) => {
   const map = {
     'AVAILABLE': 'success',
-    'IN_USE': 'warning',
     'MAINTENANCE': 'info',
     'DAMAGED': 'danger'
   };
@@ -449,7 +497,6 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   const map = {
     'AVAILABLE': '可用',
-    'IN_USE': '使用中',
     'MAINTENANCE': '维护中',
     'DAMAGED': '损坏'
   };
@@ -473,6 +520,8 @@ const handleReserve = () => {
     endTime: '',
     purpose: ''
   };
+  isTimeAvailable.value = true;
+  availabilityMessage.value = '';
 
   if (formRef.value) {
     formRef.value.clearValidate();
@@ -492,6 +541,14 @@ const handleSubmit = async () => {
     loadFacilityDetail();
   } catch (error) {
     console.error('预约失败:', error);
+    if (error.response?.data?.message) {
+      const message = error.response.data.message;
+      if (message.includes('已被预约') || message.includes('冲突')) {
+        ElMessage.error('该时段已被预约，请选择其他时间');
+      } else {
+        ElMessage.error(message);
+      }
+    }
   }
 };
 </script>
@@ -967,6 +1024,51 @@ const handleSubmit = async () => {
 
 .cancel-btn {
   border-radius: 8px;
+}
+
+.availability-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #f5f7fa;
+  border: 1px solid #e4e7ed;
+}
+
+.availability-check .el-icon {
+  font-size: 18px;
+}
+
+.availability-check .available-icon {
+  color: #67c23a;
+}
+
+.availability-check .unavailable-icon {
+  color: #f56c6c;
+}
+
+.availability-check .is-loading {
+  color: #409eff;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.availability-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.availability-text.available {
+  color: #67c23a;
+}
+
+.availability-text.unavailable {
+  color: #f56c6c;
 }
 
 .submit-btn {

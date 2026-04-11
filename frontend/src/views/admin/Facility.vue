@@ -199,7 +199,6 @@
         <el-form-item label="状态" prop="status">
           <el-select v-model="form.status" style="width: 100%;" placeholder="请选择状态">
             <el-option label="可用" value="AVAILABLE" />
-            <el-option label="使用中" value="IN_USE" />
             <el-option label="维护中" value="MAINTENANCE" />
             <el-option label="损坏" value="DAMAGED" />
           </el-select>
@@ -936,7 +935,6 @@ const handleSubmit = async () => {
 const getStatusType = (status) => {
   const map = {
     'AVAILABLE': 'success',
-    'IN_USE': 'warning',
     'MAINTENANCE': 'info',
     'DAMAGED': 'danger'
   };
@@ -946,7 +944,6 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   const map = {
     'AVAILABLE': '可用',
-    'IN_USE': '使用中',
     'MAINTENANCE': '维护中',
     'DAMAGED': '损坏'
   };

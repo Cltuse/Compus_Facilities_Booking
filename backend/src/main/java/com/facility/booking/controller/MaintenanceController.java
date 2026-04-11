@@ -8,6 +8,7 @@ import com.facility.booking.repository.FacilityRepository;
 import com.facility.booking.repository.MaintenanceRepository;
 import com.facility.booking.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -121,7 +122,33 @@ public class MaintenanceController {
             maintenance.setStatus("PENDING");
         }
 
+        if (maintenance.getMaintainerId() != null) {
+            Optional<User> maintainer = userRepository.findById(maintenance.getMaintainerId());
+            if (maintainer.isPresent()) {
+                User user = maintainer.get();
+                String maintainerName = user.getRealName() != null && !user.getRealName().trim().isEmpty()
+                        ? user.getRealName() : user.getUsername();
+                maintenance.setMaintainer(maintainerName);
+            }
+        }
+
         Maintenance savedMaintenance = maintenanceRepository.save(maintenance);
+
+        if (maintenance.getStartTime() != null) {
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime fifteenMinutesBeforeStart = maintenance.getStartTime().minusMinutes(15);
+            if (now.isAfter(fifteenMinutesBeforeStart) || now.isEqual(fifteenMinutesBeforeStart)) {
+                Optional<Facility> facilityOpt = facilityRepository.findById(maintenance.getFacilityId());
+                if (facilityOpt.isPresent()) {
+                    Facility facility = facilityOpt.get();
+                    if (!"MAINTENANCE".equals(facility.getStatus())) {
+                        facility.setStatus("MAINTENANCE");
+                        facilityRepository.save(facility);
+                    }
+                }
+            }
+        }
+
         enrichMaintenance(savedMaintenance);
         return Result.success("创建成功", savedMaintenance);
     }
@@ -180,7 +207,48 @@ public class MaintenanceController {
             }
         }
 
+        String oldStatus = existingOpt.map(Maintenance::getStatus).orElse(null);
+        String newStatus = maintenance.getStatus();
+        
         Maintenance savedMaintenance = maintenanceRepository.save(maintenance);
+        
+        if ("IN_PROGRESS".equals(newStatus) && !"IN_PROGRESS".equals(oldStatus)) {
+            Optional<Facility> facilityOpt = facilityRepository.findById(maintenance.getFacilityId());
+            if (facilityOpt.isPresent()) {
+                Facility facility = facilityOpt.get();
+                facility.setStatus("MAINTENANCE");
+                facilityRepository.save(facility);
+            }
+        }
+        
+        if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
+            Optional<Facility> facilityOpt = facilityRepository.findById(maintenance.getFacilityId());
+            if (facilityOpt.isPresent()) {
+                Facility facility = facilityOpt.get();
+                if ("MAINTENANCE".equals(facility.getStatus())) {
+                    facility.setStatus("AVAILABLE");
+                    facilityRepository.save(facility);
+                }
+            }
+        }
+        
+        if (maintenance.getStartTime() != null) {
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime fifteenMinutesBeforeStart = maintenance.getStartTime().minusMinutes(15);
+            if (now.isAfter(fifteenMinutesBeforeStart) || now.isEqual(fifteenMinutesBeforeStart)) {
+                if (!"IN_PROGRESS".equals(newStatus) && !"COMPLETED".equals(newStatus)) {
+                    Optional<Facility> facilityOpt = facilityRepository.findById(maintenance.getFacilityId());
+                    if (facilityOpt.isPresent()) {
+                        Facility facility = facilityOpt.get();
+                        if (!"MAINTENANCE".equals(facility.getStatus())) {
+                            facility.setStatus("MAINTENANCE");
+                            facilityRepository.save(facility);
+                        }
+                    }
+                }
+            }
+        }
+        
         enrichMaintenance(savedMaintenance);
         return Result.success("更新成功", savedMaintenance);
     }
@@ -431,5 +499,36 @@ public class MaintenanceController {
         result.put("completedMaintenance", completed);
 
         return Result.success(result);
+    }
+
+    @Scheduled(cron = "0 0/5 * * * ?")
+    public void checkPendingMaintenances() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime fifteenMinutesLater = now.plusMinutes(15);
+        
+        List<Maintenance> pendingMaintenances = maintenanceRepository.findAll().stream()
+            .filter(m -> "PENDING".equals(m.getStatus()))
+            .filter(m -> m.getStartTime() != null)
+            .filter(m -> m.getStartTime().isBefore(fifteenMinutesLater) || m.getStartTime().isEqual(fifteenMinutesLater))
+            .filter(m -> m.getStartTime().isAfter(now.minusMinutes(15)))
+            .collect(Collectors.toList());
+        
+        for (Maintenance maintenance : pendingMaintenances) {
+            maintenance.setStatus("IN_PROGRESS");
+            maintenanceRepository.save(maintenance);
+            
+            Optional<Facility> facilityOpt = facilityRepository.findById(maintenance.getFacilityId());
+            if (facilityOpt.isPresent()) {
+                Facility facility = facilityOpt.get();
+                if (!"MAINTENANCE".equals(facility.getStatus())) {
+                    facility.setStatus("MAINTENANCE");
+                    facilityRepository.save(facility);
+                }
+            }
+        }
+        
+        if (!pendingMaintenances.isEmpty()) {
+            System.out.println("自动更新了 " + pendingMaintenances.size() + " 个维护任务状态为进行中");
+        }
     }
 }

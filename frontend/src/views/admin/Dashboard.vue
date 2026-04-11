@@ -274,7 +274,6 @@ const processFacilityCategoryData = (facilitys) => {
 const processFacilityStatusData = (facilitys) => {
   const statusCount = {
     AVAILABLE: 0,
-    IN_USE: 0,
     MAINTENANCE: 0,
     DISABLED: 0
   };
@@ -288,7 +287,6 @@ const processFacilityStatusData = (facilitys) => {
 
   return [
     { name: '可用', value: statusCount.AVAILABLE, itemStyle: { color: '#67c23a' } },
-    { name: '使用中', value: statusCount.IN_USE, itemStyle: { color: '#409eff' } },
     { name: '维护中', value: statusCount.MAINTENANCE, itemStyle: { color: '#e6a23c' } },
     { name: '停用', value: statusCount.DISABLED, itemStyle: { color: '#f56c6c' } }
   ].filter(item => item.value > 0);

@@ -45,4 +45,13 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Query("SELECT r FROM Reservation r WHERE r.verificationCode = :verificationCode")
     Optional<Reservation> findByVerificationCode(@Param("verificationCode") String verificationCode);
 
+    // 检查时间冲突的预约（有效状态：APPROVED、PENDING、COMPLETED）
+    @Query("SELECT r FROM Reservation r WHERE r.facilityId = :facilityId " +
+           "AND r.status IN :statuses " +
+           "AND ((r.startTime < :endTime AND r.endTime > :startTime))")
+    List<Reservation> findConflictingReservations(@Param("facilityId") Long facilityId,
+                                                 @Param("startTime") LocalDateTime startTime,
+                                                 @Param("endTime") LocalDateTime endTime,
+                                                 @Param("statuses") List<String> statuses);
+
     }

@@ -174,8 +174,15 @@
             <el-option label="升级" value="UPGRADE" />
           </el-select>
         </el-form-item>
-        <el-form-item label="维护人员" prop="maintainer">
-          <el-input v-model="form.maintainer" placeholder="请输入维护人员姓名" clearable />
+        <el-form-item label="维护人员" prop="maintainerId">
+          <el-select v-model="form.maintainerId" style="width: 100%;" placeholder="请选择维护人员" @change="handleMaintainerChange">
+            <el-option
+              v-for="item in maintainerOptions"
+              :key="item.id"
+              :label="item.realName || item.username"
+              :value="item.id"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="费用" prop="cost">
           <el-input-number v-model="form.cost" :min="0" :precision="2" style="width: 100%;" placeholder="请输入维护费用" />
@@ -200,8 +207,10 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-select v-model="form.status" style="width: 100%;" placeholder="请选择状态">
+            <el-option label="待处理" value="PENDING" />
             <el-option label="进行中" value="IN_PROGRESS" />
             <el-option label="已完成" value="COMPLETED" />
+            <el-option label="已取消" value="CANCELLED" />
           </el-select>
         </el-form-item>
         <el-form-item label="维护描述" prop="description">
@@ -224,11 +233,12 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { maintenanceAPI, facilityAPI } from '../../api';
+import { maintenanceAPI, facilityAPI, userAPI } from '../../api';
 
 const loading = ref(false);
 const maintenanceList = ref([]);
 const facilityOptions = ref([]);
+const maintainerOptions = ref([]);
 const searchKeyword = ref('');
 const isSearchMode = ref(false);
 const dialogVisible = ref(false);
@@ -249,11 +259,12 @@ const form = ref({
   id: null,
   facilityId: null,
   maintenanceType: 'ROUTINE',
+  maintainerId: null,
   maintainer: '',
   cost: 0,
   startTime: '',
   endTime: '',
-  status: 'IN_PROGRESS',
+  status: 'PENDING',
   description: '',
   result: ''
 });
@@ -261,7 +272,7 @@ const form = ref({
 const rules = {
   facilityId: [{ required: true, message: '请选择设施', trigger: 'change' }],
   maintenanceType: [{ required: true, message: '请选择维护类型', trigger: 'change' }],
-  maintainer: [{ required: true, message: '请输入维护人员', trigger: 'blur' }]
+  maintainerId: [{ required: true, message: '请选择维护人员', trigger: 'change' }]
 };
 
 // 表格样式
@@ -280,6 +291,7 @@ const cellStyle = {
 onMounted(() => {
   loadMaintenanceList();
   loadFacilityOptions();
+  loadMaintainerOptions();
 });
 
 const loadMaintenanceList = async () => {
@@ -325,6 +337,42 @@ const loadFacilityOptions = async () => {
   }
 };
 
+const loadMaintainerOptions = async () => {
+  try {
+    const res = await userAPI.list({ page: 0, size: 1000 });
+    if (res.data && res.data.content) {
+      maintainerOptions.value = res.data.content;
+    }
+  } catch (error) {
+    console.error('加载维护人员列表失败:', error);
+  }
+};
+
+const handleMaintainerChange = (maintainerId) => {
+  const maintainer = maintainerOptions.value.find(item => item.id === maintainerId);
+  if (maintainer) {
+    form.value.maintainer = maintainer.realName || maintainer.username;
+  }
+};
+
+const loadMaintainerOptions = async () => {
+  try {
+    const res = await userAPI.list({ page: 0, size: 1000 });
+    if (res.data && res.data.content) {
+      maintainerOptions.value = res.data.content;
+    }
+  } catch (error) {
+    console.error('加载维护人员列表失败:', error);
+  }
+};
+
+const handleMaintainerChange = (maintainerId) => {
+  const maintainer = maintainerOptions.value.find(item => item.id === maintainerId);
+  if (maintainer) {
+    form.value.maintainer = maintainer.realName || maintainer.username;
+  }
+};
+
 const handleSearch = async () => {
   pagination.page = 1;
   if (searchKeyword.value.trim()) {
@@ -367,11 +415,12 @@ const handleAdd = () => {
     id: null,
     facilityId: null,
     maintenanceType: 'ROUTINE',
+    maintainerId: null,
     maintainer: '',
     cost: 0,
     startTime: '',
     endTime: '',
-    status: 'IN_PROGRESS',
+    status: 'PENDING',
     description: '',
     result: ''
   };
@@ -430,17 +479,27 @@ const getMaintenanceTypeText = (type) => {
 };
 
 const getStatusType = (status) => {
+  if (!status || status.trim() === '') {
+    return 'info';
+  }
   const map = {
+    'PENDING': 'info',
     'IN_PROGRESS': 'warning',
-    'COMPLETED': 'success'
+    'COMPLETED': 'success',
+    'CANCELLED': 'danger'
   };
-  return map[status] || '';
+  return map[status] || 'info';
 };
 
 const getStatusText = (status) => {
+  if (!status || status.trim() === '') {
+    return '未知';
+  }
   const map = {
+    'PENDING': '待处理',
     'IN_PROGRESS': '进行中',
-    'COMPLETED': '已完成'
+    'COMPLETED': '已完成',
+    'CANCELLED': '已取消'
   };
   return map[status] || status;
 };

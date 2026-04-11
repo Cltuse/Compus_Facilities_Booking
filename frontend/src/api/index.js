@@ -75,14 +75,24 @@ export const facilityAPI = {
     updateStatus: (id, status) => request.put(`/facility/${id}/status`, { status }),
     delete: (id) => request.delete(`/facility/${id}`),
     // 图片相关接口
-    uploadImage: (id, file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return request.post(`/facility/${id}/image`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        });
+    uploadImage: (idOrFile, file) => {
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            return request.post(`/facility/${idOrFile}/image`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+        } else {
+            const formData = new FormData();
+            formData.append('file', idOrFile);
+            return request.post('/file/upload/facility', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+        }
     },
     deleteImage: (id) => request.delete(`/facility/${id}/image`)
 };
@@ -110,7 +120,10 @@ export const reservationAPI = {
     checkin: (id) => request.put(`/reservation/${id}/checkin`),
     checkout: (id) => request.put(`/reservation/${id}/checkout`),
     verify: (id, adminId, verificationCode) => request.put(`/reservation/${id}/verify?adminId=${adminId}&verificationCode=${verificationCode}`),
-    getVerificationCode: (id) => request.get(`/reservation/${id}/verification-code`)
+    getVerificationCode: (id) => request.get(`/reservation/${id}/verification-code`),
+    checkAvailability: (facilityId, startTime, endTime) => request.get('/reservation/availability', {
+        params: { facilityId, startTime, endTime }
+    })
 };
 
 // 维护相关API

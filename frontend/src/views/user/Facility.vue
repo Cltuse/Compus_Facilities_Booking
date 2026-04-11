@@ -86,7 +86,6 @@
             >
               <el-radio-button label="">全部</el-radio-button>
               <el-radio-button label="AVAILABLE">可用</el-radio-button>
-              <el-radio-button label="IN_USE">使用中</el-radio-button>
               <el-radio-button label="MAINTENANCE">维护中</el-radio-button>
             </el-radio-group>
           </div>
@@ -173,7 +172,6 @@
             >
               <el-icon>
                 <CircleCheck v-if="item.status === 'AVAILABLE'" />
-                <Timer v-else-if="item.status === 'IN_USE'" />
                 <Tools v-else-if="item.status === 'MAINTENANCE'" />
                 <CircleClose v-else />
               </el-icon>
@@ -487,7 +485,7 @@ const filteredFacilityList = computed(() => {
         case 'nameDesc':
           return b.name.localeCompare(a.name, 'zh-CN');
         case 'status':
-          const statusOrder = { 'AVAILABLE': 1, 'IN_USE': 2, 'MAINTENANCE': 3, 'DAMAGED': 4 };
+          const statusOrder = { 'AVAILABLE': 1, 'MAINTENANCE': 2, 'DAMAGED': 3 };
           return (statusOrder[a.status] || 5) - (statusOrder[b.status] || 5);
         default:
           return 0;
@@ -616,7 +614,6 @@ const handleSubmit = async () => {
 const getStatusType = (status) => {
   const map = {
     'AVAILABLE': 'success',
-    'IN_USE': 'warning',
     'MAINTENANCE': 'info',
     'DAMAGED': 'danger'
   };
@@ -626,7 +623,6 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   const map = {
     'AVAILABLE': '可用',
-    'IN_USE': '使用中',
     'MAINTENANCE': '维护中',
     'DAMAGED': '损坏'
   };

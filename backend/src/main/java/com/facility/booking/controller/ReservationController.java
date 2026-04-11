@@ -122,16 +122,13 @@ public class ReservationController {
                 return Result.error("结束时间不能为空");
             }
             
-            // 2. 检查设施是否存在且可用
+            // 2. 检查设施是否存在（不再检查设施状态）
             Optional<Facility> facilityOpt = facilityRepository.findById(reservation.getFacilityId());
             if (!facilityOpt.isPresent()) {
                 return Result.error("设施不存在");
             }
             
             Facility facility = facilityOpt.get();
-            if (!"AVAILABLE".equals(facility.getStatus())) {
-                return Result.error("该设施当前不可用，无法预约");
-            }
             
             // 3. 检查用户是否存在
             Optional<User> userOpt = userRepository.findById(reservation.getUserId());
@@ -155,15 +152,24 @@ public class ReservationController {
                 return Result.error("不能预约过去的时间");
             }
             
-            // 6. 检查时间冲突
-            List<Reservation> existingReservations = reservationRepository.findByFacilityId(reservation.getFacilityId());
-            for (Reservation existing : existingReservations) {
-                if (isTimeConflict(reservation.getStartTime(), reservation.getEndTime(), 
-                                 existing.getStartTime(), existing.getEndTime()) &&
-                    !("REJECTED".equals(existing.getStatus()) || 
-                      "CANCELLED".equals(existing.getStatus()))) {
-                    return Result.error("该时间段已被预约，请选择其他时间");
-                }
+            // 6. 检查时间冲突（使用悲观锁确保并发安全）
+            // 获取设施锁，防止并发冲突
+            Optional<Facility> lockedFacility = facilityRepository.findByIdWithLock(reservation.getFacilityId());
+            if (!lockedFacility.isPresent()) {
+                return Result.error("设施不存在或已被删除");
+            }
+            
+            // 检查同一设施在所选时间段内是否已有有效预约（APPROVED、PENDING、COMPLETED）
+            List<String> validStatuses = Arrays.asList("APPROVED", "PENDING", "COMPLETED");
+            List<Reservation> conflictingReservations = reservationRepository.findConflictingReservations(
+                reservation.getFacilityId(), 
+                reservation.getStartTime(), 
+                reservation.getEndTime(), 
+                validStatuses
+            );
+            
+            if (!conflictingReservations.isEmpty()) {
+                return Result.error("该时间段已被预约，请选择其他时间");
             }
             
             // 7. 根据规则设置状态并保存
@@ -322,14 +328,6 @@ public class ReservationController {
 
         Reservation savedReservation = reservationRepository.save(existingReservation);
         
-        // 审核通过后将设施状态设置为占用
-        Optional<Facility> facilityOpt = facilityRepository.findById(savedReservation.getFacilityId());
-        if (facilityOpt.isPresent()) {
-            Facility facility = facilityOpt.get();
-            facility.setStatus("IN_USE");
-            facilityRepository.save(facility);
-        }
-        
         enrichReservation(savedReservation);
         return Result.success("审核通过", savedReservation);
     }
@@ -429,14 +427,6 @@ public class ReservationController {
 
         // 更新预约状态为已完成
         existingReservation.setStatus("COMPLETED");
-
-        // 更新设备状态为可用
-        Optional<Facility> facilityOpt = facilityRepository.findById(existingReservation.getFacilityId());
-        if (facilityOpt.isPresent()) {
-            Facility facility = facilityOpt.get();
-            facility.setStatus("AVAILABLE");
-            facilityRepository.save(facility);
-        }
 
         Reservation savedReservation = reservationRepository.save(existingReservation);
         enrichReservation(savedReservation);
@@ -585,16 +575,8 @@ public class ReservationController {
         reservation.setCheckinStatus("CHECKED_OUT");
         reservation.setCheckoutTime(LocalDateTime.now());
         
-        // 签退时自动完成预约并释放设施
+        // 签退时自动完成预约
         reservation.setStatus("COMPLETED");
-        
-        // 释放设施，将设施状态设置为可用
-        Optional<Facility> facilityOpt = facilityRepository.findById(reservation.getFacilityId());
-        if (facilityOpt.isPresent()) {
-            Facility facility = facilityOpt.get();
-            facility.setStatus("AVAILABLE");
-            facilityRepository.save(facility);
-        }
         
         Reservation savedReservation = reservationRepository.save(reservation);
         enrichReservation(savedReservation);
@@ -635,20 +617,60 @@ public class ReservationController {
         reservation.setCheckinStatus("CHECKED_OUT");
         reservation.setCheckoutTime(LocalDateTime.now());
         
-        // 核销时自动完成预约并释放设施
+        // 核销时自动完成预约
         reservation.setStatus("COMPLETED");
-        
-        // 释放设施，将设施状态设置为可用
-        Optional<Facility> facilityOpt = facilityRepository.findById(reservation.getFacilityId());
-        if (facilityOpt.isPresent()) {
-            Facility facility = facilityOpt.get();
-            facility.setStatus("AVAILABLE");
-            facilityRepository.save(facility);
-        }
         
         Reservation savedReservation = reservationRepository.save(reservation);
         enrichReservation(savedReservation);
         return Result.success("核销成功，预约已完成", savedReservation);
+    }
+
+    /**
+     * 检查设施在指定时间段是否可用
+     * @param facilityId 设施ID
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 检查结果
+     */
+    @GetMapping("/availability")
+    public Result<Map<String, Object>> checkAvailability(@RequestParam Long facilityId,
+                                                         @RequestParam String startTime,
+                                                         @RequestParam String endTime) {
+        try {
+            // 解析时间参数
+            LocalDateTime start = LocalDateTime.parse(startTime, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            LocalDateTime end = LocalDateTime.parse(endTime, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            
+            // 检查设施是否存在
+            Optional<Facility> facilityOpt = facilityRepository.findById(facilityId);
+            if (!facilityOpt.isPresent()) {
+                return Result.error("设施不存在");
+            }
+            
+            // 检查时间有效性
+            if (end.isBefore(start)) {
+                return Result.error("结束时间不能早于开始时间");
+            }
+            
+            if (start.isBefore(LocalDateTime.now())) {
+                return Result.error("不能预约过去的时间");
+            }
+            
+            // 检查时间冲突
+            List<String> validStatuses = Arrays.asList("APPROVED", "PENDING", "COMPLETED");
+            List<Reservation> conflictingReservations = reservationRepository.findConflictingReservations(
+                facilityId, start, end, validStatuses
+            );
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("available", conflictingReservations.isEmpty());
+            result.put("message", conflictingReservations.isEmpty() ? "该时间段可用" : "该时间段已被预约");
+            
+            return Result.success(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("检查失败：" + e.getMessage());
+        }
     }
 
     /**
@@ -910,15 +932,6 @@ public class ReservationController {
                 } catch (Exception e) {
                     System.err.println("创建违规记录失败：" + e.getMessage());
                     e.printStackTrace();
-                }
-                
-                // 释放设施，将设施状态设置为可用
-                Optional<Facility> facilityOpt = facilityRepository.findById(reservation.getFacilityId());
-                if (facilityOpt.isPresent()) {
-                    Facility facility = facilityOpt.get();
-                    facility.setStatus("AVAILABLE");
-                    facilityRepository.save(facility);
-                    facilityReleasedCount++;
                 }
                 
                 // 记录爽约日志

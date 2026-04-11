@@ -46,16 +46,14 @@ public class ReservationService {
             return "结束时间不能为空";
         }
         
-        // 2. 检查设施是否存在且可用
+        // 2. 检查设施是否存在
         Optional<Facility> facilityOpt = facilityRepository.findById(reservation.getFacilityId());
         if (!facilityOpt.isPresent()) {
             return "设施不存在";
         }
         
-        Facility facility = facilityOpt.get();
-        if (!"AVAILABLE".equals(facility.getStatus())) {
-            return "该设施当前不可用，无法预约";
-        }
+        // 设施状态不影响预约，通过时间冲突检查来控制预约有效性
+        // 设施状态仅有 AVAILABLE, MAINTENANCE, DAMAGED 三种
         
         // 3. 检查用户是否存在
         Optional<User> userOpt = userRepository.findById(reservation.getUserId());

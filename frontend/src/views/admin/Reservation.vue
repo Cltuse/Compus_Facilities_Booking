@@ -755,10 +755,7 @@ const handleSubmit = async () => {
       // 通过预约
       await reservationAPI.approve(currentRow.value.id, form.value);
 
-      // 同时更新设施状态为使用中
-      await updateFaciltymentStatus(currentRow.value.facilityId, 'IN_USE');
-
-      ElMessage.success('审核通过，设施状态已更新为使用中');
+      ElMessage.success('审核通过');
     } else {
       await reservationAPI.reject(currentRow.value.id, form.value);
       ElMessage.success('已拒绝');

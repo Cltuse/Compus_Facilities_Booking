@@ -412,7 +412,7 @@ const initTrendChart = () => {
       axisLabel: {
         color: '#718096',
         fontSize: 12,
-        rotate: 0,
+        rotate: 45,//四十五度
         interval: 0
       }
     },

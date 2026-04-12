@@ -41,7 +41,7 @@
               <el-option
                 v-for="user in userList"
                 :key="user.id"
-                :label="user.name + ' (' + user.studentId + ')'"
+                :label="(user.realName || user.username) + ' (' + (user.roleName || user.role || '用户') + ')'"
                 :value="user.id"
               />
             </el-select>

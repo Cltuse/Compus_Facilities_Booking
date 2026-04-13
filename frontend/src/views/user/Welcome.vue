@@ -124,6 +124,13 @@
         </div>
       </div>
     </div>
+
+    <!-- 推荐设施 -->
+    <div class="recommend-section" v-if="currentUser && currentUser.id">
+      <h3 class="section-title">个性化推荐</h3>
+      <RecommendWidget :userId="currentUser.id" />
+    </div>
+
   </div>
 </template>
 
@@ -132,6 +139,16 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ArrowRight, Loading } from '@element-plus/icons-vue';
 import { weatherAPI } from '../../api/weather';
+import RecommendWidget from '../../components/RecommendWidget.vue';
+
+const router = useRouter();
+
+const currentUser = ref(null);
+
+const initUserInfo = () => {
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  currentUser.value = userInfo;
+};
 
 const weatherInfo = ref({
   weatherType: '晴',
@@ -168,6 +185,7 @@ const fetchWeather = async () => {
 };
 
 onMounted(() => {
+  initUserInfo();
   fetchWeather();
 });
 </script>

@@ -225,7 +225,8 @@ public class RecommendService {
     /**
      * 保存推荐结果
      */
-    private void saveRecommendations(Long userId, List<UserRecommendation> recommendations) {
+    @Transactional
+    public void saveRecommendations(Long userId, List<UserRecommendation> recommendations) {
         // 删除旧的推荐结果
         userRecommendationRepository.deleteByUserId(userId);
         
@@ -243,6 +244,7 @@ public class RecommendService {
     /**
      * 为所有用户生成推荐（批量处理）
      */
+    @Transactional
     public void generateRecommendationsForAllUsers() {
         // 获取所有有预约记录的用户ID
         List<Long> userIds = reservationRepository.findAll().stream()
@@ -280,6 +282,7 @@ public class RecommendService {
     /**
      * 处理冷启动问题 - 为新用户生成热门推荐
      */
+    @Transactional
     public List<UserRecommendation> generateHotRecommendationsForNewUser(Long userId, int limit) {
         // 获取热门设施热度评分
         List<FacilityHotScore> hotFacilityScores = hotScoreService.getTopHotFacilities(limit);

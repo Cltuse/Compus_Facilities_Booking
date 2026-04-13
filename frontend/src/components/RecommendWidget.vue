@@ -240,7 +240,7 @@ onMounted(() => {
 
 .facility-image img {
   width: 100%;
-  height: 100px;
+  height: 160px;
   object-fit: cover;
   border-radius: 6px;
 }

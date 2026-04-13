@@ -22,7 +22,7 @@ export function getRecommendFacilities(userId) {
  */
 export function regenerateRecommendations(userId) {
   return request({
-    url: `/api/recommend/user/${userId}/regenerate`,
+    url: `/recommend/user/${userId}/regenerate`,
     method: 'post'
   })
 }
@@ -39,7 +39,7 @@ export function refreshRecommendations(userId) {
  */
 export function getHotRecommendations(limit = 10) {
   return request({
-    url: '/api/recommend/hot',
+    url: '/recommend/hot',
     method: 'get',
     params: { limit }
   })

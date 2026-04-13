@@ -670,7 +670,7 @@ const handleSubmit = async () => {
 
 .main-image {
   width: 100%;
-  max-height: 400px;
+  max-height: 650px;
   object-fit: cover;
 }
 

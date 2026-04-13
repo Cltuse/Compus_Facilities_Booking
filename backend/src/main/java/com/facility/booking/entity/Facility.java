@@ -46,7 +46,7 @@ public class Facility {
     private String equipment;
 
     @Column(length = 500)
-    private String imageUrl;
+    private String imageUrl = "http://localhost:5681/files/facility/default-facility.svg";
 
     @Column(columnDefinition = "TEXT")
     private String damageDescription;

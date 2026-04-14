@@ -355,24 +355,6 @@ const handleMaintainerChange = (maintainerId) => {
   }
 };
 
-const loadMaintainerOptions = async () => {
-  try {
-    const res = await userAPI.list({ page: 0, size: 1000 });
-    if (res.data && res.data.content) {
-      maintainerOptions.value = res.data.content;
-    }
-  } catch (error) {
-    console.error('加载维护人员列表失败:', error);
-  }
-};
-
-const handleMaintainerChange = (maintainerId) => {
-  const maintainer = maintainerOptions.value.find(item => item.id === maintainerId);
-  if (maintainer) {
-    form.value.maintainer = maintainer.realName || maintainer.username;
-  }
-};
-
 const handleSearch = async () => {
   pagination.page = 1;
   if (searchKeyword.value.trim()) {

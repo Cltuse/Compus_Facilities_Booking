@@ -1145,12 +1145,31 @@ const handleVerifySubmit = async () => {
   background: #ffffff;
   border-radius: 0;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   transition: all 0.3s ease;
 }
 
 .table-container:hover {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.table-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 /* 表格样式 */

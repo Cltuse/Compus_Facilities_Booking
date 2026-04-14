@@ -16,6 +16,10 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:5681',
         changeOrigin: true
+      },
+      '/files': {                    // 新增代理规则
+        target: 'http://localhost:5681',
+        changeOrigin: true
       }
     }
   }

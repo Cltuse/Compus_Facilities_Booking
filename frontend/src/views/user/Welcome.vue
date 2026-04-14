@@ -37,7 +37,7 @@
         </div>
         <div class="mood-content">
           <div class="weather-display">
-            <div class="weather-emoji">{{ weatherInfo.weatherIcon }}</div>
+            <img :src="weatherInfo.weatherIcon" :alt="weatherInfo.weatherType" class="weather-icon" />
             <div class="weather-desc">{{ weatherInfo.weatherType }} {{ weatherInfo.temperature }}</div>
             <div class="weather-city">{{ weatherInfo.city }}</div>
             <div class="weather-time">{{ weatherInfo.updateTime }}</div>
@@ -164,21 +164,31 @@ const loading = ref(false);
 const fetchWeather = async () => {
   try {
     loading.value = true;
-    const response = await weatherAPI.getWeather('北京');
+    // 优先使用自动定位接口
+    const response = await weatherAPI.getAutoWeather();
     if (response.data && response.data.data) {
       weatherInfo.value = response.data.data;
     }
   } catch (error) {
-    console.error('获取天气信息失败:', error);
-    // 如果获取失败，使用默认的晴天信息
-    weatherInfo.value = {
-      weatherType: '晴',
-      temperature: '25℃',
-      weatherIcon: '☀️',
-      moodQuote: '网络连接失败，但愿你依然拥有阳光般的心情！',
-      city: '北京',
-      updateTime: new Date().toLocaleString()
-    };
+    console.error('自动定位获取天气信息失败，尝试使用默认城市:', error);
+    // 如果自动定位失败，回退到默认城市
+    try {
+      const response = await weatherAPI.getWeather('北京');
+      if (response.data && response.data.data) {
+        weatherInfo.value = response.data.data;
+      }
+    } catch (fallbackError) {
+      console.error('获取默认城市天气信息失败:', fallbackError);
+      // 如果都失败，使用默认的晴天信息
+      weatherInfo.value = {
+        weatherType: '晴',
+        temperature: '25℃',
+        weatherIcon: '☀️',
+        moodQuote: '网络连接失败，但愿你依然拥有阳光般的心情！',
+        city: '北京',
+        updateTime: new Date().toLocaleString()
+      };
+    }
   } finally {
     loading.value = false;
   }
@@ -430,8 +440,10 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.weather-emoji {
-  font-size: 48px;
+.weather-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
 }
 
 .weather-desc {

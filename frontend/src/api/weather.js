@@ -7,5 +7,9 @@ export const weatherAPI = {
         return axios.get(`${BASE_URL}/weather/get`, {
             params: { city }
         });
+    },
+    
+    getAutoWeather: () => {
+        return axios.get(`${BASE_URL}/weather/auto`);
     }
 };

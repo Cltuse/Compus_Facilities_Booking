@@ -3,3 +3,6 @@ netstat -ano | findstr :5681
 
 # 停止占用端口的进程（将<PID>替换为实际的进程ID）
 taskkill /PID <PID> /F
+
+weather:
+  api: "http://t.weather.itboy.net/api/weather/city/"

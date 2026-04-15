@@ -327,8 +327,38 @@ public class ViolationRecordService {
             
             System.out.println("Fetching violations with filters - userName: " + userName + ", violationType: " + violationType + ", status: " + status);
             
-            // 先获取所有数据
-            Page<ViolationRecord> violations = violationRecordRepository.findAllByOrderByReportedTimeDesc(pageable);
+            // 根据筛选条件使用不同的查询方法，在数据库层面进行筛选
+            Page<ViolationRecord> violations;
+            
+            boolean hasUserName = userName != null && !userName.trim().isEmpty();
+            boolean hasViolationType = violationType != null && !violationType.trim().isEmpty();
+            boolean hasStatus = status != null && !status.trim().isEmpty();
+            
+            if (hasUserName && hasViolationType && hasStatus) {
+                // 三个条件都有
+                violations = violationRecordRepository.findByFilters(userName, violationType, status, pageable);
+            } else if (hasUserName && hasViolationType) {
+                // 用户名 + 违规类型
+                violations = violationRecordRepository.findByUserNameAndViolationType(userName, violationType, pageable);
+            } else if (hasUserName && hasStatus) {
+                // 用户名 + 状态
+                violations = violationRecordRepository.findByUserNameAndStatus(userName, status, pageable);
+            } else if (hasViolationType && hasStatus) {
+                // 违规类型 + 状态
+                violations = violationRecordRepository.findByViolationTypeAndStatus(violationType, status, pageable);
+            } else if (hasUserName) {
+                // 只有用户名
+                violations = violationRecordRepository.findByUserNameContainingIgnoreCase(userName, pageable);
+            } else if (hasViolationType) {
+                // 只有违规类型
+                violations = violationRecordRepository.findByViolationType(violationType, pageable);
+            } else if (hasStatus) {
+                // 只有状态
+                violations = violationRecordRepository.findByStatus(status, pageable);
+            } else {
+                // 没有筛选条件
+                violations = violationRecordRepository.findAllByOrderByReportedTimeDesc(pageable);
+            }
             
             // 丰富违规记录信息
             violations.forEach(violation -> {
@@ -356,47 +386,6 @@ public class ViolationRecordService {
                     e.printStackTrace();
                 }
             });
-            
-            // 如果有过滤条件，在内存中进行过滤
-            if ((userName != null && !userName.trim().isEmpty()) || 
-                (violationType != null && !violationType.trim().isEmpty()) || 
-                (status != null && !status.trim().isEmpty())) {
-                
-                List<ViolationRecord> filteredList = violations.getContent().stream()
-                    .filter(violation -> {
-                        // 用户名过滤
-                        if (userName != null && !userName.trim().isEmpty()) {
-                            if (violation.getUserName() == null || 
-                                !violation.getUserName().toLowerCase().contains(userName.toLowerCase())) {
-                                return false;
-                            }
-                        }
-                        
-                        // 违规类型过滤
-                        if (violationType != null && !violationType.trim().isEmpty()) {
-                            if (!violationType.equals(violation.getViolationType())) {
-                                return false;
-                            }
-                        }
-                        
-                        // 状态过滤
-                        if (status != null && !status.trim().isEmpty()) {
-                            if (!status.equals(violation.getStatus())) {
-                                return false;
-                            }
-                        }
-                        
-                        return true;
-                    })
-                    .collect(Collectors.toList());
-                
-                // 创建新的Page对象
-                return new org.springframework.data.domain.PageImpl<>(
-                    filteredList, 
-                    pageable, 
-                    filteredList.size()
-                );
-            }
             
             return violations;
         } catch (Exception e) {
@@ -531,16 +520,8 @@ public class ViolationRecordService {
         
         try {
             long totalViolations = violationRecordRepository.count();
-            
-            // 使用 Pageable 获取待处理违规数量
-            Page<ViolationRecord> pendingPage = violationRecordRepository.findByStatus("PENDING", Pageable.unpaged());
-            long pendingViolations = pendingPage.getTotalElements();
-            
-            // 获取所有违规记录计算累计处罚分
-            List<ViolationRecord> allViolations = violationRecordRepository.findAll();
-            int totalPenaltyPoints = allViolations.stream()
-                .mapToInt(v -> v.getPenaltyPoints() != null ? v.getPenaltyPoints() : 0)
-                .sum();
+            long pendingViolations = violationRecordRepository.countByStatusPending();
+            int totalPenaltyPoints = violationRecordRepository.sumAllPenaltyPoints();
             
             stats.put("totalViolations", totalViolations);
             stats.put("pendingViolations", pendingViolations);

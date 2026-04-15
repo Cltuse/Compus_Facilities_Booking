@@ -68,6 +68,18 @@ public interface ViolationRecordRepository extends JpaRepository<ViolationRecord
     @Query("SELECT v FROM ViolationRecord v JOIN User u ON v.userId = u.id WHERE LOWER(u.realName) LIKE LOWER(CONCAT('%', :userName, '%')) AND v.violationType = :violationType AND v.status = :status")
     Page<ViolationRecord> findByFilters(@Param("userName") String userName, @Param("violationType") String violationType, @Param("status") String status, Pageable pageable);
     
+    // 统计待处理违规记录数量
+    @Query("SELECT COUNT(v) FROM ViolationRecord v WHERE v.status = 'PENDING'")
+    Long countByStatusPending();
+    
+    // 统计所有违规记录的处罚分总和
+    @Query("SELECT COALESCE(SUM(v.penaltyPoints), 0) FROM ViolationRecord v")
+    Integer sumAllPenaltyPoints();
+    
+    // 根据状态统计数量
+    @Query("SELECT COUNT(v) FROM ViolationRecord v WHERE v.status = :status")
+    Long countByStatus(@Param("status") String status);
+    
     // 数据库中没有violation_time字段，使用reportedTime代替
     
     /**

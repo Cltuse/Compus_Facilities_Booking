@@ -1,9 +1,11 @@
 package com.facility.booking.service;
 
+import com.facility.booking.entity.Reservation;
 import com.facility.booking.entity.ViolationRecord;
 import com.facility.booking.repository.ViolationRecordRepository;
 import com.facility.booking.repository.UserRepository;
 import com.facility.booking.repository.ReservationRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +28,143 @@ public class ViolationRecordService {
 
     @Autowired
     private ReservationRepository reservationRepository;
+
+    /**
+     * 系统启动时执行一次违规检测
+     */
+    @PostConstruct
+    public void onStartup() {
+        System.out.println("系统启动，开始执行违规检测...");
+        autoDetectViolations();
+        System.out.println("系统启动违规检测完成");
+    }
+
+    /**
+     * 定时任务：自动检测违规记录
+     * 每30分钟执行一次，检测爽约、超时使用等违规行为
+     */
+    @Scheduled(cron = "0 0/30 * * * ?")
+    @Transactional
+    public void autoDetectViolations() {
+        LocalDateTime now = LocalDateTime.now();
+        System.out.println("开始执行自动违规检测，当前时间：" + now);
+        
+        int totalDetected = 0;
+        int noShowCount = 0;
+        int overdueCount = 0;
+        
+        try {
+            // 1. 检测爽约违规（预约已开始15分钟但未签到）
+            noShowCount = detectNoShowViolations(now);
+            
+            // 2. 检测超时使用违规（预约已结束但设施仍在占用状态）
+            overdueCount = detectOverdueViolations(now);
+            
+            totalDetected = noShowCount + overdueCount;
+            
+            if (totalDetected > 0) {
+                System.out.println("自动违规检测完成，共检测到 " + totalDetected + " 条违规记录");
+                System.out.println(" - 爽约违规：" + noShowCount + " 条");
+                System.out.println(" - 超时使用：" + overdueCount + " 条");
+            } else {
+                System.out.println("自动违规检测完成，未发现新的违规记录");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("自动违规检测失败：" + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 检测爽约违规
+     */
+    private int detectNoShowViolations(LocalDateTime now) {
+        int count = 0;
+        
+        // 查找已批准但未签到且开始时间已过15分钟的预约
+        List<Reservation> noShowReservations = reservationRepository
+            .findByStatusAndCheckinStatusAndStartTimeBefore("APPROVED", "NOT_CHECKED", 
+                now.minusMinutes(15));
+        
+        for (Reservation reservation : noShowReservations) {
+            try {
+                // 检查是否已存在对应的违规记录
+                boolean exists = violationRecordRepository
+                    .existsByReservationIdAndViolationType(reservation.getId(), "NO_SHOW");
+                
+                if (!exists) {
+                    // 创建爽约违规记录
+                    ViolationRecord violationRecord = new ViolationRecord();
+                    violationRecord.setUserId(reservation.getUserId());
+                    violationRecord.setReservationId(reservation.getId());
+                    violationRecord.setViolationType("NO_SHOW");
+                    violationRecord.setDescription("爽约：预约开始时间已过15分钟，用户未在规定时间内签到。预约时间：" + 
+                        reservation.getStartTime() + " 至 " + reservation.getEndTime());
+                    violationRecord.setPenaltyPoints(5);
+                    violationRecord.setReportedBy(1L); // 系统自动上报
+                    violationRecord.setReportedTime(now);
+                    violationRecord.setStatus("PENDING");
+                    
+                    violationRecordRepository.save(violationRecord);
+                    count++;
+                    
+                    System.out.println("检测到爽约违规：用户ID=" + reservation.getUserId() + 
+                                     ", 预约ID=" + reservation.getId());
+                }
+            } catch (Exception e) {
+                System.err.println("创建爽约违规记录失败：" + e.getMessage());
+            }
+        }
+        
+        return count;
+    }
+
+    /**
+     * 检测超时使用违规
+     */
+    private int detectOverdueViolations(LocalDateTime now) {
+        int count = 0;
+        
+        // 查找已签到但结束时间已过30分钟且未签退的预约
+        List<Reservation> overdueReservations = reservationRepository
+            .findByCheckinStatusAndEndTimeBefore("CHECKED_IN", now.minusMinutes(30))
+            .stream()
+            .filter(reservation -> reservation.getCheckoutTime() == null) // 未签退
+            .collect(Collectors.toList());
+        
+        for (Reservation reservation : overdueReservations) {
+            try {
+                // 检查是否已存在对应的违规记录
+                boolean exists = violationRecordRepository
+                    .existsByReservationIdAndViolationType(reservation.getId(), "OVERDUE");
+                
+                if (!exists) {
+                    // 创建超时使用违规记录
+                    ViolationRecord violationRecord = new ViolationRecord();
+                    violationRecord.setUserId(reservation.getUserId());
+                    violationRecord.setReservationId(reservation.getId());
+                    violationRecord.setViolationType("OVERDUE");
+                    violationRecord.setDescription("超时使用：预约结束时间已过30分钟，用户仍未签退。预约时间：" + 
+                        reservation.getStartTime() + " 至 " + reservation.getEndTime());
+                    violationRecord.setPenaltyPoints(3);
+                    violationRecord.setReportedBy(1L); // 系统自动上报
+                    violationRecord.setReportedTime(now);
+                    violationRecord.setStatus("PENDING");
+                    
+                    violationRecordRepository.save(violationRecord);
+                    count++;
+                    
+                    System.out.println("检测到超时使用违规：用户ID=" + reservation.getUserId() + 
+                                     ", 预约ID=" + reservation.getId());
+                }
+            } catch (Exception e) {
+                System.err.println("创建超时使用违规记录失败：" + e.getMessage());
+            }
+        }
+        
+        return count;
+    }
 
     /**
      * 记录违规

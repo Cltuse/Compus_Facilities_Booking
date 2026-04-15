@@ -100,4 +100,7 @@ public interface ViolationRecordRepository extends JpaRepository<ViolationRecord
      */
     @Query("SELECT COUNT(v) FROM ViolationRecord v WHERE v.userId = :userId")
     Integer countAllViolationsByUserId(@Param("userId") Long userId);
+
+    // 检查是否存在指定预约和违规类型的记录
+    boolean existsByReservationIdAndViolationType(Long reservationId, String violationType);
 }

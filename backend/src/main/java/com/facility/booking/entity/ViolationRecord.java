@@ -40,38 +40,6 @@ public class ViolationRecord {
     @Column(name = "reported_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private LocalDateTime reportedTime;
-    
-    public void setReportedTime(String reportedTimeStr) {
-        if (reportedTimeStr != null) {
-            try {
-                // Try to parse ISO format first (with timezone)
-                if (reportedTimeStr.contains("T") && reportedTimeStr.contains("Z")) {
-                    // Remove the 'Z' and replace 'T' with space
-                    String cleanedDate = reportedTimeStr.replace("Z", "").replace("T", " ");
-                    // Parse the date string
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-                    this.reportedTime = LocalDateTime.parse(cleanedDate, formatter);
-                } else if (reportedTimeStr.contains("T")) {
-                    // Handle ISO format without Z
-                    String cleanedDate = reportedTimeStr.replace("T", " ");
-                    if (cleanedDate.contains(".")) {
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-                        this.reportedTime = LocalDateTime.parse(cleanedDate, formatter);
-                    } else {
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                        this.reportedTime = LocalDateTime.parse(cleanedDate, formatter);
-                    }
-                } else {
-                    // Handle standard format
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                    this.reportedTime = LocalDateTime.parse(reportedTimeStr, formatter);
-                }
-            } catch (Exception e) {
-                // If parsing fails, set to current time
-                this.reportedTime = LocalDateTime.now();
-            }
-        }
-    }
 
     @Basic
     @Column(updatable = false)

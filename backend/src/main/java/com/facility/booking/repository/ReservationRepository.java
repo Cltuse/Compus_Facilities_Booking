@@ -69,5 +69,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Query("SELECT DISTINCT r.userId FROM Reservation r WHERE r.startTime >= :activeDate")
     List<Long> findActiveUserIds(@Param("activeDate") LocalDateTime activeDate);
 
+    // 查找已批准但未签到且开始时间已过指定时间的预约
+    List<Reservation> findByStatusAndCheckinStatusAndStartTimeBefore(
+            String status, String checkinStatus, LocalDateTime startTime);
 
-    }
+
+
+}

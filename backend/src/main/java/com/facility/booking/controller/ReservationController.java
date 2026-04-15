@@ -924,7 +924,7 @@ public class ReservationController {
                     violationRecord.setDescription("爽约记录：" + missedReason + "。预约时间：" + reservation.getStartTime() + " 至 " + reservation.getEndTime());
                     violationRecord.setPenaltyPoints(5); // 爽约默认扣5分
                     violationRecord.setReportedBy(76L); // reported_by固定为76
-                violationRecord.setReportedTime(LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                violationRecord.setReportedTime(LocalDateTime.now());
                     
                     violationRecordService.recordViolation(violationRecord);
                     System.out.println("已自动创建违规记录：预约ID=" + reservation.getId() + 

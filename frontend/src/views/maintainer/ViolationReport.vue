@@ -287,11 +287,26 @@ onMounted(() => {
 // 方法
 const loadUsers = async () => {
   try {
-    const response = await userAPI.list();
-    userList.value = response.data || [];
+    const response = await userAPI.list({ page: 0, size: 1000 });
+    if (response && response.data) {
+      // 确保用户数据有正确的显示名称
+      userList.value = response.data.content || response.data || [];
+      
+      // 处理用户显示名称
+      userList.value.forEach(user => {
+        if (!user.realName && !user.username) {
+          user.realName = '未知用户';
+        }
+      });
+      
+      console.log('加载用户列表成功，共', userList.value.length, '个用户');
+    } else {
+      userList.value = [];
+      console.warn('用户列表响应格式异常:', response);
+    }
   } catch (error) {
     console.error('加载用户列表失败:', error);
-    ElMessage.error('加载用户列表失败');
+    ElMessage.error('加载用户列表失败: ' + error.message);
   }
 };
 

@@ -60,10 +60,6 @@
               <div class="info-label">存放位置</div>
               <div class="info-value">{{ facility.location }}</div>
             </div>
-            <div class="info-item" v-if="facility.capacity">
-              <div class="info-label">容纳人数</div>
-              <div class="info-value">{{ facility.capacity }} 人</div>
-            </div>
             <div class="info-item" v-if="facility.purchaseDate">
               <div class="info-label">购买日期</div>
               <div class="info-value">{{ facility.purchaseDate }}</div>
@@ -80,22 +76,7 @@
             <div class="description-content">{{ facility.description }}</div>
           </div>
 
-          <!-- 设备清单 -->
-          <div class="equipment-section" v-if="facility.equipment">
-            <div class="section-title">设备清单</div>
-            <div class="equipment-list">
-              <el-tag
-                  v-for="(item, index) in parseEquipment(facility.equipment)"
-                  :key="index"
-                  class="equipment-tag"
-                  effect="plain"
-                  type="info"
-              >
-                <el-icon><Checked /></el-icon>
-                {{ item }}
-              </el-tag>
-            </div>
-          </div>
+
         </div>
       </div>
 

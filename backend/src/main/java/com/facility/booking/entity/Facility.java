@@ -39,20 +39,8 @@ public class Facility {
     @Column(precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "capacity")
-    private Integer capacity;
-
-    @Column(columnDefinition = "TEXT")
-    private String equipment;
-
     @Column(length = 500)
     private String imageUrl = "http://localhost:5681/files/facility/default-facility.svg";
-
-    @Column(columnDefinition = "TEXT")
-    private String damageDescription;
-
-    @Column(length = 500)
-    private String damageImageUrl;
 
     @Column(updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")

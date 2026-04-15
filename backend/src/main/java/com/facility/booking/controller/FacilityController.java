@@ -369,13 +369,6 @@ public class FacilityController {
 
         facility.setStatus(status.trim().toUpperCase());
         
-        if (requestBody.containsKey("damageDescription")) {
-            facility.setDamageDescription(requestBody.get("damageDescription"));
-        }
-        if (requestBody.containsKey("damageImageUrl")) {
-            facility.setDamageImageUrl(requestBody.get("damageImageUrl"));
-        }
-        
         Facility savedfacility = facilityRepository.save(facility);
         return Result.success("设备状态更新成功", savedfacility);
     }

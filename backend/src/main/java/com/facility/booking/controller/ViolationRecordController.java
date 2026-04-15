@@ -11,6 +11,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -198,6 +200,22 @@ public class ViolationRecordController {
             return Result.success("获取维护人员违规记录成功", violations);
         } catch (Exception e) {
             return Result.error("获取维护人员违规记录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取违规记录统计数据
+     * 返回完整的统计数据，不受分页和筛选条件影响
+     */
+    @GetMapping("/stats")
+    public Result<Map<String, Object>> getViolationStats() {
+        try {
+            Map<String, Object> stats = violationRecordService.getViolationStats();
+            return Result.success("获取违规记录统计数据成功", stats);
+        } catch (Exception e) {
+            System.err.println("获取违规记录统计数据失败: " + e.getMessage());
+            e.printStackTrace();
+            return Result.error("获取违规记录统计数据失败: " + e.getMessage());
         }
     }
 }

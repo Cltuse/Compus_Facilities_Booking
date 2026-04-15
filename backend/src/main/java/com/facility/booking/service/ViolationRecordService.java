@@ -13,7 +13,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -517,6 +519,38 @@ public class ViolationRecordService {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("获取维护人员违规记录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取违规记录统计数据
+     * 返回完整的统计数据，不受分页和筛选条件影响
+     */
+    public Map<String, Object> getViolationStats() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        try {
+            long totalViolations = violationRecordRepository.count();
+            
+            // 使用 Pageable 获取待处理违规数量
+            Page<ViolationRecord> pendingPage = violationRecordRepository.findByStatus("PENDING", Pageable.unpaged());
+            long pendingViolations = pendingPage.getTotalElements();
+            
+            // 获取所有违规记录计算累计处罚分
+            List<ViolationRecord> allViolations = violationRecordRepository.findAll();
+            int totalPenaltyPoints = allViolations.stream()
+                .mapToInt(v -> v.getPenaltyPoints() != null ? v.getPenaltyPoints() : 0)
+                .sum();
+            
+            stats.put("totalViolations", totalViolations);
+            stats.put("pendingViolations", pendingViolations);
+            stats.put("totalPenaltyPoints", totalPenaltyPoints);
+            
+            return stats;
+        } catch (Exception e) {
+            System.err.println("获取违规记录统计数据失败: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("获取违规记录统计数据失败: " + e.getMessage());
         }
     }
 }

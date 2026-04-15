@@ -247,7 +247,8 @@ export const violationAPI = {
         params: { status, reportedBy }
     }),
     getUserCurrentCreditScore: (userId) => request.get(`/violation/user/${userId}/credit-score`),
-    getUserViolationCount: (userId) => request.get(`/violation/user/${userId}/violation-count`)
+    getUserViolationCount: (userId) => request.get(`/violation/user/${userId}/violation-count`),
+    getViolationStats: () => request.get('/violation/stats')
 };
 
 // 用户端相关API

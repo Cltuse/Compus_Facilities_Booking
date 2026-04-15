@@ -434,9 +434,33 @@ const addFormRules = {
 const userOptions = ref([])
 const userLoading = ref(false)
 
+// 统计数据（从后端API获取完整数据）
+const stats = ref({
+  totalViolations: 0,
+  pendingViolations: 0,
+  totalPenaltyPoints: 0
+})
+
 onMounted(() => {
   loadViolationList()
+  loadViolationStats()
 })
+
+// 加载违规记录统计数据
+const loadViolationStats = async () => {
+  try {
+    const res = await violationAPI.getViolationStats()
+    if (res && res.code === 200 && res.data) {
+      stats.value = {
+        totalViolations: res.data.totalViolations || 0,
+        pendingViolations: res.data.pendingViolations || 0,
+        totalPenaltyPoints: res.data.totalPenaltyPoints || 0
+      }
+    }
+  } catch (error) {
+    console.error('加载违规记录统计数据失败:', error)
+  }
+}
 
 const loadViolationList = async () => {
   try {
@@ -512,12 +536,10 @@ const searchUsers = async (query) => {
 // 直接使用后端返回的数据，不再需要前端过滤
 const filteredViolationList = computed(() => violationList.value)
 
-// 使用后端分页，不再需要前端分页计算属性
-
-// 计算属性
-const totalViolations = computed(() => violationList.value.length)
-const pendingViolations = computed(() => violationList.value.filter(v => v.status === 'PENDING').length)
-const totalPenaltyPoints = computed(() => violationList.value.reduce((sum, v) => sum + (v.penaltyPoints || 0), 0))
+// 使用后端统计接口获取的数据
+const totalViolations = computed(() => stats.value.totalViolations)
+const pendingViolations = computed(() => stats.value.pendingViolations)
+const totalPenaltyPoints = computed(() => stats.value.totalPenaltyPoints)
 
 // 处理方法
 const handleSearch = () => {
@@ -539,6 +561,7 @@ const handleSizeChange = (size) => {
 const refreshData = () => {
   currentPage.value = 1
   loadViolationList()
+  loadViolationStats()
 }
 
 const showAddDialog = () => {

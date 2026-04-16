@@ -387,14 +387,17 @@ const paginatedViolationList = computed(() => {
   return filteredViolationList.value.slice(start, end)
 })
 
+const processedViolationList = computed(() => {
+  return violationList.value.filter(item => item.status === 'PROCESSED')
+})
+
 // 计算属性
 const activeViolations = computed(() => {
-  // 生效中违规数 = 当前用户违规总数（不分状态）
-  return violationList.value.length
+  return processedViolationList.value.length
 })
 
 const totalDeduction = computed(() => {
-  return violationList.value.reduce((sum, v) => sum + (v.penaltyPoints || 0), 0)
+  return processedViolationList.value.reduce((sum, v) => sum + (v.penaltyPoints || 0), 0)
 })
 
 // 处理搜索
@@ -482,6 +485,8 @@ const getStatusType = (status) => {
   const map = {
     'PENDING': 'warning',
     'PROCESSED': 'success',
+    'REVOKED': 'info',
+    'REJECTED': 'danger',
     'EXPIRED': 'info',
     'APPEALED': 'primary'
   }
@@ -492,6 +497,8 @@ const getStatusText = (status) => {
   const map = {
     'PENDING': '待处理',
     'PROCESSED': '已处理',
+    'REVOKED': '已取消生效',
+    'REJECTED': '已驳回',
     'EXPIRED': '已过期',
     'APPEALED': '申诉中'
   }
@@ -502,6 +509,8 @@ const getStatusClass = (status) => {
   const map = {
     'PENDING': 'status-pending',
     'PROCESSED': 'status-processed',
+    'REVOKED': 'status-revoked',
+    'REJECTED': 'status-rejected',
     'EXPIRED': 'status-expired',
     'APPEALED': 'status-appealed'
   }
@@ -1085,6 +1094,16 @@ const getViolationTypeClass = (type) => {
 .status-processed {
   background: #d4edda;
   color: #155724;
+}
+
+.status-revoked {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.status-rejected {
+  background: #fde2e2;
+  color: #c45656;
 }
 
 .status-expired {

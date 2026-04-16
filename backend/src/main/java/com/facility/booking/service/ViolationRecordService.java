@@ -753,7 +753,7 @@ public class ViolationRecordService {
         try {
             long totalViolations = violationRecordRepository.count();
             long pendingViolations = violationRecordRepository.countByStatusPending();
-            int totalPenaltyPoints = violationRecordRepository.sumAllPenaltyPoints();
+            int totalPenaltyPoints = violationRecordRepository.sumAllProcessedPenaltyPoints();
 
             stats.put("totalViolations", totalViolations);
             stats.put("pendingViolations", pendingViolations);

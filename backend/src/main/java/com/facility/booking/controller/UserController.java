@@ -114,6 +114,8 @@ public class UserController {
             Page<User> users = userRepository.findAll(pageRequest);
             users.forEach(user -> {
                 violationRecordService.recalculateUserCreditScoreAndViolationCount(user.getId());
+                user.setCreditScore(violationRecordService.getUserCurrentCreditScore(user.getId()));
+                user.setViolationCount(violationRecordService.getUserViolationCount(user.getId()));
                 user.setPassword("******");
             });
             System.out.println("Successfully retrieved " + users.getNumberOfElements() + " users, total: " + users.getTotalElements());
@@ -136,6 +138,8 @@ public class UserController {
         if (user.isPresent()) {
             User foundUser = user.get();
             violationRecordService.recalculateUserCreditScoreAndViolationCount(foundUser.getId());
+            foundUser.setCreditScore(violationRecordService.getUserCurrentCreditScore(foundUser.getId()));
+            foundUser.setViolationCount(violationRecordService.getUserViolationCount(foundUser.getId()));
             foundUser.setPassword("******");
             return Result.success(foundUser);
         }
@@ -263,6 +267,8 @@ public class UserController {
         // 隐藏密码信息
         users.forEach(user -> {
             violationRecordService.recalculateUserCreditScoreAndViolationCount(user.getId());
+            user.setCreditScore(violationRecordService.getUserCurrentCreditScore(user.getId()));
+            user.setViolationCount(violationRecordService.getUserViolationCount(user.getId()));
             user.setPassword("******");
         });
         

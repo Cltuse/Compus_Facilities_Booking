@@ -56,6 +56,8 @@
         >
           <el-option label="待处理" value="PENDING" />
           <el-option label="已处理" value="PROCESSED" />
+          <el-option label="已取消生效" value="REVOKED" />
+          <el-option label="已驳回" value="REJECTED" />
         </el-select>
       </div>
 
@@ -218,6 +220,17 @@
                 <el-icon><CircleCheck /></el-icon>
                 处理
               </el-button>
+              <el-button
+                  v-if="row.status === 'PROCESSED'"
+                  size="small"
+                  type="warning"
+                  :plain="true"
+                  class="action-btn revoke-btn"
+                  @click.stop="revokeViolation(row)"
+              >
+                <el-icon><Close /></el-icon>
+                取消生效
+              </el-button>
             </div>
           </template>
         </el-table-column>
@@ -306,6 +319,13 @@
               @click="processViolation(currentViolation)"
           >
             标记为已处理
+          </el-button>
+          <el-button
+              v-if="currentViolation.status === 'PROCESSED'"
+              type="warning"
+              @click="revokeViolation(currentViolation)"
+          >
+            取消生效
           </el-button>
         </span>
     </template>
@@ -592,6 +612,7 @@ const submitAddViolation = async () => {
       ElMessage.success('违规记录添加成功')
       addDialogVisible.value = false
       loadViolationList()
+      loadViolationStats()
     }
   } catch (error) {
     console.error('添加违规记录失败:', error)
@@ -625,16 +646,45 @@ const processViolation = async (row) => {
     )
 
     const adminInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-    const res = await violationAPI.updateViolationStatus(row.id, 'PROCESSED', adminInfo.id)
+    const res = await violationAPI.approveViolation(row.id, adminInfo.id)
 
     if (res.success) {
       ElMessage.success('违规记录已标记为已处理')
       loadViolationList()
+      loadViolationStats()
       detailDialogVisible.value = false
     }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('处理违规记录失败:', error)
+    }
+  }
+}
+
+const revokeViolation = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+        '确认取消这条已生效违规记录吗？这会重新计算用户信誉分和违约次数。',
+        '取消生效确认',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+    )
+
+    const adminInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+    const res = await violationAPI.revokeViolation(row.id, adminInfo.id)
+
+    if (res.success) {
+      ElMessage.success('违规记录已取消生效')
+      loadViolationList()
+      loadViolationStats()
+      detailDialogVisible.value = false
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('取消生效违规记录失败:', error)
     }
   }
 }
@@ -699,7 +749,9 @@ const getViolationTypeClass = (type) => {
 const getStatusType = (status) => {
   const map = {
     'PENDING': 'warning',
-    'PROCESSED': 'success'
+    'PROCESSED': 'success',
+    'REVOKED': 'info',
+    'REJECTED': 'danger'
   }
   return map[status] || 'info'
 }
@@ -707,7 +759,9 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   const map = {
     'PENDING': '待处理',
-    'PROCESSED': '已处理'
+    'PROCESSED': '已处理',
+    'REVOKED': '已取消生效',
+    'REJECTED': '已驳回'
   }
   return map[status] || status
 }
@@ -715,7 +769,9 @@ const getStatusText = (status) => {
 const getStatusClass = (status) => {
   const map = {
     'PENDING': 'status-pending',
-    'PROCESSED': 'status-processed'
+    'PROCESSED': 'status-processed',
+    'REVOKED': 'status-revoked',
+    'REJECTED': 'status-rejected'
   }
   return map[status] || 'status-default'
 }
@@ -1019,6 +1075,11 @@ const getStatusClass = (status) => {
   border-color: #67c23a;
 }
 
+.revoke-btn {
+  color: #e6a23c;
+  border-color: #e6a23c;
+}
+
 /* 分页容器 */
 .pagination-container {
   display: flex;
@@ -1087,6 +1148,16 @@ const getStatusClass = (status) => {
 .status-processed {
   background: #d4edda;
   color: #155724;
+}
+
+.status-revoked {
+  background: #eef2f7;
+  color: #606266;
+}
+
+.status-rejected {
+  background: #fde2e2;
+  color: #c45656;
 }
 
 .description-content {

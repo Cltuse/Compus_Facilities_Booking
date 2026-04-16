@@ -75,6 +75,9 @@ public interface ViolationRecordRepository extends JpaRepository<ViolationRecord
     // 统计所有违规记录的处罚分总和
     @Query("SELECT COALESCE(SUM(v.penaltyPoints), 0) FROM ViolationRecord v")
     Integer sumAllPenaltyPoints();
+
+    @Query("SELECT COALESCE(SUM(v.penaltyPoints), 0) FROM ViolationRecord v WHERE v.status = 'PROCESSED'")
+    Integer sumAllProcessedPenaltyPoints();
     
     // 根据状态统计数量
     @Query("SELECT COUNT(v) FROM ViolationRecord v WHERE v.status = :status")

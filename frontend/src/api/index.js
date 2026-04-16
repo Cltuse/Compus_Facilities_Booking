@@ -226,6 +226,15 @@ export const adminAPI = {
     getAllViolations: (page = 0, size = 10, userName = '', violationType = '', status = '') => 
         request.get('/violation/all', { params: { page, size, userName, violationType, status } }),
     recordViolation: (data) => request.post('/violation/record', data),
+    approveViolation: (id, adminId, remark) => request.post(`/violation/${id}/approve`, null, {
+        params: { adminId, remark }
+    }),
+    rejectViolation: (id, adminId, remark) => request.post(`/violation/${id}/reject`, null, {
+        params: { adminId, remark }
+    }),
+    revokeViolation: (id, adminId, remark) => request.post(`/violation/${id}/revoke`, null, {
+        params: { adminId, remark }
+    }),
     updateViolationStatus: (id, status, reportedBy) => request.put(`/violation/${id}/status`, null, {
         params: { status, reportedBy }
     }),
@@ -243,6 +252,15 @@ export const violationAPI = {
     getAllViolations: (page = 0, size = 10, userName = '', violationType = '', status = '') => 
         request.get('/violation/all', { params: { page, size, userName, violationType, status } }),
     recordViolation: (data) => request.post('/violation/record', data),
+    approveViolation: (id, adminId, remark) => request.post(`/violation/${id}/approve`, null, {
+        params: { adminId, remark }
+    }),
+    rejectViolation: (id, adminId, remark) => request.post(`/violation/${id}/reject`, null, {
+        params: { adminId, remark }
+    }),
+    revokeViolation: (id, adminId, remark) => request.post(`/violation/${id}/revoke`, null, {
+        params: { adminId, remark }
+    }),
     updateViolationStatus: (id, status, reportedBy) => request.put(`/violation/${id}/status`, null, {
         params: { status, reportedBy }
     }),

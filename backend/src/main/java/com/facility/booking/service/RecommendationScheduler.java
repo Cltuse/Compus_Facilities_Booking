@@ -6,24 +6,25 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class RecommendationScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(RecommendationScheduler.class);
-    
+
     @Autowired
     private UserCFService userCFService;
-    
+
     @Autowired
     private HotScoreService hotScoreService;
-    
+
     @Autowired
     private RecommendService recommendService;
-    
+
     @Autowired
     private NoticeRepository noticeRepository;
-    
+
     /**
      * 每天凌晨2点更新用户相似度矩阵
      */
@@ -37,7 +38,7 @@ public class RecommendationScheduler {
             logger.error("更新用户相似度矩阵失败", e);
         }
     }
-    
+
     /**
      * 每天凌晨3点更新设施热度评分
      */
@@ -51,7 +52,7 @@ public class RecommendationScheduler {
             logger.error("更新设施热度评分失败", e);
         }
     }
-    
+
     /**
      * 每小时刷新活跃用户的推荐缓存
      */
@@ -66,7 +67,6 @@ public class RecommendationScheduler {
         }
     }
 
-    
     /**
      * 每天凌晨4点为所有用户生成推荐
      */
@@ -80,7 +80,7 @@ public class RecommendationScheduler {
             logger.error("生成用户推荐失败", e);
         }
     }
-    
+
     /**
      * 系统启动后立即执行一次推荐数据初始化
      */
@@ -88,28 +88,29 @@ public class RecommendationScheduler {
     public void initializeRecommendationData() {
         try {
             logger.info("系统启动，开始初始化推荐数据...");
-            
+
             // 更新热度评分
             hotScoreService.calculateAllFacilityHotScores();
             logger.info("设施热度评分初始化完成");
-            
+
             // 更新用户相似度
             userCFService.computeUserSimilarities();
             logger.info("用户相似度矩阵初始化完成");
-            
+
             // 生成推荐
             recommendService.generateRecommendationsForAllUsers();
             logger.info("用户推荐初始化完成");
-            
+
             logger.info("推荐数据初始化完成");
         } catch (Exception e) {
             logger.error("推荐数据初始化失败", e);
         }
     }
-    
+
     /**
      * 每隔5分钟检查并发布已到时的定时通知
      */
+    @Transactional
     @Scheduled(fixedRate = 5 * 60 * 1000)
     public void publishScheduledNotices() {
         try {

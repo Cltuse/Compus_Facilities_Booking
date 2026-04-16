@@ -218,4 +218,82 @@ public class ViolationRecordController {
             return Result.error("获取违规记录统计数据失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 管理员确认违规记录
+     * 确认后扣除用户信誉分，增加违规次数
+     */
+    @PostMapping("/{id}/approve")
+    public Result<Map<String, Object>> approveViolation(@PathVariable Long id,
+                                                        @RequestParam Long adminId,
+                                                        @RequestParam(required = false) String remark) {
+        try {
+            Map<String, Object> result = violationRecordService.approveViolation(id, adminId, remark);
+            if ((Boolean) result.get("success")) {
+                return Result.success((String) result.get("message"), result);
+            } else {
+                return Result.error((String) result.get("message"));
+            }
+        } catch (Exception e) {
+            System.err.println("确认违规记录失败: " + e.getMessage());
+            e.printStackTrace();
+            return Result.error("确认违规记录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员拒绝违规记录
+     * 拒绝后不扣除用户信誉分
+     */
+    @PostMapping("/{id}/reject")
+    public Result<Map<String, Object>> rejectViolation(@PathVariable Long id,
+                                                       @RequestParam Long adminId,
+                                                       @RequestParam(required = false) String remark) {
+        try {
+            Map<String, Object> result = violationRecordService.rejectViolation(id, adminId, remark);
+            if ((Boolean) result.get("success")) {
+                return Result.success((String) result.get("message"), result);
+            } else {
+                return Result.error((String) result.get("message"));
+            }
+        } catch (Exception e) {
+            System.err.println("拒绝违规记录失败: " + e.getMessage());
+            e.printStackTrace();
+            return Result.error("拒绝违规记录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员取消已生效违规记录
+     */
+    @PostMapping("/{id}/revoke")
+    public Result<Map<String, Object>> revokeViolation(@PathVariable Long id,
+                                                       @RequestParam Long adminId,
+                                                       @RequestParam(required = false) String remark) {
+        try {
+            Map<String, Object> result = violationRecordService.revokeViolation(id, adminId, remark);
+            if ((Boolean) result.get("success")) {
+                return Result.success((String) result.get("message"), result);
+            } else {
+                return Result.error((String) result.get("message"));
+            }
+        } catch (Exception e) {
+            System.err.println("取消生效违规记录失败: " + e.getMessage());
+            e.printStackTrace();
+            return Result.error("取消生效违规记录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取用户的已生效信誉分（基于已确认的违规）
+     */
+    @GetMapping("/user/{userId}/processed-penalty")
+    public Result getProcessedPenaltyPoints(@PathVariable Long userId) {
+        try {
+            Integer penalty = violationRecordService.getProcessedPenaltyPoints(userId);
+            return Result.success("获取已生效处罚分成功", penalty);
+        } catch (Exception e) {
+            return Result.error("获取已生效处罚分失败: " + e.getMessage());
+        }
+    }
 }

@@ -71,4 +71,43 @@ public class BlacklistService {
     public Blacklist getUserActiveBlacklist(Long userId) {
         return blacklistRepository.findByUserIdAndStatus(userId, "ACTIVE").orElse(null);
     }
+
+    /**
+     * 添加用户到黑名单
+     * @param userId 用户ID
+     * @param reason 原因
+     * @param days 天数
+     * @param adminId 管理员ID
+     */
+    @Transactional
+    public void addToBlacklist(Long userId, String reason, int days, Long adminId) {
+        try {
+            // 检查是否已在黑名单中
+            if (blacklistRepository.findByUserIdAndStatus(userId, "ACTIVE").isPresent()) {
+                return;
+            }
+            
+            Blacklist blacklist = new Blacklist();
+            blacklist.setUserId(userId);
+            blacklist.setReason(reason);
+            blacklist.setStartTime(LocalDateTime.now());
+            blacklist.setEndTime(LocalDateTime.now().plusDays(days));
+            blacklist.setStatus("ACTIVE");
+            blacklist.setOperatorId(adminId);
+            blacklistRepository.save(blacklist);
+            
+            // 记录操作日志
+            OperationLog log = new OperationLog();
+            log.setOperationType("ADD_BLACKLIST");
+            log.setTargetId(userId);
+            log.setDetail("用户因" + reason + "被加入黑名单，有效期为" + days + "天");
+            log.setOperatorId(adminId);
+            operationLogRepository.save(log);
+            
+            System.out.println("用户" + userId + "因" + reason + "被加入黑名单");
+        } catch (Exception e) {
+            System.err.println("加入黑名单失败：" + e.getMessage());
+            throw new RuntimeException("加入黑名单失败：" + e.getMessage());
+        }
+    }
 }

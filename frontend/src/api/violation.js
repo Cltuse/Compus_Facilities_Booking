@@ -16,6 +16,21 @@ export const violationAPI = {
     // 获取违规记录详情
     getViolationDetail: (id) => 
         request.get(`/violation/${id}`),
+
+    approveViolation: (id, adminId, remark) =>
+        request.post(`/violation/${id}/approve`, null, {
+            params: { adminId, remark }
+        }),
+
+    rejectViolation: (id, adminId, remark) =>
+        request.post(`/violation/${id}/reject`, null, {
+            params: { adminId, remark }
+        }),
+
+    revokeViolation: (id, adminId, remark) =>
+        request.post(`/violation/${id}/revoke`, null, {
+            params: { adminId, remark }
+        }),
     
     // 更新违规记录状态
     updateViolationStatus: (id, status) => 

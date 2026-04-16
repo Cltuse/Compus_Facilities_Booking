@@ -115,4 +115,16 @@ public interface ViolationRecordRepository extends JpaRepository<ViolationRecord
 
     // 检查是否存在指定预约和违规类型的记录
     boolean existsByReservationIdAndViolationType(Long reservationId, String violationType);
+    
+    // 查询用户已生效（PROCESSED状态）的处罚分总和
+    @Query("SELECT COALESCE(SUM(v.penaltyPoints), 0) FROM ViolationRecord v WHERE v.userId = :userId AND v.status = 'PROCESSED'")
+    Integer sumProcessedPenaltyPointsByUserId(@Param("userId") Long userId);
+    
+    // 查询用户已生效（PROCESSED状态）的违规次数
+    @Query("SELECT COUNT(v) FROM ViolationRecord v WHERE v.userId = :userId AND v.status = 'PROCESSED'")
+    Integer countProcessedViolationsByUserId(@Param("userId") Long userId);
+    
+    // 查询用户某段时间内的已生效违规次数
+    @Query("SELECT COUNT(v) FROM ViolationRecord v WHERE v.userId = :userId AND v.status = :status AND v.reportedTime >= :startTime")
+    Integer countRecentProcessedViolations(@Param("userId") Long userId, @Param("status") String status, @Param("startTime") LocalDateTime startTime);
 }

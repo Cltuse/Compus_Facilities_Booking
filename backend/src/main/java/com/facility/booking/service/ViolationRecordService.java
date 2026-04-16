@@ -2,9 +2,11 @@ package com.facility.booking.service;
 
 import com.facility.booking.entity.Reservation;
 import com.facility.booking.entity.ViolationRecord;
+import com.facility.booking.entity.OperationLog;
 import com.facility.booking.repository.ViolationRecordRepository;
 import com.facility.booking.repository.UserRepository;
 import com.facility.booking.repository.ReservationRepository;
+import com.facility.booking.repository.OperationLogRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -31,47 +33,49 @@ public class ViolationRecordService {
     @Autowired
     private ReservationRepository reservationRepository;
 
+    @Autowired
+    private BlacklistService blacklistService;
+
+    @Autowired
+    private OperationLogRepository operationLogRepository;
+
     /**
      * 系统启动时执行一次违规检测
      */
     @PostConstruct
     public void onStartup() {
         System.out.println("系统启动，开始执行违规检测...");
+        syncAllUserViolationStats();
         autoDetectViolations();
         System.out.println("系统启动违规检测完成");
     }
 
     /**
      * 定时任务：自动检测违规记录
-     * 每30分钟执行一次，检测爽约、超时使用等违规行为
+     * 每5分钟执行一次，只检测超时使用违规
      */
-    @Scheduled(cron = "0 0/30 * * * ?")
+    @Scheduled(cron = "0 0/5 * * * ?")
     @Transactional
     public void autoDetectViolations() {
         LocalDateTime now = LocalDateTime.now();
         System.out.println("开始执行自动违规检测，当前时间：" + now);
-        
-        int totalDetected = 0;
-        int noShowCount = 0;
+
         int overdueCount = 0;
-        
+        int noShowCount = 0;
+
         try {
-            // 1. 检测爽约违规（预约已开始15分钟但未签到）
-            noShowCount = detectNoShowViolations(now);
-            
-            // 2. 检测超时使用违规（预约已结束但设施仍在占用状态）
+            // 检测超时使用违规
             overdueCount = detectOverdueViolations(now);
-            
-            totalDetected = noShowCount + overdueCount;
-            
-            if (totalDetected > 0) {
-                System.out.println("自动违规检测完成，共检测到 " + totalDetected + " 条违规记录");
-                System.out.println(" - 爽约违规：" + noShowCount + " 条");
-                System.out.println(" - 超时使用：" + overdueCount + " 条");
+            // 检测爽约违规
+            noShowCount = detectNoShowViolations(now);
+
+            int totalCount = overdueCount + noShowCount;
+            if (totalCount > 0) {
+                System.out.println("自动违规检测完成，检测到 " + totalCount + " 条违规（超时使用：" + overdueCount + "，爽约：" + noShowCount + ")");
             } else {
                 System.out.println("自动违规检测完成，未发现新的违规记录");
             }
-            
+
         } catch (Exception e) {
             System.err.println("自动违规检测失败：" + e.getMessage());
             e.printStackTrace();
@@ -79,97 +83,110 @@ public class ViolationRecordService {
     }
 
     /**
-     * 检测爽约违规
-     */
-    private int detectNoShowViolations(LocalDateTime now) {
-        int count = 0;
-        
-        // 查找已批准但未签到且开始时间已过15分钟的预约
-        List<Reservation> noShowReservations = reservationRepository
-            .findByStatusAndCheckinStatusAndStartTimeBefore("APPROVED", "NOT_CHECKED", 
-                now.minusMinutes(15));
-        
-        for (Reservation reservation : noShowReservations) {
-            try {
-                // 检查是否已存在对应的违规记录
-                boolean exists = violationRecordRepository
-                    .existsByReservationIdAndViolationType(reservation.getId(), "NO_SHOW");
-                
-                if (!exists) {
-                    // 创建爽约违规记录
-                    ViolationRecord violationRecord = new ViolationRecord();
-                    violationRecord.setUserId(reservation.getUserId());
-                    violationRecord.setReservationId(reservation.getId());
-                    violationRecord.setViolationType("NO_SHOW");
-                    violationRecord.setDescription("爽约：预约开始时间已过15分钟，用户未在规定时间内签到。预约时间：" + 
-                        reservation.getStartTime() + " 至 " + reservation.getEndTime());
-                    violationRecord.setPenaltyPoints(5);
-                    violationRecord.setReportedBy(1L); // 系统自动上报
-                    violationRecord.setReportedTime(now);
-                    violationRecord.setStatus("PENDING");
-                    
-                    violationRecordRepository.save(violationRecord);
-                    count++;
-                    
-                    System.out.println("检测到爽约违规：用户ID=" + reservation.getUserId() + 
-                                     ", 预约ID=" + reservation.getId());
-                }
-            } catch (Exception e) {
-                System.err.println("创建爽约违规记录失败：" + e.getMessage());
-            }
-        }
-        
-        return count;
-    }
-
-    /**
      * 检测超时使用违规
      */
     private int detectOverdueViolations(LocalDateTime now) {
         int count = 0;
-        
+
         // 查找已签到但结束时间已过30分钟且未签退的预约
         List<Reservation> overdueReservations = reservationRepository
-            .findByCheckinStatusAndEndTimeBefore("CHECKED_IN", now.minusMinutes(30))
-            .stream()
-            .filter(reservation -> reservation.getCheckoutTime() == null) // 未签退
-            .collect(Collectors.toList());
-        
+                .findByCheckinStatusAndEndTimeBefore("CHECKED_IN", now.minusMinutes(30))
+                .stream()
+                .filter(reservation -> reservation.getCheckoutTime() == null) // 未签退
+                .collect(Collectors.toList());
+
         for (Reservation reservation : overdueReservations) {
             try {
-                // 检查是否已存在对应的违规记录
+                // 幂等性控制：检查是否已存在对应的违规记录
                 boolean exists = violationRecordRepository
-                    .existsByReservationIdAndViolationType(reservation.getId(), "OVERDUE");
-                
+                        .existsByReservationIdAndViolationType(reservation.getId(), "OVERDUE");
+
                 if (!exists) {
                     // 创建超时使用违规记录
                     ViolationRecord violationRecord = new ViolationRecord();
                     violationRecord.setUserId(reservation.getUserId());
                     violationRecord.setReservationId(reservation.getId());
                     violationRecord.setViolationType("OVERDUE");
-                    violationRecord.setDescription("超时使用：预约结束时间已过30分钟，用户仍未签退。预约时间：" + 
-                        reservation.getStartTime() + " 至 " + reservation.getEndTime());
+                    violationRecord.setDescription("超时使用：预约结束时间已过30分钟，用户仍未签退。预约时间：" +
+                            reservation.getStartTime() + " 至 " + reservation.getEndTime());
                     violationRecord.setPenaltyPoints(3);
                     violationRecord.setReportedBy(1L); // 系统自动上报
                     violationRecord.setReportedTime(now);
                     violationRecord.setStatus("PENDING");
-                    
+
                     violationRecordRepository.save(violationRecord);
                     count++;
-                    
-                    System.out.println("检测到超时使用违规：用户ID=" + reservation.getUserId() + 
-                                     ", 预约ID=" + reservation.getId());
+
+                    // 更新预约状态为 COMPLETED
+                    reservation.setCheckinStatus("COMPLETED");
+                    reservationRepository.save(reservation);
+
+                    System.out.println("检测到超时使用违规：用户ID=" + reservation.getUserId() +
+                            ", 预约ID=" + reservation.getId());
                 }
             } catch (Exception e) {
                 System.err.println("创建超时使用违规记录失败：" + e.getMessage());
             }
         }
-        
+
+        return count;
+    }
+
+    /**
+     * 检测爽约违规（NO_SHOW）
+     * 预约开始时间已过15分钟，用户仍未签到
+     */
+    private int detectNoShowViolations(LocalDateTime now) {
+        int count = 0;
+
+        // 查找已批准但超过开始时间15分钟仍未签到的预约
+        List<Reservation> noShowReservations = reservationRepository
+                .findByStatusAndCheckinStatus("APPROVED", "NOT_CHECKED")
+                .stream()
+                .filter(reservation -> reservation.getStartTime() != null
+                        && now.isAfter(reservation.getStartTime().plusMinutes(15)))
+                .collect(Collectors.toList());
+
+        for (Reservation reservation : noShowReservations) {
+            try {
+                // 幂等性控制：检查是否已存在对应的违规记录
+                boolean exists = violationRecordRepository
+                        .existsByReservationIdAndViolationType(reservation.getId(), "NO_SHOW");
+
+                if (!exists) {
+                    // 创建爽约违规记录
+                    ViolationRecord violationRecord = new ViolationRecord();
+                    violationRecord.setUserId(reservation.getUserId());
+                    violationRecord.setReservationId(reservation.getId());
+                    violationRecord.setViolationType("NO_SHOW");
+                    violationRecord.setDescription("爽约：预约开始时间已过15分钟，用户仍未签到。预约时间：" +
+                            reservation.getStartTime() + " 至 " + reservation.getEndTime());
+                    violationRecord.setPenaltyPoints(5);
+                    violationRecord.setReportedBy(1L); // 系统自动上报
+                    violationRecord.setReportedTime(now);
+                    violationRecord.setStatus("PENDING");
+
+                    violationRecordRepository.save(violationRecord);
+                    count++;
+
+                    // 更新预约状态为 MISSED
+                    reservation.setCheckinStatus("MISSED");
+                    reservationRepository.save(reservation);
+
+                    System.out.println("检测到爽约违规：用户ID=" + reservation.getUserId() +
+                            ", 预约ID=" + reservation.getId());
+                }
+            } catch (Exception e) {
+                System.err.println("创建爽约违规记录失败：" + e.getMessage());
+            }
+        }
+
         return count;
     }
 
     /**
      * 记录违规
+     * 初始状态为 PENDING，不立即扣分，等待管理员审核
      */
     @Transactional
     public ViolationRecord recordViolation(ViolationRecord violationRecord) {
@@ -180,47 +197,56 @@ public class ViolationRecordService {
         if (violationRecord.getUserId() == null) {
             throw new IllegalArgumentException("用户ID不能为空");
         }
-        
-        // 设置默认状态
+
+        // 设置默认状态为 PENDING（待审核）
         violationRecord.setStatus("PENDING");
-        
+
         // 验证违规类型是否在允许范围内
         String[] allowedTypes = {"NO_SHOW", "OVERDUE", "CANCEL_FREQ", "DAMAGE", "OTHER"};
         if (violationRecord.getViolationType() != null && !java.util.Arrays.asList(allowedTypes).contains(violationRecord.getViolationType())) {
             violationRecord.setViolationType("OTHER");
         }
-        
+
         // 设置默认处罚分
         if (violationRecord.getPenaltyPoints() == null) {
             violationRecord.setPenaltyPoints(0);
         }
-        
-        // 保存违规记录
+
+        // 保存违规记录（状态为PENDING，不立即计算信誉分）
         ViolationRecord savedViolation = violationRecordRepository.save(violationRecord);
-        
-        // 重新计算用户信用分和违规次数
-        recalculateUserCreditScoreAndViolationCount(violationRecord.getUserId());
-        
+
         return savedViolation;
     }
-    
+
+
     /**
-     * 重新计算用户信用分和违规次数
-     * 信用分 = 100 - 所有违规记录处罚分总和
-     * 违规次数 = 所有违规记录总数
+     * 重新计算用户信用分
+     * 信用分 = 100 - 所有已生效（PROCESSED状态）违规记录处罚分总和
+     * 用户表中credit_score默认保持100不变，通过计算实时得出当前信用分
      */
     @Transactional
     public void recalculateUserCreditScoreAndViolationCount(Long userId) {
         userRepository.findById(userId).ifPresent(user -> {
-            // 获取所有违规记录的处罚分总和
-            Integer totalPenaltyPoints = getTotalPenaltyPoints(userId);
-            // 信用分 = 100 - 所有违规记录处罚分总和
-            user.setCreditScore(100 - totalPenaltyPoints);
-            // 违规次数 = 所有违规记录总数
+            Integer totalPenaltyPoints = getProcessedPenaltyPoints(userId);
             Integer totalViolationCount = violationRecordRepository.countAllViolationsByUserId(userId);
-            user.setViolationCount(totalViolationCount);
+            user.setCreditScore(Math.max(0, 100 - totalPenaltyPoints));
+            user.setViolationCount(totalViolationCount != null ? totalViolationCount : 0);
             userRepository.save(user);
         });
+    }
+
+    @Transactional
+    public void syncAllUserViolationStats() {
+        userRepository.findAll().forEach(user ->
+                recalculateUserCreditScoreAndViolationCount(user.getId()));
+    }
+
+    /**
+     * 获取用户的已生效（PROCESSED）处罚分
+     */
+    public Integer getProcessedPenaltyPoints(Long userId) {
+        Integer penalty = violationRecordRepository.sumProcessedPenaltyPointsByUserId(userId);
+        return penalty != null ? penalty : 0;
     }
 
     /**
@@ -230,11 +256,11 @@ public class ViolationRecordService {
         Page<ViolationRecord> violations = violationRecordRepository.findByUserIdOrderByReportedTimeDesc(userId, pageable);
         // 设置用户名和操作员名
         violations.forEach(violation -> {
-            userRepository.findById(violation.getUserId()).ifPresent(user -> 
-                violation.setUserName(user.getName()));
+            userRepository.findById(violation.getUserId()).ifPresent(user ->
+                    violation.setUserName(user.getName()));
             if (violation.getReportedBy() != null) {
-                userRepository.findById(violation.getReportedBy()).ifPresent(user -> 
-                    violation.setReporterName(user.getName()));
+                userRepository.findById(violation.getReportedBy()).ifPresent(user ->
+                        violation.setReporterName(user.getName()));
             }
             // 设置设施名称（如果有预约ID）
             if (violation.getReservationId() != null) {
@@ -248,15 +274,212 @@ public class ViolationRecordService {
      * 获取用户的活跃违规记录数量
      */
     public Long getActiveViolationCount(Long userId) {
-        return violationRecordRepository.countActiveViolationsByUserId(userId);
+        Integer count = violationRecordRepository.countProcessedViolationsByUserId(userId);
+        return count != null ? count.longValue() : 0L;
     }
 
     /**
-     * 获取用户的总处罚分
+     * 获取用户的总处罚分（包含所有状态，用于统计）
      */
     public Integer getTotalPenaltyPoints(Long userId) {
         Integer penalty = violationRecordRepository.sumPenaltyPointsByUserId(userId);
         return penalty != null ? penalty : 0;
+    }
+
+    /**
+     * 管理员确认违规记录
+     * 确认后将状态更新为 PROCESSED，并真正扣除信誉分
+     *
+     * @param violationId 违规记录ID
+     * @param adminId     管理员ID
+     * @param remark      审核备注
+     * @return 操作结果
+     */
+    @Transactional
+    public Map<String, Object> approveViolation(Long violationId, Long adminId, String remark) {
+        Map<String, Object> result = new HashMap<>();
+
+        Optional<ViolationRecord> violationOpt = violationRecordRepository.findById(violationId);
+        if (!violationOpt.isPresent()) {
+            result.put("success", false);
+            result.put("message", "违规记录不存在");
+            return result;
+        }
+
+        ViolationRecord violation = violationOpt.get();
+
+        // 检查状态是否为 PENDING
+        if (!"PENDING".equals(violation.getStatus())) {
+            result.put("success", false);
+            result.put("message", "该违规记录已处理，不能重复确认");
+            return result;
+        }
+
+        violation.setStatus("PROCESSED");
+        violation.setRemark(remark);
+        violation.setReportedBy(adminId);
+        violationRecordRepository.save(violation);
+
+        Long userId = violation.getUserId();
+        recalculateUserCreditScoreAndViolationCount(userId);
+        userRepository.findById(userId).ifPresent(user -> checkAndAddToBlacklist(user, adminId));
+
+        // 记录操作日志
+        logViolationOperation("APPROVE_VIOLATION", violationId, userId,
+                "管理员确认违规，扣除信誉分" + violation.getPenaltyPoints() + "分", adminId);
+
+        result.put("success", true);
+        result.put("message", "违规确认成功，已扣除信誉分" + violation.getPenaltyPoints() + "分");
+        result.put("violation", violation);
+
+        return result;
+    }
+
+    /**
+     * 管理员拒绝违规记录
+     * 拒绝后将状态更新为 REJECTED
+     *
+     * @param violationId 违规记录ID
+     * @param adminId     管理员ID
+     * @param remark      审核备注（拒绝原因）
+     * @return 操作结果
+     */
+    @Transactional
+    public Map<String, Object> rejectViolation(Long violationId, Long adminId, String remark) {
+        Map<String, Object> result = new HashMap<>();
+
+        Optional<ViolationRecord> violationOpt = violationRecordRepository.findById(violationId);
+        if (!violationOpt.isPresent()) {
+            result.put("success", false);
+            result.put("message", "违规记录不存在");
+            return result;
+        }
+
+        ViolationRecord violation = violationOpt.get();
+
+        // 检查状态是否为 PENDING
+        if (!"PENDING".equals(violation.getStatus())) {
+            result.put("success", false);
+            result.put("message", "该违规记录已处理，不能重复操作");
+            return result;
+        }
+
+        violation.setStatus("REJECTED");
+        violation.setRemark(remark);
+        violation.setReportedBy(adminId);
+        violationRecordRepository.save(violation);
+        recalculateUserCreditScoreAndViolationCount(violation.getUserId());
+
+        // 记录操作日志
+        logViolationOperation("REJECT_VIOLATION", violationId, violation.getUserId(),
+                "管理员拒绝违规，理由：" + remark, adminId);
+
+        result.put("success", true);
+        result.put("message", "违规已拒绝");
+        result.put("violation", violation);
+
+        return result;
+    }
+
+    /**
+     * 管理员取消已生效的违规记录
+     *
+     * @param violationId 违规记录ID
+     * @param adminId     管理员ID
+     * @param remark      取消原因
+     * @return 操作结果
+     */
+    @Transactional
+    public Map<String, Object> revokeViolation(Long violationId, Long adminId, String remark) {
+        Map<String, Object> result = new HashMap<>();
+
+        Optional<ViolationRecord> violationOpt = violationRecordRepository.findById(violationId);
+        if (!violationOpt.isPresent()) {
+            result.put("success", false);
+            result.put("message", "违规记录不存在");
+            return result;
+        }
+
+        ViolationRecord violation = violationOpt.get();
+        if (!"PROCESSED".equals(violation.getStatus())) {
+            result.put("success", false);
+            result.put("message", "只能取消已生效的违规记录");
+            return result;
+        }
+
+        violation.setStatus("REVOKED");
+        violation.setRemark(remark);
+        violation.setReportedBy(adminId);
+        violationRecordRepository.save(violation);
+
+        recalculateUserCreditScoreAndViolationCount(violation.getUserId());
+
+        logViolationOperation("REVOKE_VIOLATION", violationId, violation.getUserId(),
+                "管理员取消已生效违规，理由：" + (remark != null ? remark : "无"), adminId);
+
+        result.put("success", true);
+        result.put("message", "违规记录已取消生效");
+        result.put("violation", violation);
+
+        return result;
+    }
+
+    /**
+     * 检查用户是否需要加入黑名单
+     * 触发条件：信誉分低于60分或30天内违规3次以上
+     */
+    @Transactional
+    public void checkAndAddToBlacklist(com.facility.booking.entity.User user, Long adminId) {
+        if (user == null) return;
+
+        recalculateUserCreditScoreAndViolationCount(user.getId());
+        com.facility.booking.entity.User latestUser = userRepository.findById(user.getId()).orElse(user);
+        Integer creditScore = latestUser.getCreditScore() != null ? latestUser.getCreditScore() : 100;
+
+        // 信誉分低于60分，自动拉黑
+        if (creditScore < 60) {
+            addToBlacklist(latestUser.getId(), "信誉分低于60分", 30, adminId);
+            return;
+        }
+
+        // 30天内违规3次以上，自动拉黑
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        Integer recentViolations = violationRecordRepository.countRecentProcessedViolations(
+                latestUser.getId(), "PROCESSED", thirtyDaysAgo);
+        if (recentViolations != null && recentViolations >= 3) {
+            addToBlacklist(latestUser.getId(), "30天内违规" + recentViolations + "次", 7, adminId);
+        }
+    }
+
+    /**
+     * 添加用户到黑名单
+     */
+    private void addToBlacklist(Long userId, String reason, int days, Long adminId) {
+        try {
+            blacklistService.addToBlacklist(userId, reason, days, adminId);
+            System.out.println("用户" + userId + "因" + reason + "被自动加入黑名单");
+        } catch (Exception e) {
+            System.err.println("自动加入黑名单失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 记录违规操作日志
+     */
+    private void logViolationOperation(String operationType, Long violationId, Long userId, String detail, Long operatorId) {
+        try {
+            OperationLog log = new OperationLog();
+            log.setOperationType(operationType);
+            log.setTargetId(violationId);
+            log.setTargetType("VIOLATION");
+            log.setDetail(detail);
+            if (operatorId != null) {
+                log.setOperatorId(operatorId);
+            }
+            operationLogRepository.save(log);
+        } catch (Exception e) {
+            System.err.println("记录操作日志失败：" + e.getMessage());
+        }
     }
 
     /**
@@ -266,11 +489,11 @@ public class ViolationRecordService {
         Optional<ViolationRecord> violationOpt = violationRecordRepository.findById(id);
         if (violationOpt.isPresent()) {
             ViolationRecord violation = violationOpt.get();
-            userRepository.findById(violation.getUserId()).ifPresent(user -> 
-                violation.setUserName(user.getName()));
+            userRepository.findById(violation.getUserId()).ifPresent(user ->
+                    violation.setUserName(user.getName()));
             if (violation.getReportedBy() != null) {
-                userRepository.findById(violation.getReportedBy()).ifPresent(user -> 
-                    violation.setReporterName(user.getName()));
+                userRepository.findById(violation.getReportedBy()).ifPresent(user ->
+                        violation.setReporterName(user.getName()));
             }
         }
         return violationOpt;
@@ -284,14 +507,24 @@ public class ViolationRecordService {
         Optional<ViolationRecord> violationOpt = violationRecordRepository.findById(id);
         if (violationOpt.isPresent()) {
             ViolationRecord violation = violationOpt.get();
+            String currentStatus = violation.getStatus();
+            if ("PROCESSED".equals(status) && !"PROCESSED".equals(currentStatus)) {
+                return Boolean.TRUE.equals(approveViolation(id, reportedBy, violation.getRemark()).get("success"));
+            }
+            if ("REJECTED".equals(status) && !"REJECTED".equals(currentStatus)) {
+                return Boolean.TRUE.equals(rejectViolation(id, reportedBy, violation.getRemark()).get("success"));
+            }
+            if ("REVOKED".equals(status) && "PROCESSED".equals(currentStatus)) {
+                return Boolean.TRUE.equals(revokeViolation(id, reportedBy, violation.getRemark()).get("success"));
+            }
             violation.setStatus(status);
             violation.setReportedBy(reportedBy);
             violationRecordRepository.save(violation);
+            recalculateUserCreditScoreAndViolationCount(violation.getUserId());
             return true;
         }
         return false;
     }
-
 
 
     /**
@@ -301,12 +534,12 @@ public class ViolationRecordService {
         Page<ViolationRecord> violations = violationRecordRepository.findByUserIdAndTimeRange(userId, startTime, endTime, pageable);
         // 设置用户名和上报人名称
         violations.forEach(violation -> {
-            userRepository.findById(violation.getUserId()).ifPresent(user -> 
-                violation.setUserName(user.getName()));
+            userRepository.findById(violation.getUserId()).ifPresent(user ->
+                    violation.setUserName(user.getName()));
             // 设置上报人名称
             if (violation.getReportedBy() != null) {
-                userRepository.findById(violation.getReportedBy()).ifPresent(user -> 
-                    violation.setReporterName(user.getName()));
+                userRepository.findById(violation.getReportedBy()).ifPresent(user ->
+                        violation.setReporterName(user.getName()));
             }
         });
         return violations;
@@ -324,16 +557,16 @@ public class ViolationRecordService {
             if (userRepository == null) {
                 throw new RuntimeException("UserRepository is null - database connection issue");
             }
-            
+
             System.out.println("Fetching violations with filters - userName: " + userName + ", violationType: " + violationType + ", status: " + status);
-            
+
             // 根据筛选条件使用不同的查询方法，在数据库层面进行筛选
             Page<ViolationRecord> violations;
-            
+
             boolean hasUserName = userName != null && !userName.trim().isEmpty();
             boolean hasViolationType = violationType != null && !violationType.trim().isEmpty();
             boolean hasStatus = status != null && !status.trim().isEmpty();
-            
+
             if (hasUserName && hasViolationType && hasStatus) {
                 // 三个条件都有
                 violations = violationRecordRepository.findByFilters(userName, violationType, status, pageable);
@@ -359,7 +592,7 @@ public class ViolationRecordService {
                 // 没有筛选条件
                 violations = violationRecordRepository.findAllByOrderByReportedTimeDesc(pageable);
             }
-            
+
             // 丰富违规记录信息
             violations.forEach(violation -> {
                 try {
@@ -386,37 +619,36 @@ public class ViolationRecordService {
                     e.printStackTrace();
                 }
             });
-            
+
             return violations;
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("获取所有违规记录失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 获取用户的当前信用分
      */
     public Integer getUserCurrentCreditScore(Long userId) {
-        return userRepository.findById(userId)
-                .map(user -> user.getCreditScore() != null ? user.getCreditScore() : 100)
-                .orElse(100);
+        recalculateUserCreditScoreAndViolationCount(userId);
+        return Math.max(0, 100 - getProcessedPenaltyPoints(userId));
     }
-    
+
     /**
      * 获取用户的违规次数（所有状态的违规记录总数）
      */
     public Integer getUserViolationCount(Long userId) {
-        return userRepository.findById(userId)
-                .map(user -> user.getViolationCount() != null ? user.getViolationCount() : 0)
-                .orElse(0);
+        recalculateUserCreditScoreAndViolationCount(userId);
+        Integer count = violationRecordRepository.countAllViolationsByUserId(userId);
+        return count != null ? count : 0;
     }
-    
+
     /**
      * 获取用户的生效中违规数（所有状态的违规记录总数）
      */
     public Integer getUserActiveViolationCount(Long userId) {
-        Integer count = violationRecordRepository.countAllViolationsByUserId(userId);
+        Integer count = violationRecordRepository.countProcessedViolationsByUserId(userId);
         return count != null ? count : 0;
     }
 
@@ -433,7 +665,7 @@ public class ViolationRecordService {
                 // 获取所有维护人员上报的记录（即reportedBy不为空的记录）
                 violations = violationRecordRepository.findByReportedByIsNotNullOrderByReportedTimeDesc(pageable);
             }
-            
+
             // 丰富违规记录信息
             violations.forEach(violation -> {
                 try {
@@ -445,7 +677,7 @@ public class ViolationRecordService {
                             violation.setUserName("未知用户");
                         }
                     });
-                    
+
                     // 设置上报人名称
                     if (violation.getReportedBy() != null) {
                         userRepository.findById(violation.getReportedBy()).ifPresent(user -> {
@@ -462,48 +694,48 @@ public class ViolationRecordService {
                     e.printStackTrace();
                 }
             });
-            
+
             // 如果有过滤条件，在内存中进行过滤
-            if ((userName != null && !userName.trim().isEmpty()) || 
-                (violationType != null && !violationType.trim().isEmpty()) || 
-                (status != null && !status.trim().isEmpty())) {
-                
+            if ((userName != null && !userName.trim().isEmpty()) ||
+                    (violationType != null && !violationType.trim().isEmpty()) ||
+                    (status != null && !status.trim().isEmpty())) {
+
                 List<ViolationRecord> filteredList = violations.getContent().stream()
-                    .filter(violation -> {
-                        // 用户名过滤
-                        if (userName != null && !userName.trim().isEmpty()) {
-                            if (violation.getUserName() == null || 
-                                !violation.getUserName().toLowerCase().contains(userName.toLowerCase())) {
-                                return false;
+                        .filter(violation -> {
+                            // 用户名过滤
+                            if (userName != null && !userName.trim().isEmpty()) {
+                                if (violation.getUserName() == null ||
+                                        !violation.getUserName().toLowerCase().contains(userName.toLowerCase())) {
+                                    return false;
+                                }
                             }
-                        }
-                        
-                        // 违规类型过滤
-                        if (violationType != null && !violationType.trim().isEmpty()) {
-                            if (!violationType.equals(violation.getViolationType())) {
-                                return false;
+
+                            // 违规类型过滤
+                            if (violationType != null && !violationType.trim().isEmpty()) {
+                                if (!violationType.equals(violation.getViolationType())) {
+                                    return false;
+                                }
                             }
-                        }
-                        
-                        // 状态过滤
-                        if (status != null && !status.trim().isEmpty()) {
-                            if (!status.equals(violation.getStatus())) {
-                                return false;
+
+                            // 状态过滤
+                            if (status != null && !status.trim().isEmpty()) {
+                                if (!status.equals(violation.getStatus())) {
+                                    return false;
+                                }
                             }
-                        }
-                        
-                        return true;
-                    })
-                    .collect(Collectors.toList());
-                
+
+                            return true;
+                        })
+                        .collect(Collectors.toList());
+
                 // 创建新的Page对象
                 return new org.springframework.data.domain.PageImpl<>(
-                    filteredList, 
-                    pageable, 
-                    filteredList.size()
+                        filteredList,
+                        pageable,
+                        filteredList.size()
                 );
             }
-            
+
             return violations;
         } catch (Exception e) {
             e.printStackTrace();
@@ -517,16 +749,16 @@ public class ViolationRecordService {
      */
     public Map<String, Object> getViolationStats() {
         Map<String, Object> stats = new HashMap<>();
-        
+
         try {
             long totalViolations = violationRecordRepository.count();
             long pendingViolations = violationRecordRepository.countByStatusPending();
             int totalPenaltyPoints = violationRecordRepository.sumAllPenaltyPoints();
-            
+
             stats.put("totalViolations", totalViolations);
             stats.put("pendingViolations", pendingViolations);
             stats.put("totalPenaltyPoints", totalPenaltyPoints);
-            
+
             return stats;
         } catch (Exception e) {
             System.err.println("获取违规记录统计数据失败: " + e.getMessage());

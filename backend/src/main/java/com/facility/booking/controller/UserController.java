@@ -3,6 +3,7 @@ package com.facility.booking.controller;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.User;
 import com.facility.booking.repository.UserRepository;
+import com.facility.booking.service.ViolationRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +26,9 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ViolationRecordService violationRecordService;
 
     /**
      * 用户登录
@@ -108,7 +112,10 @@ public class UserController {
             System.out.println("Getting users list with pagination: page=" + page + ", size=" + size);
             PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
             Page<User> users = userRepository.findAll(pageRequest);
-            users.forEach(user -> user.setPassword("******"));
+            users.forEach(user -> {
+                violationRecordService.recalculateUserCreditScoreAndViolationCount(user.getId());
+                user.setPassword("******");
+            });
             System.out.println("Successfully retrieved " + users.getNumberOfElements() + " users, total: " + users.getTotalElements());
             return Result.success(users);
         } catch (Exception e) {
@@ -128,6 +135,7 @@ public class UserController {
         Optional<User> user = userRepository.findById(id);
         if (user.isPresent()) {
             User foundUser = user.get();
+            violationRecordService.recalculateUserCreditScoreAndViolationCount(foundUser.getId());
             foundUser.setPassword("******");
             return Result.success(foundUser);
         }
@@ -251,9 +259,12 @@ public class UserController {
         
         String searchTerm = "%" + keyword.trim() + "%";
         List<User> users = userRepository.findByRealNameLikeOrUsernameLike(searchTerm);
-        
+
         // 隐藏密码信息
-        users.forEach(user -> user.setPassword("******"));
+        users.forEach(user -> {
+            violationRecordService.recalculateUserCreditScoreAndViolationCount(user.getId());
+            user.setPassword("******");
+        });
         
         return Result.success(users);
     }

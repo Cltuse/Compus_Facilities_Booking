@@ -25,6 +25,9 @@ public class OperationLog {
     @Column(name = "target_id")
     private Long targetId;
 
+    @Column(name = "target_type", length = 50)
+    private String targetType; // VIOLATION/RESERVATION/USER/FACILITY等
+
     @Column(name = "detail", columnDefinition = "TEXT")
     private String detail;
 

@@ -45,20 +45,6 @@
     <!-- 统计卡片 -->
     <div class="stats-cards">
       <div class="stat-card">
-        <div class="stat-icon info">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M12 8V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-value">{{ violationCount }}</div>
-          <div class="stat-label">累计违规次数</div>
-        </div>
-      </div>
-      
-      <div class="stat-card">
         <div class="stat-icon warning">
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -219,10 +205,6 @@
             <div class="detail-item">
               <label>当前信用分：</label>
               <span class="credit-score">{{ currentCreditScore }}</span>
-            </div>
-            <div class="detail-item">
-              <label>累计违规次数：</label>
-              <span>{{ violationCount }}次</span>
             </div>
           </div>
         </div>

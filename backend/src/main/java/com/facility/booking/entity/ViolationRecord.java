@@ -32,7 +32,10 @@ public class ViolationRecord {
     private Integer penaltyPoints = 0;
 
     @Column(length = 20)
-    private String status = "PENDING"; // PENDING-待处理/PROCESSED-已处理
+    private String status = "PENDING"; // PENDING-待处理/PROCESSED-已处理/REJECTED-已拒绝
+
+    @Column(columnDefinition = "TEXT")
+    private String remark; // 管理员审核备注
 
     @Column(name = "reported_by")
     private Long reportedBy;

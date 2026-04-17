@@ -89,14 +89,14 @@
       </el-empty>
       <el-table v-else :data="logData" class="operation-table" v-loading="loading" stripe>
         <el-table-column prop="operatorName" label="操作人" width="140" />
-        <el-table-column prop="operationType" label="操作类型" width="160">
+        <el-table-column prop="operationType" label="操作类型" width="230" align="center">
           <template #default="scope">
             <el-tag :type="getOperationTypeType(scope.row.operationType)" size="small">
               {{ getOperationTypeText(scope.row.operationType) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="targetId" label="目标ID" width="100" align="center"/>
+        <el-table-column prop="targetId" label="目标ID" width="120" align="center"/>
         <el-table-column prop="detail" label="操作详情" min-width="200" show-overflow-tooltip  align="center"/>
         <el-table-column prop="ipAddress" label="IP地址" width="160" align="center"/>
         <el-table-column prop="createdAt" label="操作时间" width="220" align="center">

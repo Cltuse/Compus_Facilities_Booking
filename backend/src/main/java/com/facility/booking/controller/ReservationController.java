@@ -17,9 +17,6 @@ import com.facility.booking.service.ViolationRecordService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
@@ -813,8 +810,45 @@ public class ReservationController {
      * @param reservations 预约记录列表
      */
     private void enrichReservations(List<Reservation> reservations) {
+        if (reservations == null || reservations.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Facility> facilitiesById = facilityRepository.findAllById(
+                        reservations.stream()
+                                .map(Reservation::getFacilityId)
+                                .filter(Objects::nonNull)
+                                .collect(java.util.stream.Collectors.toSet()))
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(Facility::getId, facility -> facility));
+
+        Map<Long, User> usersById = userRepository.findAllById(
+                        reservations.stream()
+                                .flatMap(reservation -> java.util.stream.Stream.of(reservation.getUserId(), reservation.getVerifiedBy()))
+                                .filter(Objects::nonNull)
+                                .collect(java.util.stream.Collectors.toSet()))
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(User::getId, user -> user));
+
         for (Reservation reservation : reservations) {
-            enrichReservation(reservation);
+            Facility facility = facilitiesById.get(reservation.getFacilityId());
+            if (facility != null) {
+                reservation.setFacilityName(facility.getName());
+            }
+
+            User user = usersById.get(reservation.getUserId());
+            if (user != null) {
+                reservation.setUserName(getDisplayName(user));
+                reservation.setUserRole(user.getRole());
+            } else {
+                reservation.setUserName("未知用户");
+                reservation.setUserRole(null);
+            }
+
+            User verifiedBy = usersById.get(reservation.getVerifiedBy());
+            if (verifiedBy != null) {
+                reservation.setVerifiedByName(getDisplayName(verifiedBy));
+            }
         }
     }
 
@@ -856,6 +890,14 @@ public class ReservationController {
                 reservation.setVerifiedByName(verifiedByName);
             }
         }
+    }
+
+    private String getDisplayName(User user) {
+        String displayName = user.getRealName();
+        if (displayName == null || displayName.trim().isEmpty()) {
+            displayName = user.getUsername();
+        }
+        return displayName;
     }
 
     /**

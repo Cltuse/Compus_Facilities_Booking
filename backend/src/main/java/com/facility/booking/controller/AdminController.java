@@ -8,7 +8,6 @@ import com.facility.booking.security.CurrentUserService;
 import com.facility.booking.util.PageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
@@ -491,24 +490,22 @@ public class AdminController {
     public Result<List<Map<String, Object>>> getReservationTrends() {
         try {
             List<Map<String, Object>> trends = new ArrayList<>();
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime endTime = LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime startTime = endTime.minusDays(7);
+            Map<String, ReservationRepository.DailyTrendView> trendsByDate = reservationRepository.countDailyTrends(startTime, endTime)
+                    .stream()
+                    .collect(Collectors.toMap(ReservationRepository.DailyTrendView::getDate, trend -> trend));
             
             for (int i = 6; i >= 0; i--) {
-                LocalDateTime date = now.minusDays(i);
-                LocalDateTime startOfDay = date.withHour(0).withMinute(0).withSecond(0);
-                LocalDateTime endOfDay = date.withHour(23).withMinute(59).withSecond(59);
-                
-                List<Reservation> dayReservations = reservationRepository.findByCreatedAtAfter(startOfDay);
-                dayReservations = dayReservations.stream()
-                    .filter(r -> r.getCreatedAt().isBefore(endOfDay))
-                    .collect(Collectors.toList());
-                
+                LocalDateTime date = endTime.minusDays(i + 1);
+                ReservationRepository.DailyTrendView dayTrend = trendsByDate.get(date.toLocalDate().toString());
+
                 Map<String, Object> dayData = new HashMap<>();
                 dayData.put("date", date.toLocalDate().toString());
-                dayData.put("total", dayReservations.size());
-                dayData.put("pending", dayReservations.stream().filter(r -> "PENDING".equals(r.getStatus())).count());
-                dayData.put("approved", dayReservations.stream().filter(r -> "APPROVED".equals(r.getStatus())).count());
-                dayData.put("completed", dayReservations.stream().filter(r -> "COMPLETED".equals(r.getStatus())).count());
+                dayData.put("total", dayTrend == null ? 0L : dayTrend.getTotal());
+                dayData.put("pending", dayTrend == null ? 0L : dayTrend.getPending());
+                dayData.put("approved", dayTrend == null ? 0L : dayTrend.getApproved());
+                dayData.put("completed", dayTrend == null ? 0L : dayTrend.getCompleted());
                 
                 trends.add(dayData);
             }

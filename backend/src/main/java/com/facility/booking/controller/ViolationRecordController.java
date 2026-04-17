@@ -3,6 +3,7 @@ package com.facility.booking.controller;
 import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.ViolationRecord;
+import com.facility.booking.security.CurrentUserService;
 import com.facility.booking.service.ViolationRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,9 @@ public class ViolationRecordController {
 
     @Autowired
     private ViolationRecordService violationRecordService;
+
+    @Autowired
+    private CurrentUserService currentUserService;
 
     /**
      * 记录违规
@@ -131,10 +135,14 @@ public class ViolationRecordController {
      * 更新违规记录状态
      */
     @PutMapping("/{id}/status")
+    @OperationLog(operationType = "UPDATE_VIOLATION_STATUS", detail = "Update violation status")
     public Result updateViolationStatus(@PathVariable Long id,
-                                       @RequestParam String status,
-                                       @RequestParam Long reportedBy) {
+                                       @RequestParam String status) {
         try {
+            Long reportedBy = currentUserService.getCurrentUserId();
+            if (reportedBy == null) {
+                return Result.error(401, "Unauthorized");
+            }
             boolean success = violationRecordService.updateViolationStatus(id, status, reportedBy);
             if (success) {
                 return Result.success("更新违规记录状态成功");
@@ -228,9 +236,12 @@ public class ViolationRecordController {
     @PostMapping("/{id}/approve")
     @OperationLog(operationType = "APPROVE_VIOLATION", detail = "确认违规记录")
     public Result<Map<String, Object>> approveViolation(@PathVariable Long id,
-                                                        @RequestParam Long adminId,
                                                         @RequestParam(required = false) String remark) {
         try {
+            Long adminId = currentUserService.getCurrentUserId();
+            if (adminId == null) {
+                return Result.error(401, "Unauthorized");
+            }
             Map<String, Object> result = violationRecordService.approveViolation(id, adminId, remark);
             if ((Boolean) result.get("success")) {
                 return Result.success((String) result.get("message"), result);
@@ -251,9 +262,12 @@ public class ViolationRecordController {
     @PostMapping("/{id}/reject")
     @OperationLog(operationType = "REJECT_VIOLATION", detail = "驳回违规记录")
     public Result<Map<String, Object>> rejectViolation(@PathVariable Long id,
-                                                       @RequestParam Long adminId,
                                                        @RequestParam(required = false) String remark) {
         try {
+            Long adminId = currentUserService.getCurrentUserId();
+            if (adminId == null) {
+                return Result.error(401, "Unauthorized");
+            }
             Map<String, Object> result = violationRecordService.rejectViolation(id, adminId, remark);
             if ((Boolean) result.get("success")) {
                 return Result.success((String) result.get("message"), result);
@@ -273,9 +287,12 @@ public class ViolationRecordController {
     @PostMapping("/{id}/revoke")
     @OperationLog(operationType = "REVOKE_VIOLATION", detail = "取消生效违规记录")
     public Result<Map<String, Object>> revokeViolation(@PathVariable Long id,
-                                                       @RequestParam Long adminId,
                                                        @RequestParam(required = false) String remark) {
         try {
+            Long adminId = currentUserService.getCurrentUserId();
+            if (adminId == null) {
+                return Result.error(401, "Unauthorized");
+            }
             Map<String, Object> result = violationRecordService.revokeViolation(id, adminId, remark);
             if ((Boolean) result.get("success")) {
                 return Result.success((String) result.get("message"), result);

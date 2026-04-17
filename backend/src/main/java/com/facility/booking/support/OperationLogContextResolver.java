@@ -1,41 +1,36 @@
 package com.facility.booking.support;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.facility.booking.common.Result;
+import com.facility.booking.security.CurrentUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerMapping;
 
 import java.lang.reflect.Method;
-import java.util.Base64;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Component
 public class OperationLogContextResolver {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final CurrentUserService currentUserService;
+
+    public OperationLogContextResolver(CurrentUserService currentUserService) {
+        this.currentUserService = currentUserService;
+    }
 
     public Long resolveOperatorId(HttpServletRequest request) {
-        Map<String, Object> userInfo = getUserInfo(request);
-        Long userId = toLong(userInfo.get("id"));
-        if (userId != null) {
-            return userId;
+        Long currentUserId = currentUserService.getCurrentUserId();
+        if (currentUserId != null) {
+            return currentUserId;
         }
 
         return resolveRequestId(request, "operatorId", "adminId", "maintainerId", "reportedBy", "publisherId", "verifiedBy");
     }
 
     public String resolveOperatorName(HttpServletRequest request) {
-        Map<String, Object> userInfo = getUserInfo(request);
-        Object realName = userInfo.get("realName");
-        if (realName != null) {
-            return String.valueOf(realName);
-        }
-        Object username = userInfo.get("username");
-        if (username != null) {
-            return String.valueOf(username);
+        String currentUserName = currentUserService.getCurrentUserName();
+        if (currentUserName != null && !currentUserName.isBlank()) {
+            return currentUserName;
         }
 
         return null;
@@ -75,20 +70,6 @@ public class OperationLogContextResolver {
             return result.getMessage();
         }
         return operationType + " " + request.getMethod() + " " + request.getRequestURI();
-    }
-
-    private Map<String, Object> getUserInfo(HttpServletRequest request) {
-        String header = request.getHeader("User-Info");
-        if (header == null || header.trim().isEmpty()) {
-            return Map.of();
-        }
-        try {
-            byte[] decoded = Base64.getDecoder().decode(header);
-            String json = new String(decoded);
-            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
-        } catch (Exception e) {
-            return Map.of();
-        }
     }
 
     private Long resolveRequestId(HttpServletRequest request, String... names) {

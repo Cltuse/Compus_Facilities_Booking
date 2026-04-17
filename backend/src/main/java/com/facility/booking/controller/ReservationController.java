@@ -11,6 +11,7 @@ import com.facility.booking.repository.ReservationRepository;
 import com.facility.booking.repository.RuleConfigRepository;
 import com.facility.booking.entity.RuleConfig;
 import com.facility.booking.repository.UserRepository;
+import com.facility.booking.security.CurrentUserService;
 import com.facility.booking.service.ReservationService;
 import com.facility.booking.service.ViolationRecordService;
 import jakarta.annotation.PostConstruct;
@@ -54,6 +55,9 @@ public class ReservationController {
 
     @Autowired
     private ReservationService reservationService;
+
+    @Autowired
+    private CurrentUserService currentUserService;
 
     /**
      * 获取所有预约记录
@@ -111,6 +115,7 @@ public class ReservationController {
      * @return 创建的预约记录信息
      */
     @PostMapping
+    @OperationLog(operationType = "CREATE_BOOKING", detail = "Create reservation")
     public Result<Reservation> create(@RequestBody Reservation reservation) {
         try {
             String validationError = reservationService.validateReservationCreation(reservation);
@@ -142,6 +147,7 @@ public class ReservationController {
      * @return 更新后的预约记录信息
      */
     @PutMapping("/{id}")
+    @OperationLog(operationType = "UPDATE_BOOKING", detail = "Update reservation")
     public Result<Reservation> update(@PathVariable Long id, @RequestBody Reservation reservation) {
         if (!reservationRepository.existsById(id)) {
             return Result.error("预约不存在");
@@ -191,9 +197,12 @@ public class ReservationController {
      */
     @PostMapping("/verify")
     @OperationLog(operationType = "VERIFY_CHECKIN", detail = "核校签到")
-    public Result<Reservation> verifyByCode(@RequestParam String verificationCode, 
-                                           @RequestParam Long adminId) {
+    public Result<Reservation> verifyByCode(@RequestParam String verificationCode) {
         try {
+            Long adminId = currentUserService.getCurrentUserId();
+            if (adminId == null) {
+                return Result.error(401, "Unauthorized");
+            }
             Optional<Reservation> reservationOpt = reservationRepository.findByVerificationCode(verificationCode);
             if (!reservationOpt.isPresent()) {
                 return Result.error("核销码无效");
@@ -255,6 +264,11 @@ public class ReservationController {
     @PutMapping("/{id}/approve")
     @OperationLog(operationType = "APPROVE_BOOKING", detail = "审核通过预约")
     public Result<Reservation> approve(@PathVariable Long id, @RequestBody Reservation reservation) {
+        Long adminId = currentUserService.getCurrentUserId();
+        if (adminId == null) {
+            return Result.error(401, "Unauthorized");
+        }
+
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
             return Result.error("Reservation not found");
@@ -283,6 +297,11 @@ public class ReservationController {
     @PutMapping("/{id}/reject")
     @OperationLog(operationType = "REJECT_BOOKING", detail = "拒绝预约")
     public Result<Reservation> reject(@PathVariable Long id, @RequestBody Reservation reservation) {
+        Long adminId = currentUserService.getCurrentUserId();
+        if (adminId == null) {
+            return Result.error(401, "Unauthorized");
+        }
+
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
             return Result.error("预约不存在");
@@ -309,13 +328,22 @@ public class ReservationController {
      * @return 取消后的预约记录信息
      */
     @PutMapping("/{id}/cancel")
+    @OperationLog(operationType = "CANCEL_BOOKING", detail = "Cancel reservation")
     public Result<Reservation> cancel(@PathVariable Long id) {
+        Long currentUserId = currentUserService.getCurrentUserId();
+        if (currentUserId == null) {
+            return Result.error(401, "Unauthorized");
+        }
+
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
             return Result.error("预约不存在");
         }
 
         Reservation existingReservation = resOpt.get();
+        if (!Objects.equals(existingReservation.getUserId(), currentUserId) && !currentUserService.hasRole("ADMIN")) {
+            return Result.error(403, "Forbidden");
+        }
         
         // 验证取消规则
         Result<String> cancelValidationResult = validateCancelRules(existingReservation);
@@ -355,7 +383,13 @@ public class ReservationController {
      * @return 完成后的预约记录信息
      */
     @PutMapping("/{id}/complete")
+    @OperationLog(operationType = "COMPLETE_BOOKING", detail = "Complete reservation")
     public Result<Reservation> complete(@PathVariable Long id) {
+        Long adminId = currentUserService.getCurrentUserId();
+        if (adminId == null) {
+            return Result.error(401, "Unauthorized");
+        }
+
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
             return Result.error("预约不存在");
@@ -445,12 +479,20 @@ public class ReservationController {
     @PutMapping("/{id}/checkin")
     @OperationLog(operationType = "VERIFY_CHECKIN", detail = "核校签到")
     public Result<Reservation> checkin(@PathVariable Long id) {
+        Long currentUserId = currentUserService.getCurrentUserId();
+        if (currentUserId == null) {
+            return Result.error(401, "Unauthorized");
+        }
+
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
             return Result.error("预约不存在");
         }
 
         Reservation reservation = resOpt.get();
+        if (!Objects.equals(reservation.getUserId(), currentUserId) && !currentUserService.hasRole("ADMIN")) {
+            return Result.error(403, "Forbidden");
+        }
         
         // 检查预约状态
         if (!"APPROVED".equals(reservation.getStatus())) {
@@ -500,12 +542,20 @@ public class ReservationController {
     @PutMapping("/{id}/checkout")
     @OperationLog(operationType = "VERIFY_CHECKOUT", detail = "核校签退")
     public Result<Reservation> checkout(@PathVariable Long id) {
+        Long currentUserId = currentUserService.getCurrentUserId();
+        if (currentUserId == null) {
+            return Result.error(401, "Unauthorized");
+        }
+
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
             return Result.error("预约不存在");
         }
 
         Reservation reservation = resOpt.get();
+        if (!Objects.equals(reservation.getUserId(), currentUserId) && !currentUserService.hasRole("ADMIN")) {
+            return Result.error(403, "Forbidden");
+        }
         
         // 检查预约状态
         if (!"APPROVED".equals(reservation.getStatus())) {
@@ -539,8 +589,12 @@ public class ReservationController {
     @PutMapping("/{id}/verify")
     @OperationLog(operationType = "VERIFY_CHECKIN", detail = "核校签到")
     public Result<Reservation> verify(@PathVariable Long id, 
-                                     @RequestParam Long adminId,
                                      @RequestParam String verificationCode) {
+        Long adminId = currentUserService.getCurrentUserId();
+        if (adminId == null) {
+            return Result.error(401, "Unauthorized");
+        }
+
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
             return Result.error("预约不存在");
@@ -627,12 +681,20 @@ public class ReservationController {
      */
     @GetMapping("/{id}/verification-code")
     public Result<Map<String, String>> getVerificationCode(@PathVariable Long id) {
+        Long currentUserId = currentUserService.getCurrentUserId();
+        if (currentUserId == null) {
+            return Result.error(401, "Unauthorized");
+        }
+
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
             return Result.error("预约不存在");
         }
 
         Reservation reservation = resOpt.get();
+        if (!Objects.equals(reservation.getUserId(), currentUserId) && !currentUserService.hasRole("ADMIN")) {
+            return Result.error(403, "Forbidden");
+        }
         if (reservation.getVerificationCode() == null) {
             return Result.error("该预约暂无核销码");
         }

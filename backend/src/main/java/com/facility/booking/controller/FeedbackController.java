@@ -3,6 +3,7 @@ package com.facility.booking.controller;
 import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.Feedback;
+import com.facility.booking.security.CurrentUserService;
 import com.facility.booking.service.FeedbackService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,9 @@ public class FeedbackController {
 
     @Autowired
     private FeedbackService feedbackService;
+
+    @Autowired
+    private CurrentUserService currentUserService;
 
     /**
      * 提交反馈
@@ -88,9 +92,12 @@ public class FeedbackController {
     @PostMapping("/{id}/reply")
     @OperationLog(operationType = "REPLY_FEEDBACK", detail = "回复反馈")
     public Result replyFeedback(@PathVariable Long id,
-                               @RequestParam String reply,
-                               @RequestParam Long adminId) {
+                               @RequestParam String reply) {
         try {
+            Long adminId = currentUserService.getCurrentUserId();
+            if (adminId == null) {
+                return Result.error(401, "Unauthorized");
+            }
             boolean success = feedbackService.replyFeedback(id, reply, adminId);
             if (success) {
                 return Result.success("回复反馈成功");

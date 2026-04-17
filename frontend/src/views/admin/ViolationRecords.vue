@@ -645,8 +645,7 @@ const processViolation = async (row) => {
         }
     )
 
-    const adminInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-    const res = await violationAPI.approveViolation(row.id, adminInfo.id)
+    const res = await violationAPI.approveViolation(row.id)
 
     if (res.success) {
       ElMessage.success('违规记录已标记为已处理')
@@ -673,8 +672,7 @@ const revokeViolation = async (row) => {
         }
     )
 
-    const adminInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-    const res = await violationAPI.revokeViolation(row.id, adminInfo.id)
+    const res = await violationAPI.revokeViolation(row.id)
 
     if (res.success) {
       ElMessage.success('违规记录已取消生效')

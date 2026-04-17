@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <div class="blacklist">
-    <!-- 页面标题区域 -->
+    <!-- 椤甸潰鏍囬鍖哄煙 -->
     <div class="page-header">
       <div class="header-decoration"></div>
       <div class="header-content">
@@ -12,41 +12,41 @@
               <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          黑名单管理
+          榛戝悕鍗曠鐞?
         </h1>
-        <p class="page-subtitle">管理违规用户的黑名单记录</p>
+        <p class="page-subtitle">绠＄悊杩濊鐢ㄦ埛鐨勯粦鍚嶅崟璁板綍</p>
       </div>
     </div>
 
-    <!-- 搜索和工具栏 -->
+    <!-- 鎼滅储鍜屽伐鍏锋爮 -->
     <div class="toolbar">
       <div class="search-section">
         <el-form :inline="true" :model="searchForm" class="search-form">
-          <el-form-item label="状态">
-            <el-select v-model="searchForm.status" placeholder="全部状态" clearable style="width: 140px">
-              <el-option label="生效中" value="ACTIVE" />
-              <el-option label="已过期" value="EXPIRED" />
-              <el-option label="手动移除" value="REMOVED" />
+          <el-form-item label="鐘舵€?>
+            <el-select v-model="searchForm.status" placeholder="鍏ㄩ儴鐘舵€? clearable style="width: 140px">
+              <el-option label="鐢熸晥涓? value="ACTIVE" />
+              <el-option label="宸茶繃鏈? value="EXPIRED" />
+              <el-option label="鎵嬪姩绉婚櫎" value="REMOVED" />
             </el-select>
           </el-form-item>
-          <el-form-item label="用户姓名">
-            <el-input v-model="searchForm.userName" placeholder="输入用户姓名" clearable style="width: 200px" size="large" />
+          <el-form-item label="鐢ㄦ埛濮撳悕">
+            <el-input v-model="searchForm.userName" placeholder="杈撳叆鐢ㄦ埛濮撳悕" clearable style="width: 200px" size="large" />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch" :icon="Search" size="large">搜索</el-button>
-            <el-button @click="resetSearch" :icon="Refresh" size="large">重置</el-button>
+            <el-button type="primary" @click="handleSearch" :icon="Search" size="large">鎼滅储</el-button>
+            <el-button @click="resetSearch" :icon="Refresh" size="large">閲嶇疆</el-button>
           </el-form-item>
         </el-form>
       </div>
       <div class="button-section">
         <el-button type="danger" size="large" class="add-button" @click="handleAddBlacklist">
           <el-icon><Plus /></el-icon>
-          添加黑名单
+          娣诲姞榛戝悕鍗?
         </el-button>
       </div>
     </div>
 
-    <!-- 统计信息 -->
+    <!-- 缁熻淇℃伅 -->
     <el-row :gutter="20" class="stats-row">
       <el-col :span="6">
         <el-card class="stat-card active-card">
@@ -56,7 +56,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.activeCount }}</div>
-              <div class="stat-label">生效中</div>
+              <div class="stat-label">鐢熸晥涓?/div>
             </div>
           </div>
         </el-card>
@@ -69,7 +69,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.expiredCount }}</div>
-              <div class="stat-label">已过期</div>
+              <div class="stat-label">宸茶繃鏈?/div>
             </div>
           </div>
         </el-card>
@@ -82,7 +82,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.removedCount }}</div>
-              <div class="stat-label">手动移除</div>
+              <div class="stat-label">鎵嬪姩绉婚櫎</div>
             </div>
           </div>
         </el-card>
@@ -95,44 +95,44 @@
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.totalCount }}</div>
-              <div class="stat-label">总记录数</div>
+              <div class="stat-label">鎬昏褰曟暟</div>
             </div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 黑名单列表 -->
+    <!-- 榛戝悕鍗曞垪琛?-->
     <el-card class="blacklist-card">
       <el-table :data="blacklistData" style="width: 100%" v-loading="loading">
-        <el-table-column prop="userRealName" label="用户姓名" width="100" />
-        <el-table-column prop="userName" label="学号/工号" width="120" />
-        <el-table-column prop="reason" label="拉黑原因" min-width="200" show-overflow-tooltip align="center" />
-        <el-table-column prop="startTime" label="开始时间" width="260" align="center" >
+        <el-table-column prop="userRealName" label="鐢ㄦ埛濮撳悕" width="100" />
+        <el-table-column prop="userName" label="瀛﹀彿/宸ュ彿" width="120" />
+        <el-table-column prop="reason" label="鎷夐粦鍘熷洜" min-width="200" show-overflow-tooltip align="center" />
+        <el-table-column prop="startTime" label="寮€濮嬫椂闂? width="260" align="center" >
           <template #default="scope">
             {{ formatDateTime(scope.row.startTime) }}
           </template>
         </el-table-column>
-        <el-table-column prop="endTime" label="结束时间" width="260" align="center">
+        <el-table-column prop="endTime" label="缁撴潫鏃堕棿" width="260" align="center">
           <template #default="scope">
             <span v-if="scope.row.endTime">{{ formatDateTime(scope.row.endTime) }}</span>
-            <el-tag v-else type="danger" size="small">永久</el-tag>
+            <el-tag v-else type="danger" size="small">姘镐箙</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column prop="status" label="鐘舵€? width="100" align="center">
           <template #default="scope">
             <el-tag :type="getStatusType(scope.row.status)" size="small">
               {{ getStatusText(scope.row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="operatorName" label="操作员" width="100" align="center" />
-        <el-table-column prop="createdAt" label="创建时间" width="260" align="center">
+        <el-table-column prop="operatorName" label="鎿嶄綔鍛? width="100" align="center" />
+        <el-table-column prop="createdAt" label="鍒涘缓鏃堕棿" width="260" align="center">
           <template #default="scope">
             {{ formatDateTime(scope.row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right" align="center">
+        <el-table-column label="鎿嶄綔" width="280" fixed="right" align="center">
           <template #default="scope">
             <el-button
               v-if="scope.row.status === 'ACTIVE'"
@@ -140,20 +140,20 @@
               link
               @click="handleRemove(scope.row)"
               :icon="CircleCheck">
-              移出
+              绉诲嚭
             </el-button>
             <el-button
               type="info"
               link
               @click="handleView(scope.row)"
               :icon="View">
-              详情
+              璇︽儏
             </el-button>
           </template>
         </el-table-column>
       </el-table>
       
-      <!-- 分页 -->
+      <!-- 鍒嗛〉 -->
       <div class="pagination-container">
         <el-pagination
           v-model:current-page="pagination.currentPage"
@@ -166,18 +166,18 @@
       </div>
     </el-card>
 
-    <!-- 添加黑名单对话框 -->
+    <!-- 娣诲姞榛戝悕鍗曞璇濇 -->
     <el-dialog
       v-model="addDialogVisible"
-      title="添加黑名单"
+      title="娣诲姞榛戝悕鍗?
       width="500px"
       :close-on-click-modal="false"
       class="blacklist-dialog">
       <el-form :model="addForm" :rules="addRules" ref="addFormRef" label-width="100px">
-        <el-form-item label="用户" prop="userId">
+        <el-form-item label="鐢ㄦ埛" prop="userId">
           <el-select
             v-model="addForm.userId"
-            placeholder="选择用户"
+            placeholder="閫夋嫨鐢ㄦ埛"
             filterable
             remote
             :remote-method="searchUsers"
@@ -190,26 +190,26 @@
               :value="user.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="拉黑原因" prop="reason">
+        <el-form-item label="鎷夐粦鍘熷洜" prop="reason">
           <el-input
             v-model="addForm.reason"
             type="textarea"
             :rows="3"
-            placeholder="请输入拉黑原因"
+            placeholder="璇疯緭鍏ユ媺榛戝師鍥?
             maxlength="255"
             show-word-limit />
         </el-form-item>
-        <el-form-item label="拉黑期限" prop="endTime">
+        <el-form-item label="鎷夐粦鏈熼檺" prop="endTime">
           <el-radio-group v-model="addForm.durationType">
-            <el-radio label="permanent">永久</el-radio>
-            <el-radio label="custom">自定义</el-radio>
+            <el-radio label="permanent">姘镐箙</el-radio>
+            <el-radio label="custom">鑷畾涔?/el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item v-if="addForm.durationType === 'custom'" label="结束时间" prop="endTime">
+        <el-form-item v-if="addForm.durationType === 'custom'" label="缁撴潫鏃堕棿" prop="endTime">
           <el-date-picker
             v-model="addForm.endTime"
             type="datetime"
-            placeholder="选择结束时间"
+            placeholder="閫夋嫨缁撴潫鏃堕棿"
             format="YYYY-MM-DD HH:mm"
             value-format="YYYY-MM-DDTHH:mm:ss"
             style="width: 100%" />
@@ -217,36 +217,36 @@
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="addDialogVisible = false">取消</el-button>
+          <el-button @click="addDialogVisible = false">鍙栨秷</el-button>
           <el-button type="danger" @click="handleAddSubmit" :loading="addLoading">
-            添加
+            娣诲姞
           </el-button>
         </span>
       </template>
     </el-dialog>
 
-    <!-- 详情对话框 -->
+    <!-- 璇︽儏瀵硅瘽妗?-->
     <el-dialog
       v-model="detailDialogVisible"
-      title="黑名单详情"
+      title="榛戝悕鍗曡鎯?
       width="600px"
       class="detail-dialog">
       <el-descriptions :column="2" border v-if="currentDetail">
-        <el-descriptions-item label="用户姓名">{{ currentDetail.userRealName }}</el-descriptions-item>
-        <el-descriptions-item label="学号/工号">{{ currentDetail.userName }}</el-descriptions-item>
-        <el-descriptions-item label="拉黑原因" :span="2">{{ currentDetail.reason }}</el-descriptions-item>
-        <el-descriptions-item label="开始时间">{{ formatDateTime(currentDetail.startTime) }}</el-descriptions-item>
-        <el-descriptions-item label="结束时间">
+        <el-descriptions-item label="鐢ㄦ埛濮撳悕">{{ currentDetail.userRealName }}</el-descriptions-item>
+        <el-descriptions-item label="瀛﹀彿/宸ュ彿">{{ currentDetail.userName }}</el-descriptions-item>
+        <el-descriptions-item label="鎷夐粦鍘熷洜" :span="2">{{ currentDetail.reason }}</el-descriptions-item>
+        <el-descriptions-item label="寮€濮嬫椂闂?>{{ formatDateTime(currentDetail.startTime) }}</el-descriptions-item>
+        <el-descriptions-item label="缁撴潫鏃堕棿">
           <span v-if="currentDetail.endTime">{{ formatDateTime(currentDetail.endTime) }}</span>
-          <el-tag v-else type="danger" size="small">永久</el-tag>
+          <el-tag v-else type="danger" size="small">姘镐箙</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="状态">
+        <el-descriptions-item label="鐘舵€?>
           <el-tag :type="getStatusType(currentDetail.status)" size="small">
             {{ getStatusText(currentDetail.status) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="操作员">{{ currentDetail.operatorName || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间" :span="2">{{ formatDateTime(currentDetail.createdAt) }}</el-descriptions-item>
+        <el-descriptions-item label="鎿嶄綔鍛?>{{ currentDetail.operatorName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="鍒涘缓鏃堕棿" :span="2">{{ formatDateTime(currentDetail.createdAt) }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </div>
@@ -296,15 +296,15 @@ const addForm = reactive({
 });
 
 const addRules = {
-  userId: [{ required: true, message: '请选择用户', trigger: 'change' }],
+  userId: [{ required: true, message: '璇烽€夋嫨鐢ㄦ埛', trigger: 'change' }],
   reason: [
-    { required: true, message: '请输入拉黑原因', trigger: 'blur' },
-    { min: 5, max: 255, message: '原因长度应在5-255个字符之间', trigger: 'blur' }
+    { required: true, message: '璇疯緭鍏ユ媺榛戝師鍥?, trigger: 'blur' },
+    { min: 5, max: 255, message: '鍘熷洜闀垮害搴斿湪5-255涓瓧绗︿箣闂?, trigger: 'blur' }
   ],
   endTime: [{ 
     validator: (rule, value, callback) => {
       if (addForm.durationType === 'custom' && !value) {
-        callback(new Error('请选择结束时间'));
+        callback(new Error('璇烽€夋嫨缁撴潫鏃堕棿'));
       } else {
         callback();
       }
@@ -329,9 +329,9 @@ const getStatusType = (status) => {
 
 const getStatusText = (status) => {
   const texts = {
-    'ACTIVE': '生效中',
-    'EXPIRED': '已过期',
-    'REMOVED': '手动移除'
+    'ACTIVE': '鐢熸晥涓?,
+    'EXPIRED': '宸茶繃鏈?,
+    'REMOVED': '鎵嬪姩绉婚櫎'
   };
   return texts[status] || status;
 };
@@ -352,10 +352,10 @@ const loadBlacklist = async () => {
     blacklistData.value = data.content;
     pagination.total = data.totalElements;
     
-    // 加载统计信息
+    // 鍔犺浇缁熻淇℃伅
     await loadStats();
   } catch (error) {
-    ElMessage.error('加载黑名单失败');
+    ElMessage.error('鍔犺浇榛戝悕鍗曞け璐?);
   } finally {
     loading.value = false;
   }
@@ -363,14 +363,14 @@ const loadBlacklist = async () => {
 
 const loadStats = async () => {
   try {
-    // 这里可以根据实际需求调用统计接口
-    // 暂时使用模拟数据
+    // 杩欓噷鍙互鏍规嵁瀹為檯闇€姹傝皟鐢ㄧ粺璁℃帴鍙?
+    // 鏆傛椂浣跨敤妯℃嫙鏁版嵁
     stats.activeCount = blacklistData.value.filter(item => item.status === 'ACTIVE').length;
     stats.expiredCount = blacklistData.value.filter(item => item.status === 'EXPIRED').length;
     stats.removedCount = blacklistData.value.filter(item => item.status === 'REMOVED').length;
     stats.totalCount = pagination.total;
   } catch (error) {
-    console.error('加载统计信息失败:', error);
+    console.error('鍔犺浇缁熻淇℃伅澶辫触:', error);
   }
 };
 
@@ -415,7 +415,7 @@ const searchUsers = async (query) => {
     const response = await userAPI.searchUsers(query);
     userOptions.value = response.data;
   } catch (error) {
-    ElMessage.error('搜索用户失败');
+    ElMessage.error('鎼滅储鐢ㄦ埛澶辫触');
   } finally {
     userLoading.value = false;
   }
@@ -429,7 +429,6 @@ const handleAddSubmit = async () => {
     const formData = {
       userId: addForm.userId,
       reason: addForm.reason,
-      operatorId: 1 // 这里应该从登录信息获取
     };
     
     if (addForm.durationType === 'custom' && addForm.endTime) {
@@ -437,12 +436,12 @@ const handleAddSubmit = async () => {
     }
     
     await adminAPI.addToBlacklist(formData);
-    ElMessage.success('添加黑名单成功');
+    ElMessage.success('娣诲姞榛戝悕鍗曟垚鍔?);
     addDialogVisible.value = false;
     loadBlacklist();
   } catch (error) {
     if (error !== false) {
-      ElMessage.error('添加黑名单失败');
+      ElMessage.error('娣诲姞榛戝悕鍗曞け璐?);
     }
   } finally {
     addLoading.value = false;
@@ -452,21 +451,21 @@ const handleAddSubmit = async () => {
 const handleRemove = async (row) => {
   try {
     await ElMessageBox.confirm(
-      `确定要将 ${row.userRealName} 移出黑名单吗？`,
-      '确认移出',
+      `纭畾瑕佸皢 ${row.userRealName} 绉诲嚭榛戝悕鍗曞悧锛焋,
+      '纭绉诲嚭',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: '纭畾',
+        cancelButtonText: '鍙栨秷',
         type: 'warning'
       }
     );
     
-    await adminAPI.removeFromBlacklist(row.id, { operatorId: 1 }); // operatorId应该从登录信息获取
-    ElMessage.success('移出黑名单成功');
+    await adminAPI.removeFromBlacklist(row.id);
+    ElMessage.success('绉诲嚭榛戝悕鍗曟垚鍔?);
     loadBlacklist();
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('移出黑名单失败');
+      ElMessage.error('绉诲嚭榛戝悕鍗曞け璐?);
     }
   }
 };
@@ -488,7 +487,7 @@ onMounted(() => {
   min-height: calc(100vh - 88px);
 }
 
-/* 页面标题区域 */
+/* 椤甸潰鏍囬鍖哄煙 */
 .page-header {
   position: relative;
   background: #ffffff;
@@ -550,7 +549,7 @@ onMounted(() => {
   font-weight: 400;
 }
 
-/* 工具栏 */
+/* 宸ュ叿鏍?*/
 .toolbar {
   margin-bottom: 24px;
   padding: 0 40px;
@@ -613,7 +612,7 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
-/* 统计信息 */
+/* 缁熻淇℃伅 */
 .stats-row {
   margin-bottom: 24px;
   padding: 0 40px;
@@ -713,7 +712,7 @@ onMounted(() => {
   color: #909399;
 }
 
-/* 表格容器 */
+/* 琛ㄦ牸瀹瑰櫒 */
 .blacklist-card {
   margin: 0 40px 24px;
   border-radius: 0;
@@ -793,7 +792,7 @@ onMounted(() => {
   color: #606266;
 }
 
-/* 对话框样式 */
+/* 瀵硅瘽妗嗘牱寮?*/
 .blacklist-dialog :deep(.el-dialog) {
   border-radius: 16px;
   overflow: hidden;
@@ -888,13 +887,13 @@ onMounted(() => {
   color: #2d3748;
 }
 
-/* 动画效果 */
+/* 鍔ㄧ敾鏁堟灉 */
 @keyframes gradient-shimmer {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
 }
 
-/* 响应式设计 */
+/* 鍝嶅簲寮忚璁?*/
 @media (max-width: 768px) {
   .header-content {
     padding: 24px 20px 16px;
@@ -943,3 +942,4 @@ onMounted(() => {
   }
 }
 </style>
+

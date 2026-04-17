@@ -4,6 +4,7 @@ import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.*;
 import com.facility.booking.repository.*;
+import com.facility.booking.security.CurrentUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -45,6 +46,9 @@ public class AdminController {
 
     @Autowired
     private ReservationRepository reservationRepository;
+
+    @Autowired
+    private CurrentUserService currentUserService;
 
     /**
      * 预约规则配置管理
@@ -188,7 +192,10 @@ public class AdminController {
             Long userId = Long.valueOf(blacklistData.get("userId").toString());
             String reason = blacklistData.get("reason").toString();
             String endTimeStr = blacklistData.get("endTime") != null ? blacklistData.get("endTime").toString() : null;
-            Long operatorId = Long.valueOf(blacklistData.get("operatorId").toString());
+            Long operatorId = currentUserService.getCurrentUserId();
+            if (operatorId == null) {
+                return Result.error(401, "Unauthorized");
+            }
             
             // 检查用户是否已存在有效黑名单记录
             Optional<Blacklist> existingBlacklist = blacklistRepository.findByUserIdAndStatus(userId, "ACTIVE");
@@ -223,7 +230,11 @@ public class AdminController {
      */
     @PutMapping("/blacklist/{id}/remove")
     @OperationLog(operationType = "REMOVE_BLACKLIST", detail = "将用户移出黑名单")
-    public Result<Blacklist> removeFromBlacklist(@PathVariable Long id, @RequestParam Long operatorId) {
+    public Result<Blacklist> removeFromBlacklist(@PathVariable Long id) {
+        Long operatorId = currentUserService.getCurrentUserId();
+        if (operatorId == null) {
+            return Result.error(401, "Unauthorized");
+        }
         Optional<Blacklist> blacklistOpt = blacklistRepository.findById(id);
         if (!blacklistOpt.isPresent()) {
             return Result.error("黑名单记录不存在");
@@ -235,6 +246,7 @@ public class AdminController {
         }
         
         blacklist.setStatus("REMOVED");
+        blacklist.setOperatorId(operatorId);
         Blacklist updatedBlacklist = blacklistRepository.save(blacklist);
         
         return Result.success("移出黑名单成功", updatedBlacklist);

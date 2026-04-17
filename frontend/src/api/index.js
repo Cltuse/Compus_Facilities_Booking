@@ -27,20 +27,13 @@ export const feedbackAPI = {
         request.get(`/feedback/${id}`),
     
     // 鍥炲鍙嶉
-    replyFeedback: (id, data) => {
-        // 鍚庣鎺ュ彛闇€瑕乺eply鍜宎dminId鍙傛暟
-        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        return request.post(`/feedback/${id}/reply`, null, { 
-            params: { 
-                reply: data.replyContent, 
-                adminId: userInfo.id 
-            } 
-        });
-    },
-    
-    // 鏇存柊鍙嶉鐘舵€?
-    updateFeedbackStatus: (id, status) => 
-        request.put(`/feedback/${id}/status`, { status }),
+    replyFeedback: (id, data) => request.post(`/feedback/${id}/reply`, null, {
+        params: {
+            reply: data.replyContent
+        }
+    }),
+    updateFeedbackStatus: (id, status) =>
+        request.put(`/feedback/${id}/status`, null, { params: { status } }),
     
     // 鍒犻櫎鍙嶉
     deleteFeedback: (id) => 
@@ -120,7 +113,7 @@ export const reservationAPI = {
     // 绛惧埌绛鹃€€鐩稿叧鎺ュ彛
     checkin: (id) => request.put(`/reservation/${id}/checkin`),
     checkout: (id) => request.put(`/reservation/${id}/checkout`),
-    verify: (id, adminId, verificationCode) => request.put(`/reservation/${id}/verify?adminId=${adminId}&verificationCode=${verificationCode}`),
+    verify: (id, verificationCode) => request.put(`/reservation/${id}/verify`, null, { params: { verificationCode } }),
     getVerificationCode: (id) => request.get(`/reservation/${id}/verification-code`),
     checkAvailability: (facilityId, startTime, endTime) => request.get('/reservation/availability', {
         params: { facilityId, startTime, endTime }
@@ -213,7 +206,7 @@ export const adminAPI = {
     // 榛戝悕鍗曠鐞?
     getBlacklist: (params) => request.get('/admin/blacklist', { params }),
     addToBlacklist: (data) => request.post('/admin/blacklist', data),
-    removeFromBlacklist: (id, params) => request.put(`/admin/blacklist/${id}/remove`, null, { params }),
+    removeFromBlacklist: (id) => request.put(`/admin/blacklist/${id}/remove`),
     autoExpireBlacklist: () => request.put('/admin/blacklist/auto-expire'),
     
     // 鎿嶄綔鏃ュ織瀹¤
@@ -228,17 +221,17 @@ export const adminAPI = {
     getAllViolations: (page = 0, size = 10, userName = '', violationType = '', status = '') => 
         request.get('/violation/all', { params: { page, size, userName, violationType, status } }),
     recordViolation: (data) => request.post('/violation/record', data),
-    approveViolation: (id, adminId, remark) => request.post(`/violation/${id}/approve`, null, {
-        params: { adminId, remark }
+    approveViolation: (id, remark) => request.post(`/violation/${id}/approve`, null, {
+        params: { remark }
     }),
-    rejectViolation: (id, adminId, remark) => request.post(`/violation/${id}/reject`, null, {
-        params: { adminId, remark }
+    rejectViolation: (id, remark) => request.post(`/violation/${id}/reject`, null, {
+        params: { remark }
     }),
-    revokeViolation: (id, adminId, remark) => request.post(`/violation/${id}/revoke`, null, {
-        params: { adminId, remark }
+    revokeViolation: (id, remark) => request.post(`/violation/${id}/revoke`, null, {
+        params: { remark }
     }),
-    updateViolationStatus: (id, status, reportedBy) => request.put(`/violation/${id}/status`, null, {
-        params: { status, reportedBy }
+    updateViolationStatus: (id, status) => request.put(`/violation/${id}/status`, null, {
+        params: { status }
     }),
     
     // 缁熻鏁版嵁
@@ -254,17 +247,17 @@ export const violationAPI = {
     getAllViolations: (page = 0, size = 10, userName = '', violationType = '', status = '') => 
         request.get('/violation/all', { params: { page, size, userName, violationType, status } }),
     recordViolation: (data) => request.post('/violation/record', data),
-    approveViolation: (id, adminId, remark) => request.post(`/violation/${id}/approve`, null, {
-        params: { adminId, remark }
+    approveViolation: (id, remark) => request.post(`/violation/${id}/approve`, null, {
+        params: { remark }
     }),
-    rejectViolation: (id, adminId, remark) => request.post(`/violation/${id}/reject`, null, {
-        params: { adminId, remark }
+    rejectViolation: (id, remark) => request.post(`/violation/${id}/reject`, null, {
+        params: { remark }
     }),
-    revokeViolation: (id, adminId, remark) => request.post(`/violation/${id}/revoke`, null, {
-        params: { adminId, remark }
+    revokeViolation: (id, remark) => request.post(`/violation/${id}/revoke`, null, {
+        params: { remark }
     }),
-    updateViolationStatus: (id, status, reportedBy) => request.put(`/violation/${id}/status`, null, {
-        params: { status, reportedBy }
+    updateViolationStatus: (id, status) => request.put(`/violation/${id}/status`, null, {
+        params: { status }
     }),
     getUserCurrentCreditScore: (userId) => request.get(`/violation/user/${userId}/credit-score`),
     getUserViolationCount: (userId) => request.get(`/violation/user/${userId}/violation-count`),

@@ -635,7 +635,7 @@ const handleCompleteSubmit = async () => {
 
 const submitCompleteWithLocalTime = async () => {
   if (!completeResult.value.trim()) {
-    ElMessage.error('???????');
+    ElMessage.error('请输入处理结果');
     return;
   }
 
@@ -645,7 +645,7 @@ const submitCompleteWithLocalTime = async () => {
     if (currentRow.value.startTime) {
       const startTime = new Date(currentRow.value.startTime);
       if (currentEndTime < startTime) {
-        ElMessage.error('????????????');
+        ElMessage.error('完成时间不能早于开始时间');
         return;
       }
     }
@@ -659,12 +659,12 @@ const submitCompleteWithLocalTime = async () => {
     };
 
     await maintenanceAPI.complete(currentRow.value.id, updateData);
-    ElMessage.success('???????');
+    ElMessage.success('维护任务已完成');
     completeDialogVisible.value = false;
     loadMaintenanceList();
   } catch (error) {
-    console.error('????????:', error);
-    ElMessage.error(error?.message || error?.response?.data?.message || '????????');
+    console.error('完成维护任务失败:', error);
+    ElMessage.error(error?.message || error?.response?.data?.message || '完成维护任务失败');
   }
 };
 

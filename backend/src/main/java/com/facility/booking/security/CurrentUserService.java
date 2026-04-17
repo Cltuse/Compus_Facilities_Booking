@@ -19,4 +19,20 @@ public class CurrentUserService {
         CustomUserPrincipal principal = getCurrentUser();
         return principal == null ? null : principal.id();
     }
+
+    public String getCurrentUserName() {
+        CustomUserPrincipal principal = getCurrentUser();
+        if (principal == null) {
+            return null;
+        }
+        if (principal.realName() != null && !principal.realName().isBlank()) {
+            return principal.realName();
+        }
+        return principal.username();
+    }
+
+    public boolean hasRole(String role) {
+        CustomUserPrincipal principal = getCurrentUser();
+        return principal != null && role != null && role.equals(principal.role());
+    }
 }

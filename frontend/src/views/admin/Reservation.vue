@@ -890,9 +890,7 @@ const handleVerifySubmit = async () => {
   
   try {
     verifyLoading.value = true;
-    // 使用管理员ID 1 作为示例，实际应该从登录信息获取
-    const adminId = 1;
-    await reservationAPI.verify(currentRow.value.id, adminId, verifyForm.value.verificationCode.trim());
+    await reservationAPI.verify(currentRow.value.id, verifyForm.value.verificationCode.trim());
     ElMessage.success('核销成功');
     verifyDialogVisible.value = false;
     loadReservationList();

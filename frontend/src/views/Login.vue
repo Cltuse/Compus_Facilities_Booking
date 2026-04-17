@@ -1,17 +1,14 @@
 <template>
   <div class="login-container">
-    <!-- 装饰性背景元素 -->
     <div class="decoration-circle decoration-circle-1"></div>
     <div class="decoration-circle decoration-circle-2"></div>
     <div class="decoration-shape decoration-shape-1"></div>
 
     <div class="login-box">
-      <!-- 顶部装饰线 -->
       <div class="login-box-header">
         <div class="header-line"></div>
       </div>
 
-      <!-- Logo和标题区域 -->
       <div class="title-section">
         <div class="logo-icon">
           <svg viewBox="0 0 24 24" fill="none">
@@ -60,12 +57,11 @@
           </el-button>
         </el-form-item>
         <div class="register-link">
-          还没有账户？
+          还没有账号？
           <el-link type="primary" @click="goToRegister">立即注册</el-link>
         </div>
       </el-form>
 
-      <!-- 底部装饰 -->
       <div class="login-box-footer">
         <div class="footer-line"></div>
       </div>
@@ -74,59 +70,55 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
-import { userAPI } from '../api';
+import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { userAPI } from '../api'
+import { setAuth } from '../utils/auth'
 
-const router = useRouter();
-const loginFormRef = ref(null);
-const loading = ref(false);
+const router = useRouter()
+const loginFormRef = ref(null)
+const loading = ref(false)
 
 const loginForm = reactive({
   username: '',
   password: ''
-});
+})
 
 const rules = {
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' }
-  ]
-};
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+}
+
+function resolveHomeByRole(role) {
+  if (role === 'ADMIN') {
+    return '/admin/dashboard'
+  }
+  if (role === 'MAINTAINER') {
+    return '/maintainer/dashboard'
+  }
+  return '/user/welcome'
+}
 
 const handleLogin = async () => {
   try {
-    await loginFormRef.value.validate();
-    loading.value = true;
+    await loginFormRef.value.validate()
+    loading.value = true
 
-    const res = await userAPI.login(loginForm);
-
-    localStorage.setItem('userInfo', JSON.stringify(res.data));
-    ElMessage.success('登录成功');
-
-    // 根据角色跳转到不同页面
-    if (res.data.role === 'ADMIN') {
-      router.push('/admin/dashboard');
-    } else if (res.data.role === 'MAINTAINER') {
-      router.push('/maintainer/dashboard');
-    } else {
-      // 对于 TEACHER, STUDENT 或其他 USER 角色，跳转到用户欢迎页面
-      router.push('/user/welcome');
-    }
+    const res = await userAPI.login(loginForm)
+    setAuth(res.data)
+    ElMessage.success('登录成功')
+    router.push(resolveHomeByRole(res.data.user?.role))
   } catch (error) {
-    console.error('登录失败:', error);
-
+    console.error('登录失败:', error)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
 const goToRegister = () => {
-  router.push('/register');
-};
+  router.push('/register')
+}
 </script>
 
 <style scoped>
@@ -143,15 +135,11 @@ const goToRegister = () => {
 .login-container::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 25%, #f8fafc 50%, #e0f2fe 100%);
   z-index: 0;
 }
 
-/* 装饰性背景元素 */
 .decoration-circle {
   position: absolute;
   border-radius: 50%;
@@ -220,13 +208,8 @@ const goToRegister = () => {
 
 .login-box:hover {
   transform: translateY(-2px);
-  box-shadow:
-    0 25px 30px -5px rgba(0, 0, 0, 0.12),
-    0 15px 15px -5px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
-/* 顶部装饰线 */
 .login-box-header {
   height: 4px;
   background: linear-gradient(90deg, #409eff 0%, #66b1ff 50%, #409eff 100%);
@@ -239,7 +222,6 @@ const goToRegister = () => {
   50% { background-position: 100% 50%; }
 }
 
-/* 标题区域 */
 .title-section {
   padding: 40px 48px 20px;
   text-align: center;
@@ -255,12 +237,6 @@ const goToRegister = () => {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
-  transition: all 0.3s ease;
-}
-
-.logo-icon:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.25);
 }
 
 .logo-icon svg {
@@ -274,16 +250,12 @@ const goToRegister = () => {
   color: #1a202c;
   margin: 0 0 8px 0;
   line-height: 1.3;
-  letter-spacing: 0.3px;
 }
 
 .subtitle {
   font-size: 13px;
   color: #718096;
   margin: 0;
-  font-weight: 400;
-  letter-spacing: 0.5px;
-  opacity: 0.8;
 }
 
 .login-form {
@@ -298,7 +270,6 @@ const goToRegister = () => {
   width: 100%;
 }
 
-/* 重写Element Plus表单样式 */
 .login-form :deep(.el-input__wrapper) {
   border-radius: 12px;
   border: 1px solid #e2e8f0;
@@ -306,38 +277,6 @@ const goToRegister = () => {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   height: 52px;
   background: #f7fafc;
-}
-
-.login-form :deep(.el-input__wrapper:hover) {
-  border-color: #cbd5e0;
-  background: #ffffff;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.login-form :deep(.el-input__wrapper.is-focus) {
-  border-color: #409eff;
-  background: #ffffff;
-  box-shadow:
-    0 0 0 3px rgba(64, 158, 255, 0.1),
-    0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.login-form :deep(.el-input__inner) {
-  font-size: 15px;
-  color: #2d3748;
-  height: 50px;
-  line-height: 50px;
-  font-weight: 500;
-}
-
-.login-form :deep(.el-input__inner::placeholder) {
-  color: #a0aec0;
-  font-weight: 400;
-}
-
-.login-form :deep(.el-input__prefix-inner) {
-  color: #718096;
-  padding-right: 8px;
 }
 
 .login-form :deep(.el-form-item) {
@@ -357,36 +296,6 @@ const goToRegister = () => {
   font-weight: 600;
   background: linear-gradient(135deg, #409eff 0%, #1976d2 100%);
   border: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 14px rgba(64, 158, 255, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.login-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.login-button:hover::before {
-  left: 100%;
-}
-
-.login-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(64, 158, 255, 0.4);
-  background: linear-gradient(135deg, #66b1ff 0%, #1976d2 100%);
-}
-
-.login-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
 }
 
 .register-link {
@@ -396,12 +305,6 @@ const goToRegister = () => {
   color: #718096;
 }
 
-.register-link .el-link {
-  margin-left: 4px;
-  font-weight: 500;
-}
-
-/* 底部装饰线 */
 .login-box-footer {
   height: 3px;
   background: linear-gradient(90deg, #e2e8f0 0%, #cbd5e0 50%, #e2e8f0 100%);
@@ -409,7 +312,6 @@ const goToRegister = () => {
   animation: gradient-shimmer 3s ease-in-out infinite reverse;
 }
 
-/* 响应式优化 */
 @media (max-width: 520px) {
   .login-box {
     width: 90%;
@@ -422,10 +324,6 @@ const goToRegister = () => {
 
   .login-form {
     padding: 16px 32px 24px;
-  }
-
-  .title {
-    font-size: 20px;
   }
 }
 </style>

@@ -1,8 +1,11 @@
 package com.facility.booking.controller;
 
 import com.facility.booking.common.Result;
+import com.facility.booking.dto.auth.AuthResponse;
 import com.facility.booking.entity.User;
 import com.facility.booking.repository.UserRepository;
+import com.facility.booking.security.CustomUserPrincipal;
+import com.facility.booking.security.JwtTokenProvider;
 import com.facility.booking.service.ViolationRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -11,15 +14,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * 用户管理控制器
- * 提供用户注册、登录、信息管理等功能
- */
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -30,46 +28,25 @@ public class UserController {
     @Autowired
     private ViolationRecordService violationRecordService;
 
-    /**
-     * 用户登录
-     * @param user 包含用户名和密码的用户信息
-     * @return 登录结果和用户基本信息
-     */
-    @PostMapping("/login")
-    public Result<Map<String, Object>> login(@RequestBody User user) {
-        Optional<User> userOpt = userRepository.findByUsernameAndPassword(
-                user.getUsername(), user.getPassword());
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
-        if (userOpt.isPresent()) {
-            User foundUser = userOpt.get();
-            Map<String, Object> data = new HashMap<>();
-            data.put("id", foundUser.getId());
-            data.put("username", foundUser.getUsername());
-            data.put("realName", foundUser.getRealName());
-            data.put("role", foundUser.getRole());
-            data.put("phone", foundUser.getPhone());
-            data.put("email", foundUser.getEmail());
-            data.put("avatar", foundUser.getAvatar());
-            return Result.success("登录成功", data);
-        } else {
+    @PostMapping("/login")
+    public Result<AuthResponse> login(@RequestBody User user) {
+        Optional<User> userOpt = userRepository.findByUsernameAndPassword(user.getUsername(), user.getPassword());
+        if (userOpt.isEmpty()) {
             return Result.error("用户名或密码错误");
         }
+        return Result.success("登录成功", buildAuthResponse(userOpt.get()));
     }
 
-    /**
-     * 用户注册
-     * @param user 用户注册信息
-     * @return 注册结果和用户基本信息
-     */
     @PostMapping("/register")
-    public Result<Map<String, Object>> register(@RequestBody User user) {
-        // 检查用户名是否已存在
+    public Result<AuthResponse> register(@RequestBody User user) {
         Optional<User> existingUser = userRepository.findByUsername(user.getUsername());
         if (existingUser.isPresent()) {
             return Result.error("用户名已存在");
         }
 
-        // 检查邮箱是否已存在
         if (user.getEmail() != null && !user.getEmail().isEmpty()) {
             Optional<User> existingEmailUser = userRepository.findByEmail(user.getEmail());
             if (existingEmailUser.isPresent()) {
@@ -77,7 +54,6 @@ public class UserController {
             }
         }
 
-        // 设置默认值
         if (user.getRole() == null || user.getRole().isEmpty()) {
             user.setRole("USER");
         }
@@ -86,30 +62,14 @@ public class UserController {
         }
 
         User savedUser = userRepository.save(user);
-
-        // 返回用户信息（用于自动登录）
-        Map<String, Object> data = new HashMap<>();
-        data.put("id", savedUser.getId());
-        data.put("username", savedUser.getUsername());
-        data.put("realName", savedUser.getRealName());
-        data.put("role", savedUser.getRole());
-        data.put("phone", savedUser.getPhone());
-        data.put("email", savedUser.getEmail());
-        data.put("avatar", savedUser.getAvatar());
-
-        return Result.success("注册成功", data);
+        return Result.success("注册成功", buildAuthResponse(savedUser));
     }
 
-    /**
-     * 获取所有用户列表（分页）
-     * @return 用户列表，密码已隐藏
-     */
     @GetMapping("/list")
     public Result<Page<User>> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
-            System.out.println("Getting users list with pagination: page=" + page + ", size=" + size);
             PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
             Page<User> users = userRepository.findAll(pageRequest);
             users.forEach(user -> {
@@ -118,20 +78,12 @@ public class UserController {
                 user.setViolationCount(violationRecordService.getUserViolationCount(user.getId()));
                 user.setPassword("******");
             });
-            System.out.println("Successfully retrieved " + users.getNumberOfElements() + " users, total: " + users.getTotalElements());
             return Result.success(users);
         } catch (Exception e) {
-            System.err.println("Error getting user list: " + e.getMessage());
-            e.printStackTrace();
             return Result.error("获取用户列表失败: " + e.getMessage());
         }
     }
 
-    /**
-     * 根据ID获取用户详情
-     * @param id 用户ID
-     * @return 用户详情，密码已隐藏
-     */
     @GetMapping("/{id}")
     public Result<User> getById(@PathVariable Long id) {
         Optional<User> user = userRepository.findById(id);
@@ -146,14 +98,8 @@ public class UserController {
         return Result.error("用户不存在");
     }
 
-    /**
-     * 创建新用户
-     * @param user 用户信息
-     * @return 创建的用户信息，密码已隐藏
-     */
     @PostMapping
     public Result<User> create(@RequestBody User user) {
-        // 检查用户名是否已存在
         Optional<User> existingUser = userRepository.findByUsername(user.getUsername());
         if (existingUser.isPresent()) {
             return Result.error("用户名已存在");
@@ -163,16 +109,10 @@ public class UserController {
         return Result.success("创建成功", savedUser);
     }
 
-    /**
-     * 更新用户信息
-     * @param id 用户ID
-     * @param user 更新的用户信息
-     * @return 更新后的用户信息，密码已隐藏
-     */
     @PutMapping("/{id}")
     public Result<User> update(@PathVariable Long id, @RequestBody User user) {
         Optional<User> userOpt = userRepository.findById(id);
-        if (!userOpt.isPresent()) {
+        if (userOpt.isEmpty()) {
             return Result.error("用户不存在");
         }
 
@@ -184,7 +124,6 @@ public class UserController {
         existingUser.setStatus(user.getStatus());
         existingUser.setAvatar(user.getAvatar());
 
-        // 只有密码不为null且不为空字符串时才更新密码
         if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {
             existingUser.setPassword(user.getPassword());
         }
@@ -194,16 +133,10 @@ public class UserController {
         return Result.success("更新成功", savedUser);
     }
 
-    /**
-     * 修改用户密码
-     * @param id 用户ID
-     * @param passwordData 包含当前密码和新密码的数据
-     * @return 密码修改结果
-     */
     @PostMapping("/{id}/change-password")
     public Result<String> changePassword(@PathVariable Long id, @RequestBody Map<String, String> passwordData) {
         Optional<User> userOpt = userRepository.findById(id);
-        if (!userOpt.isPresent()) {
+        if (userOpt.isEmpty()) {
             return Result.error("用户不存在");
         }
 
@@ -213,34 +146,23 @@ public class UserController {
         if (currentPassword == null || currentPassword.trim().isEmpty()) {
             return Result.error("当前密码不能为空");
         }
-
         if (newPassword == null || newPassword.trim().isEmpty()) {
             return Result.error("新密码不能为空");
         }
-
         if (newPassword.length() < 6 || newPassword.length() > 20) {
             return Result.error("新密码长度必须在6-20个字符之间");
         }
 
         User existingUser = userOpt.get();
-
-        // 验证当前密码
         if (!currentPassword.equals(existingUser.getPassword())) {
             return Result.error("当前密码错误");
         }
 
-        // 更新密码
         existingUser.setPassword(newPassword);
         userRepository.save(existingUser);
-
-        return Result.success("密码修改成功");
+        return Result.success("密码修改成功", null);
     }
 
-    /**
-     * 删除用户
-     * @param id 用户ID
-     * @return 删除结果
-     */
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         if (!userRepository.existsById(id)) {
@@ -250,28 +172,44 @@ public class UserController {
         return Result.success("删除成功", null);
     }
 
-    /**
-     * 搜索用户（按姓名或学号）
-     * @param keyword 搜索关键词
-     * @return 匹配的用户列表
-     */
     @GetMapping("/search")
     public Result<List<User>> searchUsers(@RequestParam String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return Result.success(new ArrayList<>());
         }
-        
+
         String searchTerm = "%" + keyword.trim() + "%";
         List<User> users = userRepository.findByRealNameLikeOrUsernameLike(searchTerm);
-
-        // 隐藏密码信息
         users.forEach(user -> {
             violationRecordService.recalculateUserCreditScoreAndViolationCount(user.getId());
             user.setCreditScore(violationRecordService.getUserCurrentCreditScore(user.getId()));
             user.setViolationCount(violationRecordService.getUserViolationCount(user.getId()));
             user.setPassword("******");
         });
-        
         return Result.success(users);
+    }
+
+    private AuthResponse buildAuthResponse(User user) {
+        CustomUserPrincipal principal = new CustomUserPrincipal(
+                user.getId(),
+                user.getUsername(),
+                user.getRealName(),
+                user.getRole(),
+                user.getStatus()
+        );
+        return new AuthResponse(
+                jwtTokenProvider.generateToken(principal),
+                jwtTokenProvider.getExpirationMillis(),
+                new AuthResponse.UserProfile(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getRealName(),
+                        user.getRole(),
+                        user.getPhone(),
+                        user.getEmail(),
+                        user.getAvatar(),
+                        user.getStatus()
+                )
+        );
     }
 }

@@ -228,6 +228,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Edit, Lock, Camera, Upload } from '@element-plus/icons-vue';
 import { userAPI, fileAPI } from '../../api';
 import { getRoleDisplayName } from '../../utils/roleMapping';
+import { clearAuth, getUserInfo, updateStoredUserInfo } from '../../utils/auth';
 
 const userInfo = ref({});
 const profileDialogVisible = ref(false);
@@ -282,9 +283,9 @@ onMounted(() => {
 });
 
 const loadUserInfo = () => {
-  const info = localStorage.getItem('userInfo');
+  const info = getUserInfo();
   if (info) {
-    userInfo.value = JSON.parse(info);
+    userInfo.value = info;
     profileForm.value = {
       realName: userInfo.value.realName || '',
       phone: userInfo.value.phone || '',
@@ -327,7 +328,7 @@ const handleProfileSubmit = async () => {
     await userAPI.update(userInfo.value.id, updatedUser);
 
     // 更新本地存储
-    localStorage.setItem('userInfo', JSON.stringify(updatedUser));
+    updateStoredUserInfo(updatedUser);
     userInfo.value = updatedUser;
 
     profileDialogVisible.value = false;
@@ -392,7 +393,7 @@ const handlePasswordSubmit = async () => {
 
     // 2秒后自动退出登录
     setTimeout(() => {
-      localStorage.removeItem('userInfo');
+      clearAuth();
       window.location.href = '/login';
     }, 2000);
   } catch (error) {

@@ -214,10 +214,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { userAPI, fileAPI } from '../../api';
 import { Edit, Lock, Camera, Upload } from '@element-plus/icons-vue';
+import { clearAuth, getUserInfo, updateStoredUserInfo } from '../../utils/auth';
 
 const profileDialogVisible = ref(false);
 const passwordDialogVisible = ref(false);
@@ -281,7 +282,11 @@ onMounted(() => {
 
 const loadUserInfo = async () => {
   try {
-    const storedUserInfo = JSON.parse(localStorage.getItem('userInfo'));
+    const storedUserInfo = getUserInfo();
+    if (!storedUserInfo) {
+      ElMessage.error('加载用户信息失败');
+      return;
+    }
     userInfo.value = { ...storedUserInfo };
     profileForm.value = {
       username: storedUserInfo.username || '',
@@ -334,10 +339,10 @@ const saveProfile = async () => {
       ElMessage.success('个人信息更新成功');
 
       // 更新本地存储
-      const storedUserInfo = JSON.parse(localStorage.getItem('userInfo'));
-      storedUserInfo.realName = profileForm.value.realName;
-      storedUserInfo.avatar = profileForm.value.avatar;
-      localStorage.setItem('userInfo', JSON.stringify(storedUserInfo));
+      updateStoredUserInfo({
+        realName: profileForm.value.realName,
+        avatar: profileForm.value.avatar
+      });
 
       // 更新显示信息
       userInfo.value.realName = profileForm.value.realName;
@@ -373,14 +378,18 @@ const updatePassword = async () => {
   try {
     await passwordFormRef.value.validate();
 
-    const result = await userAPI.changePassword(
-        passwordForm.value.oldPassword,
-        passwordForm.value.newPassword
-    );
+    const result = await userAPI.changePassword(userInfo.value.id, {
+      currentPassword: passwordForm.value.oldPassword,
+      newPassword: passwordForm.value.newPassword
+    });
 
     if (result.code === 200) {
-      ElMessage.success('密码修改成功');
+      ElMessage.success('密码修改成功，请重新登录');
       passwordDialogVisible.value = false;
+      setTimeout(() => {
+        clearAuth();
+        window.location.href = '/login';
+      }, 2000);
     } else {
       ElMessage.error(result.message || '密码修改失败');
     }

@@ -149,8 +149,7 @@ const handleRegister = async () => {
       username: registerForm.username,
       password: registerForm.password,
       realName: registerForm.realName,
-      email: registerForm.email,
-      role: 'USER'
+      email: registerForm.email
     }
 
     const res = await userAPI.register(registerData)

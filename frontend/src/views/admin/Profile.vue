@@ -343,14 +343,20 @@ const handleProfileSubmit = async () => {
     }
 
     // 更新个人信息
-    const updatedUser = { ...userInfo.value, ...profileForm.value };
+    const updatedUser = {
+      realName: profileForm.value.realName,
+      phone: profileForm.value.phone,
+      email: profileForm.value.email,
+      avatar: profileForm.value.avatar
+    };
 
     // 调用API更新用户信息
-    await userAPI.update(userInfo.value.id, updatedUser);
+    const res = await userAPI.updateProfile(updatedUser);
+    const nextUser = { ...userInfo.value, ...res.data };
 
     // 更新本地存储
-    updateStoredUserInfo(updatedUser);
-    userInfo.value = updatedUser;
+    updateStoredUserInfo(nextUser);
+    userInfo.value = nextUser;
 
     profileDialogVisible.value = false;
     ElMessage.success('个人信息更新成功');

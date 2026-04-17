@@ -330,7 +330,7 @@ const saveProfile = async () => {
       }
     }
 
-    const result = await userAPI.update(profileForm.value.id, {
+    const result = await userAPI.updateProfile({
       realName: profileForm.value.realName,
       avatar: profileForm.value.avatar
     });
@@ -345,8 +345,10 @@ const saveProfile = async () => {
       });
 
       // 更新显示信息
-      userInfo.value.realName = profileForm.value.realName;
-      userInfo.value.avatar = profileForm.value.avatar;
+      userInfo.value = {
+        ...userInfo.value,
+        ...result.data
+      };
 
       profileDialogVisible.value = false;
       avatarFile.value = null;

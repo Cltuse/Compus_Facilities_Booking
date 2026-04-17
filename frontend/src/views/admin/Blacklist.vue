@@ -107,32 +107,32 @@
       <el-table :data="blacklistData" style="width: 100%" v-loading="loading">
         <el-table-column prop="userRealName" label="用户姓名" width="100" />
         <el-table-column prop="userName" label="学号/工号" width="120" />
-        <el-table-column prop="reason" label="拉黑原因" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="startTime" label="开始时间" width="160">
+        <el-table-column prop="reason" label="拉黑原因" min-width="200" show-overflow-tooltip align="center" />
+        <el-table-column prop="startTime" label="开始时间" width="260" align="center" >
           <template #default="scope">
             {{ formatDateTime(scope.row.startTime) }}
           </template>
         </el-table-column>
-        <el-table-column prop="endTime" label="结束时间" width="160">
+        <el-table-column prop="endTime" label="结束时间" width="260" align="center">
           <template #default="scope">
             <span v-if="scope.row.endTime">{{ formatDateTime(scope.row.endTime) }}</span>
             <el-tag v-else type="danger" size="small">永久</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="scope">
             <el-tag :type="getStatusType(scope.row.status)" size="small">
               {{ getStatusText(scope.row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="operatorName" label="操作员" width="80" />
-        <el-table-column prop="createdAt" label="创建时间" width="160">
+        <el-table-column prop="operatorName" label="操作员" width="100" align="center" />
+        <el-table-column prop="createdAt" label="创建时间" width="260" align="center">
           <template #default="scope">
             {{ formatDateTime(scope.row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right" align="center">
+        <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="scope">
             <el-button
               v-if="scope.row.status === 'ACTIVE'"

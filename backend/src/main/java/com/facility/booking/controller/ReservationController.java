@@ -1,5 +1,6 @@
 package com.facility.booking.controller;
 
+import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.Facility;
 import com.facility.booking.entity.Reservation;
@@ -248,6 +249,7 @@ public class ReservationController {
      * 管理员扫码核验
      */
     @PostMapping("/verify")
+    @OperationLog(operationType = "VERIFY_CHECKIN", detail = "核校签到")
     public Result<Reservation> verifyByCode(@RequestParam String verificationCode, 
                                            @RequestParam Long adminId) {
         try {
@@ -310,6 +312,7 @@ public class ReservationController {
      * @return 审核通过的预约记录信息
      */
     @PutMapping("/{id}/approve")
+    @OperationLog(operationType = "APPROVE_BOOKING", detail = "审核通过预约")
     public Result<Reservation> approve(@PathVariable Long id, @RequestBody Reservation reservation) {
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
@@ -339,6 +342,7 @@ public class ReservationController {
      * @return 被拒绝的预约记录信息
      */
     @PutMapping("/{id}/reject")
+    @OperationLog(operationType = "REJECT_BOOKING", detail = "拒绝预约")
     public Result<Reservation> reject(@PathVariable Long id, @RequestBody Reservation reservation) {
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
@@ -439,6 +443,7 @@ public class ReservationController {
      * @return 删除结果
      */
     @DeleteMapping("/{id}")
+    @OperationLog(operationType = "DELETE_BOOKING", detail = "删除预约")
     public Result<Void> delete(@PathVariable Long id) {
         if (!reservationRepository.existsById(id)) {
             return Result.error("预约不存在");
@@ -499,6 +504,7 @@ public class ReservationController {
      * @return 签到结果
      */
     @PutMapping("/{id}/checkin")
+    @OperationLog(operationType = "VERIFY_CHECKIN", detail = "核校签到")
     public Result<Reservation> checkin(@PathVariable Long id) {
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
@@ -553,6 +559,7 @@ public class ReservationController {
      * @return 签退结果
      */
     @PutMapping("/{id}/checkout")
+    @OperationLog(operationType = "VERIFY_CHECKOUT", detail = "核校签退")
     public Result<Reservation> checkout(@PathVariable Long id) {
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
@@ -591,6 +598,7 @@ public class ReservationController {
      * @return 核销结果
      */
     @PutMapping("/{id}/verify")
+    @OperationLog(operationType = "VERIFY_CHECKIN", detail = "核校签到")
     public Result<Reservation> verify(@PathVariable Long id, 
                                      @RequestParam Long adminId,
                                      @RequestParam String verificationCode) {

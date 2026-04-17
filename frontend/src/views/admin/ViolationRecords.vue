@@ -152,7 +152,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="违规描述" min-width="300">
+        <el-table-column prop="description" label="违规描述" min-width="300" align="center">
           <template #default="{ row }">
             <div class="violation-description">
               <div class="description-text">{{ row.description }}</div>
@@ -162,7 +162,7 @@
 
         <!-- 删除关联设施列，数据库中不存在此字段 -->
 
-        <el-table-column prop="reportedTime" label="上报时间" width="180">
+        <el-table-column prop="reportedTime" label="上报时间" width="240" align="center">
           <template #default="{ row }">
             <div class="time-info">
               <el-icon><Calendar /></el-icon>
@@ -179,7 +179,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="120" align="center">
+        <el-table-column prop="status" label="状态" width="150" align="center">
           <template #default="{ row }">
             <el-tag
                 :type="getStatusType(row.status)"
@@ -196,7 +196,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="260" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button

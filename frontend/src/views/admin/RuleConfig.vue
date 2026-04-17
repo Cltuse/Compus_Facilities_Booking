@@ -72,37 +72,37 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="minDurationMinutes" label="最小时长" width="90">
+        <el-table-column prop="minDurationMinutes" label="最小时长" width="100">
           <template #default="scope">
             {{ scope.row.minDurationMinutes }}分钟
           </template>
         </el-table-column>
 
-        <el-table-column prop="maxDurationMinutes" label="最大时长" width="90">
+        <el-table-column prop="maxDurationMinutes" label="最大时长" width="100">
           <template #default="scope">
             {{ scope.row.maxDurationMinutes }}分钟
           </template>
         </el-table-column>
 
-        <el-table-column prop="advanceDaysMax" label="提前天数" width="90">
+        <el-table-column prop="advanceDaysMax" label="提前天数" width="100">
           <template #default="scope">
             {{ scope.row.advanceDaysMax }}天
           </template>
         </el-table-column>
 
-        <el-table-column prop="maxBookingsPerDay" label="每日预约" width="90">
+        <el-table-column prop="maxBookingsPerDay" label="每日预约" width="100">
           <template #default="scope">
             {{ scope.row.maxBookingsPerDay }}次
           </template>
         </el-table-column>
 
-        <el-table-column prop="maxActiveBookings" label="生效预约" width="90">
+        <el-table-column prop="maxActiveBookings" label="生效预约" width="100">
           <template #default="scope">
             {{ scope.row.maxActiveBookings }}个
           </template>
         </el-table-column>
 
-        <el-table-column prop="needApproval" label="需要审核" width="85">
+        <el-table-column prop="needApproval" label="需要审核" width="100">
           <template #default="scope">
             <el-tag :type="scope.row.needApproval ? 'warning' : 'info'" size="small">
               {{ scope.row.needApproval ? '是' : '否' }}
@@ -110,19 +110,19 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="openTime" label="开放时间" width="110">
+        <el-table-column prop="openTime" label="开放时间" width="260" align="center">
           <template #default="scope">
             {{ scope.row.openTime }} - {{ scope.row.closeTime }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="createdAt" label="更新时间" width="160">
+        <el-table-column prop="createdAt" label="更新时间" width="260" align="center">
           <template #default="scope">
             {{ formatDateTime(scope.row.updatedAt) }}
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="scope">
             <el-button type="primary" link @click="handleEdit(scope.row)" :icon="Edit">
               编辑

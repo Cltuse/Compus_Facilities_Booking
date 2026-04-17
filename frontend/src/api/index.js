@@ -15,7 +15,7 @@ export const userAPI = {
 
 // 管理员反馈相关API
 export const feedbackAPI = {
-    // 获取所有反馈
+    // 获取所有反�?
     getFeedbacks: (page = 0, size = 10) => 
         request.get('/feedback/list', { 
             params: { page, size } 
@@ -37,7 +37,7 @@ export const feedbackAPI = {
         });
     },
     
-    // 更新反馈状态
+    // 更新反馈状�?
     updateFeedbackStatus: (id, status) => 
         request.put(`/feedback/${id}/status`, { status }),
     
@@ -134,6 +134,7 @@ export const maintenanceAPI = {
     getById: (id) => request.get(`/maintenance/${id}`),
     create: (data) => request.post('/maintenance', data),
     update: (id, data) => request.put(`/maintenance/${id}`, data),
+    complete: (id, data) => request.put(`/maintenance/${id}/complete`, data),
     delete: (id) => request.delete(`/maintenance/${id}`),
     getStatsByTimeRange: (range) => request.get('/maintenance/stats/time-range', { params: { range } }),
     getTypeDistribution: (range) => request.get('/maintenance/stats/type-distribution', { params: { range } }),
@@ -208,7 +209,7 @@ export const adminAPI = {
     createRuleConfig: (data) => request.post('/admin/rule-configs', data),
     getRuleConfigById: (id) => request.get(`/admin/rule-configs/${id}`),
     
-    // 黑名单管理
+    // 黑名单管�?
     getBlacklist: (params) => request.get('/admin/blacklist', { params }),
     addToBlacklist: (data) => request.post('/admin/blacklist', data),
     removeFromBlacklist: (id, params) => request.put(`/admin/blacklist/${id}/remove`, null, { params }),
@@ -219,7 +220,7 @@ export const adminAPI = {
     getOperationLogById: (id) => request.get(`/admin/operation-logs/${id}`),
     getOperationTypes: () => request.get('/admin/operation-logs/types'),
     
-    // 用户搜索（用于黑名单添加）
+    // 用户搜索（用于黑名单添加�?
     searchUsers: (keyword) => request.get('/user/search', { params: { keyword } }),
     
     // 违规记录管理
@@ -304,3 +305,6 @@ export const userClientAPI = {
     getRuleDescription: (categoryId) => 
         request.get(`/user-client/rule-configs/${categoryId}/description`)
 };
+
+
+

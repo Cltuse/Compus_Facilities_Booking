@@ -1,5 +1,6 @@
 package com.facility.booking.controller;
 
+import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.FacilityCategory;
 import com.facility.booking.repository.FacilityCategoryRepository;
@@ -64,6 +65,7 @@ public class FacilityCategoryController {
      * @return 创建的设备类别信息
      */
     @PostMapping
+    @OperationLog(operationType = "CREATE_FACILITY_CATEGORY", detail = "创建设施分类")
     public Result<FacilityCategory> create(@RequestBody FacilityCategory category) {
         // 检查类别名称是否已存在
         if (facilityCategoryRepository.existsByCategoryName(category.getCategoryName())) {
@@ -92,6 +94,7 @@ public class FacilityCategoryController {
      * @return 更新后的设备类别信息
      */
     @PutMapping("/{id}")
+    @OperationLog(operationType = "UPDATE_FACILITY_CATEGORY", detail = "更新设施分类")
     public Result<FacilityCategory> update(@PathVariable Long id, @RequestBody FacilityCategory category) {
         Optional<FacilityCategory> categoryOpt = facilityCategoryRepository.findById(id);
         if (!categoryOpt.isPresent()) {
@@ -122,6 +125,7 @@ public class FacilityCategoryController {
      * @return 删除结果
      */
     @DeleteMapping("/{id}")
+    @OperationLog(operationType = "DELETE_FACILITY_CATEGORY", detail = "删除设施分类")
     public Result<Void> delete(@PathVariable Long id) {
         if (!facilityCategoryRepository.existsById(id)) {
             return Result.error("设备类别不存在");
@@ -136,6 +140,7 @@ public class FacilityCategoryController {
      * @return 更新状态后的设备类别信息
      */
     @PutMapping("/{id}/toggle-status")
+    @OperationLog(operationType = "TOGGLE_FACILITY_CATEGORY_STATUS", detail = "切换设施分类状态")
     public Result<FacilityCategory> toggleStatus(@PathVariable Long id) {
         Optional<FacilityCategory> categoryOpt = facilityCategoryRepository.findById(id);
         if (!categoryOpt.isPresent()) {

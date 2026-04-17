@@ -1,5 +1,6 @@
 package com.facility.booking.controller;
 
+import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.*;
 import com.facility.booking.repository.*;
@@ -32,9 +33,6 @@ public class AdminController {
 
     @Autowired
     private BlacklistRepository blacklistRepository;
-
-    @Autowired
-    private OperationLogRepository operationLogRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -91,17 +89,10 @@ public class AdminController {
      * @return 创建的规则配置
      */
     @PostMapping("/rule-configs")
+    @OperationLog(operationType = "UPDATE_RULE", detail = "创建或更新规则配置")
     public Result<RuleConfig> createRuleConfig(@RequestBody RuleConfig ruleConfig) {
         try {
             RuleConfig savedRule = ruleConfigRepository.save(ruleConfig);
-            
-            // 记录操作日志
-            OperationLog log = new OperationLog();
-            log.setOperationType("UPDATE_RULE");
-            log.setTargetId(savedRule.getId());
-            log.setDetail("创建/更新规则配置，类别ID: " + ruleConfig.getCategoryId());
-            operationLogRepository.save(log);
-            
             return Result.success("规则配置保存成功", savedRule);
         } catch (Exception e) {
             return Result.error("规则配置保存失败: " + e.getMessage());
@@ -188,6 +179,7 @@ public class AdminController {
      * @return 操作结果
      */
     @PostMapping("/blacklist")
+    @OperationLog(operationType = "ADD_BLACKLIST", detail = "将用户加入黑名单")
     public Result<Blacklist> addToBlacklist(@RequestBody Map<String, Object> blacklistData) {
         try {
             Long userId = Long.valueOf(blacklistData.get("userId").toString());
@@ -214,14 +206,6 @@ public class AdminController {
             
             Blacklist savedBlacklist = blacklistRepository.save(blacklist);
             
-            // 记录操作日志
-            OperationLog log = new OperationLog();
-            log.setOperatorId(operatorId);
-            log.setOperationType("ADD_BLACKLIST");
-            log.setTargetId(userId);
-            log.setDetail("将用户加入黑名单，原因: " + reason);
-            operationLogRepository.save(log);
-            
             return Result.success("加入黑名单成功", savedBlacklist);
         } catch (Exception e) {
             return Result.error("加入黑名单失败: " + e.getMessage());
@@ -235,6 +219,7 @@ public class AdminController {
      * @return 操作结果
      */
     @PutMapping("/blacklist/{id}/remove")
+    @OperationLog(operationType = "REMOVE_BLACKLIST", detail = "将用户移出黑名单")
     public Result<Blacklist> removeFromBlacklist(@PathVariable Long id, @RequestParam Long operatorId) {
         Optional<Blacklist> blacklistOpt = blacklistRepository.findById(id);
         if (!blacklistOpt.isPresent()) {
@@ -249,14 +234,6 @@ public class AdminController {
         blacklist.setStatus("REMOVED");
         Blacklist updatedBlacklist = blacklistRepository.save(blacklist);
         
-        // 记录操作日志
-        OperationLog log = new OperationLog();
-        log.setOperatorId(operatorId);
-        log.setOperationType("REMOVE_BLACKLIST");
-        log.setTargetId(blacklist.getUserId());
-        log.setDetail("将用户移出黑名单");
-        operationLogRepository.save(log);
-        
         return Result.success("移出黑名单成功", updatedBlacklist);
     }
 
@@ -265,6 +242,7 @@ public class AdminController {
      * @return 更新的记录数量
      */
     @PutMapping("/blacklist/auto-expire")
+    @OperationLog(operationType = "AUTO_EXPIRE_BLACKLIST", detail = "批量更新过期黑名单")
     public Result<Integer> autoExpireBlacklist() {
         LocalDateTime now = LocalDateTime.now();
         List<Blacklist> expiredList = blacklistRepository.findByStatusAndEndTimeBefore("ACTIVE", now);
@@ -416,10 +394,17 @@ public class AdminController {
         try {
             System.out.println("获取操作类型列表 - 开始");
             List<String> types = List.of(
-                "APPROVE_RESERVATION", "REJECT_RESERVATION", "VERIFY_CHECKIN", 
-                "ADD_BLACKLIST", "REMOVE_BLACKLIST", "REPLY_FEEDBACK",
-                "UPDATE_RULE", "CREATE_FACILITY", "UPDATE_FACILITY", 
-                "CREATE_NOTICE", "UPDATE_NOTICE", "MAINTENANCE_COMPLETE"
+                "APPROVE_BOOKING", "REJECT_BOOKING", "VERIFY_CHECKIN", "VERIFY_CHECKOUT",
+                "ADD_BLACKLIST", "REMOVE_BLACKLIST", "AUTO_EXPIRE_BLACKLIST",
+                "REPLY_FEEDBACK", "UPDATE_FEEDBACK_STATUS", "DELETE_FEEDBACK",
+                "UPDATE_RULE", "DELETE_RULE", "PUBLISH_NOTICE", "UPDATE_NOTICE",
+                "DELETE_NOTICE", "PUBLISH_SCHEDULED_NOTICE", "CREATE_FACILITY",
+                "UPDATE_FACILITY", "UPDATE_FACILITY_STATUS", "DELETE_FACILITY",
+                "UPLOAD_FACILITY_IMAGE", "DELETE_FACILITY_IMAGE", "CREATE_FACILITY_CATEGORY",
+                "UPDATE_FACILITY_CATEGORY", "TOGGLE_FACILITY_CATEGORY_STATUS", "DELETE_FACILITY_CATEGORY",
+                "CREATE_MAINTENANCE", "UPDATE_MAINTENANCE", "COMPLETE_MAINTENANCE",
+                "DELETE_MAINTENANCE", "CREATE_VIOLATION", "APPROVE_VIOLATION",
+                "REJECT_VIOLATION", "REVOKE_VIOLATION"
             );
             System.out.println("获取操作类型列表 - 成功，类型数量: " + types.size());
             return Result.success(types);

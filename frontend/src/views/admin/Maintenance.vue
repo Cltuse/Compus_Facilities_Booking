@@ -66,7 +66,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="maintenanceType" label="维护类型" width="120">
+        <el-table-column prop="maintenanceType" label="维护类型" width="150" align="center">
           <template #default="{ row }">
             <el-tag class="type-tag" effect="light">
               {{ getMaintenanceTypeText(row.maintenanceType) }}
@@ -80,7 +80,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="110" align="center">
+        <el-table-column prop="status" label="状态" width="140" align="center">
           <template #default="{ row }">
             <el-tag
               :type="getStatusType(row.status)"
@@ -99,13 +99,18 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="startTime" label="开始时间" width="160">
+        <el-table-column prop="startTime" label="开始时间" width="220" align="center">
           <template #default="{ row }">
             <span class="time">{{ row.startTime || '-' }}</span>
           </template>
         </el-table-column>
+        <el-table-column prop="endTime" label="结束时间" width="220" align="center">
+          <template #default="{ row }">
+            <span class="time">{{ row.endTime || '-' }}</span>
+          </template>
+        </el-table-column>
 
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button

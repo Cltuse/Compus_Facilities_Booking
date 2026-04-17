@@ -70,7 +70,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column prop="status" label="状态" width="140" align="center">
           <template #default="{ row }">
             <el-tag
               :type="row.status === 'ACTIVE' ? 'success' : 'info'"
@@ -83,7 +83,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button

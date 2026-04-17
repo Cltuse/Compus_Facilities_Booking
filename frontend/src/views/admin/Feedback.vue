@@ -101,12 +101,13 @@
           <template #default="{ row }">
             <!--
             <span class="create-time">{{ formatTime(row.created_at) || '-' }}</span>
-            -->
-            <span class="meta-value">{{ formatTime(currentFeedback.createdAt) }}</span>
+          -->
+            <span class="meta-value">{{ formatTime(row.created_at) }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="110" align="center">
+
+        <el-table-column prop="status" label="状态" width="160" align="center">
           <template #default="{ row }">
             <el-tag
               :type="getStatusType(row.status)"
@@ -119,7 +120,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="220" align="center" fixed="right">
+        <el-table-column label="操作" width="260" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button

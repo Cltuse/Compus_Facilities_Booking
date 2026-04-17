@@ -1,9 +1,7 @@
 package com.facility.booking.service;
 
 import com.facility.booking.entity.Blacklist;
-import com.facility.booking.entity.OperationLog;
 import com.facility.booking.repository.BlacklistRepository;
-import com.facility.booking.repository.OperationLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -14,7 +12,7 @@ import java.util.List;
 
 /**
  * 黑名单服务类
- * 处理黑名单相关的业务逻辑和定时任务
+ * 处理黑名单相关的业务逻辑和定时任�?
  */
 @Service
 public class BlacklistService {
@@ -23,32 +21,28 @@ public class BlacklistService {
     private BlacklistRepository blacklistRepository;
 
     @Autowired
-    private OperationLogRepository operationLogRepository;
+    private OperationLogService operationLogService;
 
     /**
      * 自动处理过期的黑名单记录
-     * 每天凌晨2点执行
+     * 每天凌晨2点执�?
      */
     @Scheduled(cron = "0 0 2 * * ?")
     @Transactional
     public void autoExpireBlacklist() {
         LocalDateTime now = LocalDateTime.now();
         List<Blacklist> expiredList = blacklistRepository.findByStatusAndEndTimeBefore("ACTIVE", now);
-        
+
         int updatedCount = 0;
         for (Blacklist blacklist : expiredList) {
             blacklist.setStatus("EXPIRED");
             blacklistRepository.save(blacklist);
             updatedCount++;
-            
-            // 记录操作日志
-            OperationLog log = new OperationLog();
-            log.setOperationType("AUTO_EXPIRE_BLACKLIST");
-            log.setTargetId(blacklist.getUserId());
-            log.setDetail("黑名单自动过期，原因为：" + blacklist.getReason());
-            operationLogRepository.save(log);
+
+            operationLogService.saveOperationLog(null, "SYSTEM", "AUTO_EXPIRE_BLACKLIST",
+                    blacklist.getUserId(), "AUTO_EXPIRE_BLACKLIST: " + blacklist.getReason(), "127.0.0.1");
         }
-        
+
         if (updatedCount > 0) {
             System.out.println("自动过期处理完成，共处理 " + updatedCount + " 条黑名单记录");
         }
@@ -66,7 +60,7 @@ public class BlacklistService {
     /**
      * 获取用户的有效黑名单记录
      * @param userId 用户ID
-     * @return 黑名单记录，如果不存在则返回空
+     * @return 黑名单记录，如果不存在则返回�?
      */
     public Blacklist getUserActiveBlacklist(Long userId) {
         return blacklistRepository.findByUserIdAndStatus(userId, "ACTIVE").orElse(null);
@@ -82,11 +76,10 @@ public class BlacklistService {
     @Transactional
     public void addToBlacklist(Long userId, String reason, int days, Long adminId) {
         try {
-            // 检查是否已在黑名单中
             if (blacklistRepository.findByUserIdAndStatus(userId, "ACTIVE").isPresent()) {
                 return;
             }
-            
+
             Blacklist blacklist = new Blacklist();
             blacklist.setUserId(userId);
             blacklist.setReason(reason);
@@ -95,19 +88,12 @@ public class BlacklistService {
             blacklist.setStatus("ACTIVE");
             blacklist.setOperatorId(adminId);
             blacklistRepository.save(blacklist);
-            
-            // 记录操作日志
-            OperationLog log = new OperationLog();
-            log.setOperationType("ADD_BLACKLIST");
-            log.setTargetId(userId);
-            log.setDetail("用户因" + reason + "被加入黑名单，有效期为" + days + "天");
-            log.setOperatorId(adminId);
-            operationLogRepository.save(log);
-            
-            System.out.println("用户" + userId + "因" + reason + "被加入黑名单");
+
+            System.out.println("用户" + userId + "�? + reason + "被加入黑名单");
         } catch (Exception e) {
             System.err.println("加入黑名单失败：" + e.getMessage());
             throw new RuntimeException("加入黑名单失败：" + e.getMessage());
         }
     }
 }
+

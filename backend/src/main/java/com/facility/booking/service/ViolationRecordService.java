@@ -2,11 +2,9 @@ package com.facility.booking.service;
 
 import com.facility.booking.entity.Reservation;
 import com.facility.booking.entity.ViolationRecord;
-import com.facility.booking.entity.OperationLog;
 import com.facility.booking.repository.ViolationRecordRepository;
 import com.facility.booking.repository.UserRepository;
 import com.facility.booking.repository.ReservationRepository;
-import com.facility.booking.repository.OperationLogRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -36,96 +34,94 @@ public class ViolationRecordService {
     @Autowired
     private BlacklistService blacklistService;
 
-    @Autowired
-    private OperationLogRepository operationLogRepository;
 
     /**
-     * ç³»ç»Ÿå¯åŠ¨æ—¶æ‰§è¡Œä¸€æ¬¡è¿è§„æ£€æµ‹
+     * ÏµÍ³Æô¶¯Ê±Ö´ĞĞÒ»´ÎÎ¥¹æ¼ì²â
      */
     @PostConstruct
     public void onStartup() {
-        System.out.println("ç³»ç»Ÿå¯åŠ¨ï¼Œå¼€å§‹æ‰§è¡Œè¿è§„æ£€æµ‹...");
+        System.out.println("ÏµÍ³Æô¶¯£¬¿ªÊ¼Ö´ĞĞÎ¥¹æ¼ì²â...");
         syncAllUserViolationStats();
         autoDetectViolations();
-        System.out.println("ç³»ç»Ÿå¯åŠ¨è¿è§„æ£€æµ‹å®Œæˆ");
+        System.out.println("ÏµÍ³Æô¶¯Î¥¹æ¼ì²âÍê³É");
     }
 
     /**
-     * å®šæ—¶ä»»åŠ¡ï¼šè‡ªåŠ¨æ£€æµ‹è¿è§„è®°å½•
-     * æ¯5åˆ†é’Ÿæ‰§è¡Œä¸€æ¬¡ï¼Œåªæ£€æµ‹è¶…æ—¶ä½¿ç”¨è¿è§„
+     * ¶¨Ê±ÈÎÎñ£º×Ô¶¯¼ì²âÎ¥¹æ¼ÇÂ¼
+     * Ã¿5·ÖÖÓÖ´ĞĞÒ»´Î£¬Ö»¼ì²â³¬Ê±Ê¹ÓÃÎ¥¹æ
      */
     @Scheduled(cron = "0 0/5 * * * ?")
     @Transactional
     public void autoDetectViolations() {
         LocalDateTime now = LocalDateTime.now();
-        System.out.println("å¼€å§‹æ‰§è¡Œè‡ªåŠ¨è¿è§„æ£€æµ‹ï¼Œå½“å‰æ—¶é—´ï¼š" + now);
+        System.out.println("¿ªÊ¼Ö´ĞĞ×Ô¶¯Î¥¹æ¼ì²â£¬µ±Ç°Ê±¼ä£º" + now);
 
         int overdueCount = 0;
         int noShowCount = 0;
 
         try {
-            // æ£€æµ‹è¶…æ—¶ä½¿ç”¨è¿è§„
+            // ¼ì²â³¬Ê±Ê¹ÓÃÎ¥¹æ
             overdueCount = detectOverdueViolations(now);
-            // æ£€æµ‹çˆ½çº¦è¿è§„
+            // ¼ì²âË¬Ô¼Î¥¹æ
             noShowCount = detectNoShowViolations(now);
 
             int totalCount = overdueCount + noShowCount;
             if (totalCount > 0) {
-                System.out.println("è‡ªåŠ¨è¿è§„æ£€æµ‹å®Œæˆï¼Œæ£€æµ‹åˆ° " + totalCount + " æ¡è¿è§„ï¼ˆè¶…æ—¶ä½¿ç”¨ï¼š" + overdueCount + "ï¼Œçˆ½çº¦ï¼š" + noShowCount + ")");
+                System.out.println("×Ô¶¯Î¥¹æ¼ì²âÍê³É£¬¼ì²âµ½ " + totalCount + " ÌõÎ¥¹æ£¨³¬Ê±Ê¹ÓÃ£º" + overdueCount + "£¬Ë¬Ô¼£º" + noShowCount + ")");
             } else {
-                System.out.println("è‡ªåŠ¨è¿è§„æ£€æµ‹å®Œæˆï¼Œæœªå‘ç°æ–°çš„è¿è§„è®°å½•");
+                System.out.println("×Ô¶¯Î¥¹æ¼ì²âÍê³É£¬Î´·¢ÏÖĞÂµÄÎ¥¹æ¼ÇÂ¼");
             }
 
         } catch (Exception e) {
-            System.err.println("è‡ªåŠ¨è¿è§„æ£€æµ‹å¤±è´¥ï¼š" + e.getMessage());
+            System.err.println("×Ô¶¯Î¥¹æ¼ì²âÊ§°Ü£º" + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * æ£€æµ‹è¶…æ—¶ä½¿ç”¨è¿è§„
+     * ¼ì²â³¬Ê±Ê¹ÓÃÎ¥¹æ
      */
     private int detectOverdueViolations(LocalDateTime now) {
         int count = 0;
 
-        // æŸ¥æ‰¾å·²ç­¾åˆ°ä½†ç»“æŸæ—¶é—´å·²è¿‡30åˆ†é’Ÿä¸”æœªç­¾é€€çš„é¢„çº¦
+        // ²éÕÒÒÑÇ©µ½µ«½áÊøÊ±¼äÒÑ¹ı30·ÖÖÓÇÒÎ´Ç©ÍËµÄÔ¤Ô¼
         List<Reservation> overdueReservations = reservationRepository
                 .findByCheckinStatusAndEndTimeBefore("CHECKED_IN", now.minusMinutes(30))
                 .stream()
-                .filter(reservation -> reservation.getCheckoutTime() == null) // æœªç­¾é€€
+                .filter(reservation -> reservation.getCheckoutTime() == null) // Î´Ç©ÍË
                 .collect(Collectors.toList());
 
         for (Reservation reservation : overdueReservations) {
             try {
-                // å¹‚ç­‰æ€§æ§åˆ¶ï¼šæ£€æŸ¥æ˜¯å¦å·²å­˜åœ¨å¯¹åº”çš„è¿è§„è®°å½•
+                // ÃİµÈĞÔ¿ØÖÆ£º¼ì²éÊÇ·ñÒÑ´æÔÚ¶ÔÓ¦µÄÎ¥¹æ¼ÇÂ¼
                 boolean exists = violationRecordRepository
                         .existsByReservationIdAndViolationType(reservation.getId(), "OVERDUE");
 
                 if (!exists) {
-                    // åˆ›å»ºè¶…æ—¶ä½¿ç”¨è¿è§„è®°å½•
+                    // ´´½¨³¬Ê±Ê¹ÓÃÎ¥¹æ¼ÇÂ¼
                     ViolationRecord violationRecord = new ViolationRecord();
                     violationRecord.setUserId(reservation.getUserId());
                     violationRecord.setReservationId(reservation.getId());
                     violationRecord.setViolationType("OVERDUE");
-                    violationRecord.setDescription("è¶…æ—¶ä½¿ç”¨ï¼šé¢„çº¦ç»“æŸæ—¶é—´å·²è¿‡30åˆ†é’Ÿï¼Œç”¨æˆ·ä»æœªç­¾é€€ã€‚é¢„çº¦æ—¶é—´ï¼š" +
-                            reservation.getStartTime() + " è‡³ " + reservation.getEndTime());
+                    violationRecord.setDescription("³¬Ê±Ê¹ÓÃ£ºÔ¤Ô¼½áÊøÊ±¼äÒÑ¹ı30·ÖÖÓ£¬ÓÃ»§ÈÔÎ´Ç©ÍË¡£Ô¤Ô¼Ê±¼ä£º" +
+                            reservation.getStartTime() + " ÖÁ " + reservation.getEndTime());
                     violationRecord.setPenaltyPoints(3);
-                    violationRecord.setReportedBy(1L); // ç³»ç»Ÿè‡ªåŠ¨ä¸ŠæŠ¥
+                    violationRecord.setReportedBy(1L); // ÏµÍ³×Ô¶¯ÉÏ±¨
                     violationRecord.setReportedTime(now);
                     violationRecord.setStatus("PENDING");
 
                     violationRecordRepository.save(violationRecord);
                     count++;
 
-                    // æ›´æ–°é¢„çº¦çŠ¶æ€ä¸º COMPLETED
+                    // ¸üĞÂÔ¤Ô¼×´Ì¬Îª COMPLETED
                     reservation.setCheckinStatus("COMPLETED");
                     reservationRepository.save(reservation);
 
-                    System.out.println("æ£€æµ‹åˆ°è¶…æ—¶ä½¿ç”¨è¿è§„ï¼šç”¨æˆ·ID=" + reservation.getUserId() +
-                            ", é¢„çº¦ID=" + reservation.getId());
+                    System.out.println("¼ì²âµ½³¬Ê±Ê¹ÓÃÎ¥¹æ£ºÓÃ»§ID=" + reservation.getUserId() +
+                            ", Ô¤Ô¼ID=" + reservation.getId());
                 }
             } catch (Exception e) {
-                System.err.println("åˆ›å»ºè¶…æ—¶ä½¿ç”¨è¿è§„è®°å½•å¤±è´¥ï¼š" + e.getMessage());
+                System.err.println("´´½¨³¬Ê±Ê¹ÓÃÎ¥¹æ¼ÇÂ¼Ê§°Ü£º" + e.getMessage());
             }
         }
 
@@ -133,13 +129,13 @@ public class ViolationRecordService {
     }
 
     /**
-     * æ£€æµ‹çˆ½çº¦è¿è§„ï¼ˆNO_SHOWï¼‰
-     * é¢„çº¦å¼€å§‹æ—¶é—´å·²è¿‡15åˆ†é’Ÿï¼Œç”¨æˆ·ä»æœªç­¾åˆ°
+     * ¼ì²âË¬Ô¼Î¥¹æ£¨NO_SHOW£©
+     * Ô¤Ô¼¿ªÊ¼Ê±¼äÒÑ¹ı15·ÖÖÓ£¬ÓÃ»§ÈÔÎ´Ç©µ½
      */
     private int detectNoShowViolations(LocalDateTime now) {
         int count = 0;
 
-        // æŸ¥æ‰¾å·²æ‰¹å‡†ä½†è¶…è¿‡å¼€å§‹æ—¶é—´15åˆ†é’Ÿä»æœªç­¾åˆ°çš„é¢„çº¦
+        // ²éÕÒÒÑÅú×¼µ«³¬¹ı¿ªÊ¼Ê±¼ä15·ÖÖÓÈÔÎ´Ç©µ½µÄÔ¤Ô¼
         List<Reservation> noShowReservations = reservationRepository
                 .findByStatusAndCheckinStatus("APPROVED", "NOT_CHECKED")
                 .stream()
@@ -149,35 +145,35 @@ public class ViolationRecordService {
 
         for (Reservation reservation : noShowReservations) {
             try {
-                // å¹‚ç­‰æ€§æ§åˆ¶ï¼šæ£€æŸ¥æ˜¯å¦å·²å­˜åœ¨å¯¹åº”çš„è¿è§„è®°å½•
+                // ÃİµÈĞÔ¿ØÖÆ£º¼ì²éÊÇ·ñÒÑ´æÔÚ¶ÔÓ¦µÄÎ¥¹æ¼ÇÂ¼
                 boolean exists = violationRecordRepository
                         .existsByReservationIdAndViolationType(reservation.getId(), "NO_SHOW");
 
                 if (!exists) {
-                    // åˆ›å»ºçˆ½çº¦è¿è§„è®°å½•
+                    // ´´½¨Ë¬Ô¼Î¥¹æ¼ÇÂ¼
                     ViolationRecord violationRecord = new ViolationRecord();
                     violationRecord.setUserId(reservation.getUserId());
                     violationRecord.setReservationId(reservation.getId());
                     violationRecord.setViolationType("NO_SHOW");
-                    violationRecord.setDescription("çˆ½çº¦ï¼šé¢„çº¦å¼€å§‹æ—¶é—´å·²è¿‡15åˆ†é’Ÿï¼Œç”¨æˆ·ä»æœªç­¾åˆ°ã€‚é¢„çº¦æ—¶é—´ï¼š" +
-                            reservation.getStartTime() + " è‡³ " + reservation.getEndTime());
+                    violationRecord.setDescription("Ë¬Ô¼£ºÔ¤Ô¼¿ªÊ¼Ê±¼äÒÑ¹ı15·ÖÖÓ£¬ÓÃ»§ÈÔÎ´Ç©µ½¡£Ô¤Ô¼Ê±¼ä£º" +
+                            reservation.getStartTime() + " ÖÁ " + reservation.getEndTime());
                     violationRecord.setPenaltyPoints(5);
-                    violationRecord.setReportedBy(1L); // ç³»ç»Ÿè‡ªåŠ¨ä¸ŠæŠ¥
+                    violationRecord.setReportedBy(1L); // ÏµÍ³×Ô¶¯ÉÏ±¨
                     violationRecord.setReportedTime(now);
                     violationRecord.setStatus("PENDING");
 
                     violationRecordRepository.save(violationRecord);
                     count++;
 
-                    // æ›´æ–°é¢„çº¦çŠ¶æ€ä¸º MISSED
+                    // ¸üĞÂÔ¤Ô¼×´Ì¬Îª MISSED
                     reservation.setCheckinStatus("MISSED");
                     reservationRepository.save(reservation);
 
-                    System.out.println("æ£€æµ‹åˆ°çˆ½çº¦è¿è§„ï¼šç”¨æˆ·ID=" + reservation.getUserId() +
-                            ", é¢„çº¦ID=" + reservation.getId());
+                    System.out.println("¼ì²âµ½Ë¬Ô¼Î¥¹æ£ºÓÃ»§ID=" + reservation.getUserId() +
+                            ", Ô¤Ô¼ID=" + reservation.getId());
                 }
             } catch (Exception e) {
-                System.err.println("åˆ›å»ºçˆ½çº¦è¿è§„è®°å½•å¤±è´¥ï¼š" + e.getMessage());
+                System.err.println("´´½¨Ë¬Ô¼Î¥¹æ¼ÇÂ¼Ê§°Ü£º" + e.getMessage());
             }
         }
 
@@ -185,34 +181,34 @@ public class ViolationRecordService {
     }
 
     /**
-     * è®°å½•è¿è§„
-     * åˆå§‹çŠ¶æ€ä¸º PENDINGï¼Œä¸ç«‹å³æ‰£åˆ†ï¼Œç­‰å¾…ç®¡ç†å‘˜å®¡æ ¸
+     * ¼ÇÂ¼Î¥¹æ
+     * ³õÊ¼×´Ì¬Îª PENDING£¬²»Á¢¼´¿Û·Ö£¬µÈ´ı¹ÜÀíÔ±ÉóºË
      */
     @Transactional
     public ViolationRecord recordViolation(ViolationRecord violationRecord) {
-        // å‚æ•°éªŒè¯
+        // ²ÎÊıÑéÖ¤
         if (violationRecord == null) {
-            throw new IllegalArgumentException("è¿è§„è®°å½•ä¸èƒ½ä¸ºç©º");
+            throw new IllegalArgumentException("Î¥¹æ¼ÇÂ¼²»ÄÜÎª¿Õ");
         }
         if (violationRecord.getUserId() == null) {
-            throw new IllegalArgumentException("ç”¨æˆ·IDä¸èƒ½ä¸ºç©º");
+            throw new IllegalArgumentException("ÓÃ»§ID²»ÄÜÎª¿Õ");
         }
 
-        // è®¾ç½®é»˜è®¤çŠ¶æ€ä¸º PENDINGï¼ˆå¾…å®¡æ ¸ï¼‰
+        // ÉèÖÃÄ¬ÈÏ×´Ì¬Îª PENDING£¨´ıÉóºË£©
         violationRecord.setStatus("PENDING");
 
-        // éªŒè¯è¿è§„ç±»å‹æ˜¯å¦åœ¨å…è®¸èŒƒå›´å†…
+        // ÑéÖ¤Î¥¹æÀàĞÍÊÇ·ñÔÚÔÊĞí·¶Î§ÄÚ
         String[] allowedTypes = {"NO_SHOW", "OVERDUE", "CANCEL_FREQ", "DAMAGE", "OTHER"};
         if (violationRecord.getViolationType() != null && !java.util.Arrays.asList(allowedTypes).contains(violationRecord.getViolationType())) {
             violationRecord.setViolationType("OTHER");
         }
 
-        // è®¾ç½®é»˜è®¤å¤„ç½šåˆ†
+        // ÉèÖÃÄ¬ÈÏ´¦·£·Ö
         if (violationRecord.getPenaltyPoints() == null) {
             violationRecord.setPenaltyPoints(0);
         }
 
-        // ä¿å­˜è¿è§„è®°å½•ï¼ˆçŠ¶æ€ä¸ºPENDINGï¼Œä¸ç«‹å³è®¡ç®—ä¿¡èª‰åˆ†ï¼‰
+        // ±£´æÎ¥¹æ¼ÇÂ¼£¨×´Ì¬ÎªPENDING£¬²»Á¢¼´¼ÆËãĞÅÓş·Ö£©
         ViolationRecord savedViolation = violationRecordRepository.save(violationRecord);
 
         return savedViolation;
@@ -220,9 +216,9 @@ public class ViolationRecordService {
 
 
     /**
-     * é‡æ–°è®¡ç®—ç”¨æˆ·ä¿¡ç”¨åˆ†
-     * ä¿¡ç”¨åˆ† = 100 - æ‰€æœ‰å·²ç”Ÿæ•ˆï¼ˆPROCESSEDçŠ¶æ€ï¼‰è¿è§„è®°å½•å¤„ç½šåˆ†æ€»å’Œ
-     * ç”¨æˆ·è¡¨ä¸­credit_scoreé»˜è®¤ä¿æŒ100ä¸å˜ï¼Œé€šè¿‡è®¡ç®—å®æ—¶å¾—å‡ºå½“å‰ä¿¡ç”¨åˆ†
+     * ÖØĞÂ¼ÆËãÓÃ»§ĞÅÓÃ·Ö
+     * ĞÅÓÃ·Ö = 100 - ËùÓĞÒÑÉúĞ§£¨PROCESSED×´Ì¬£©Î¥¹æ¼ÇÂ¼´¦·£·Ö×ÜºÍ
+     * ÓÃ»§±íÖĞcredit_scoreÄ¬ÈÏ±£³Ö100²»±ä£¬Í¨¹ı¼ÆËãÊµÊ±µÃ³öµ±Ç°ĞÅÓÃ·Ö
      */
     @Transactional
     public void recalculateUserCreditScoreAndViolationCount(Long userId) {
@@ -242,7 +238,7 @@ public class ViolationRecordService {
     }
 
     /**
-     * è·å–ç”¨æˆ·çš„å·²ç”Ÿæ•ˆï¼ˆPROCESSEDï¼‰å¤„ç½šåˆ†
+     * »ñÈ¡ÓÃ»§µÄÒÑÉúĞ§£¨PROCESSED£©´¦·£·Ö
      */
     public Integer getProcessedPenaltyPoints(Long userId) {
         Integer penalty = violationRecordRepository.sumProcessedPenaltyPointsByUserId(userId);
@@ -250,11 +246,11 @@ public class ViolationRecordService {
     }
 
     /**
-     * è·å–ç”¨æˆ·çš„è¿è§„è®°å½•
+     * »ñÈ¡ÓÃ»§µÄÎ¥¹æ¼ÇÂ¼
      */
     public Page<ViolationRecord> getUserViolations(Long userId, Pageable pageable) {
         Page<ViolationRecord> violations = violationRecordRepository.findByUserIdOrderByReportedTimeDesc(userId, pageable);
-        // è®¾ç½®ç”¨æˆ·åå’Œæ“ä½œå‘˜å
+        // ÉèÖÃÓÃ»§ÃûºÍ²Ù×÷Ô±Ãû
         violations.forEach(violation -> {
             userRepository.findById(violation.getUserId()).ifPresent(user ->
                     violation.setUserName(user.getName()));
@@ -262,16 +258,16 @@ public class ViolationRecordService {
                 userRepository.findById(violation.getReportedBy()).ifPresent(user ->
                         violation.setReporterName(user.getName()));
             }
-            // è®¾ç½®è®¾æ–½åç§°ï¼ˆå¦‚æœæœ‰é¢„çº¦IDï¼‰
+            // ÉèÖÃÉèÊ©Ãû³Æ£¨Èç¹ûÓĞÔ¤Ô¼ID£©
             if (violation.getReservationId() != null) {
-                // è¿™é‡Œéœ€è¦æ ¹æ®é¢„çº¦IDè·å–è®¾æ–½åç§°ï¼Œå…·ä½“å®ç°å–å†³äºæ•°æ®ç»“æ„
+                // ÕâÀïĞèÒª¸ù¾İÔ¤Ô¼ID»ñÈ¡ÉèÊ©Ãû³Æ£¬¾ßÌåÊµÏÖÈ¡¾öÓÚÊı¾İ½á¹¹
             }
         });
         return violations;
     }
 
     /**
-     * è·å–ç”¨æˆ·çš„æ´»è·ƒè¿è§„è®°å½•æ•°é‡
+     * »ñÈ¡ÓÃ»§µÄ»îÔ¾Î¥¹æ¼ÇÂ¼ÊıÁ¿
      */
     public Long getActiveViolationCount(Long userId) {
         Integer count = violationRecordRepository.countProcessedViolationsByUserId(userId);
@@ -279,7 +275,7 @@ public class ViolationRecordService {
     }
 
     /**
-     * è·å–ç”¨æˆ·çš„æ€»å¤„ç½šåˆ†ï¼ˆåŒ…å«æ‰€æœ‰çŠ¶æ€ï¼Œç”¨äºç»Ÿè®¡ï¼‰
+     * »ñÈ¡ÓÃ»§µÄ×Ü´¦·£·Ö£¨°üº¬ËùÓĞ×´Ì¬£¬ÓÃÓÚÍ³¼Æ£©
      */
     public Integer getTotalPenaltyPoints(Long userId) {
         Integer penalty = violationRecordRepository.sumPenaltyPointsByUserId(userId);
@@ -287,13 +283,13 @@ public class ViolationRecordService {
     }
 
     /**
-     * ç®¡ç†å‘˜ç¡®è®¤è¿è§„è®°å½•
-     * ç¡®è®¤åå°†çŠ¶æ€æ›´æ–°ä¸º PROCESSEDï¼Œå¹¶çœŸæ­£æ‰£é™¤ä¿¡èª‰åˆ†
+     * ¹ÜÀíÔ±È·ÈÏÎ¥¹æ¼ÇÂ¼
+     * È·ÈÏºó½«×´Ì¬¸üĞÂÎª PROCESSED£¬²¢ÕæÕı¿Û³ıĞÅÓş·Ö
      *
-     * @param violationId è¿è§„è®°å½•ID
-     * @param adminId     ç®¡ç†å‘˜ID
-     * @param remark      å®¡æ ¸å¤‡æ³¨
-     * @return æ“ä½œç»“æœ
+     * @param violationId Î¥¹æ¼ÇÂ¼ID
+     * @param adminId     ¹ÜÀíÔ±ID
+     * @param remark      ÉóºË±¸×¢
+     * @return ²Ù×÷½á¹û
      */
     @Transactional
     public Map<String, Object> approveViolation(Long violationId, Long adminId, String remark) {
@@ -302,16 +298,16 @@ public class ViolationRecordService {
         Optional<ViolationRecord> violationOpt = violationRecordRepository.findById(violationId);
         if (!violationOpt.isPresent()) {
             result.put("success", false);
-            result.put("message", "è¿è§„è®°å½•ä¸å­˜åœ¨");
+            result.put("message", "Î¥¹æ¼ÇÂ¼²»´æÔÚ");
             return result;
         }
 
         ViolationRecord violation = violationOpt.get();
 
-        // æ£€æŸ¥çŠ¶æ€æ˜¯å¦ä¸º PENDING
+        // ¼ì²é×´Ì¬ÊÇ·ñÎª PENDING
         if (!"PENDING".equals(violation.getStatus())) {
             result.put("success", false);
-            result.put("message", "è¯¥è¿è§„è®°å½•å·²å¤„ç†ï¼Œä¸èƒ½é‡å¤ç¡®è®¤");
+            result.put("message", "¸ÃÎ¥¹æ¼ÇÂ¼ÒÑ´¦Àí£¬²»ÄÜÖØ¸´È·ÈÏ");
             return result;
         }
 
@@ -324,25 +320,22 @@ public class ViolationRecordService {
         recalculateUserCreditScoreAndViolationCount(userId);
         userRepository.findById(userId).ifPresent(user -> checkAndAddToBlacklist(user, adminId));
 
-        // è®°å½•æ“ä½œæ—¥å¿—
-        logViolationOperation("APPROVE_VIOLATION", violationId, userId,
-                "ç®¡ç†å‘˜ç¡®è®¤è¿è§„ï¼Œæ‰£é™¤ä¿¡èª‰åˆ†" + violation.getPenaltyPoints() + "åˆ†", adminId);
 
         result.put("success", true);
-        result.put("message", "è¿è§„ç¡®è®¤æˆåŠŸï¼Œå·²æ‰£é™¤ä¿¡èª‰åˆ†" + violation.getPenaltyPoints() + "åˆ†");
+        result.put("message", "Î¥¹æÈ·ÈÏ³É¹¦£¬ÒÑ¿Û³ıĞÅÓş·Ö" + violation.getPenaltyPoints() + "·Ö");
         result.put("violation", violation);
 
         return result;
     }
 
     /**
-     * ç®¡ç†å‘˜æ‹’ç»è¿è§„è®°å½•
-     * æ‹’ç»åå°†çŠ¶æ€æ›´æ–°ä¸º REJECTED
+     * ¹ÜÀíÔ±¾Ü¾øÎ¥¹æ¼ÇÂ¼
+     * ¾Ü¾øºó½«×´Ì¬¸üĞÂÎª REJECTED
      *
-     * @param violationId è¿è§„è®°å½•ID
-     * @param adminId     ç®¡ç†å‘˜ID
-     * @param remark      å®¡æ ¸å¤‡æ³¨ï¼ˆæ‹’ç»åŸå› ï¼‰
-     * @return æ“ä½œç»“æœ
+     * @param violationId Î¥¹æ¼ÇÂ¼ID
+     * @param adminId     ¹ÜÀíÔ±ID
+     * @param remark      ÉóºË±¸×¢£¨¾Ü¾øÔ­Òò£©
+     * @return ²Ù×÷½á¹û
      */
     @Transactional
     public Map<String, Object> rejectViolation(Long violationId, Long adminId, String remark) {
@@ -351,16 +344,16 @@ public class ViolationRecordService {
         Optional<ViolationRecord> violationOpt = violationRecordRepository.findById(violationId);
         if (!violationOpt.isPresent()) {
             result.put("success", false);
-            result.put("message", "è¿è§„è®°å½•ä¸å­˜åœ¨");
+            result.put("message", "Î¥¹æ¼ÇÂ¼²»´æÔÚ");
             return result;
         }
 
         ViolationRecord violation = violationOpt.get();
 
-        // æ£€æŸ¥çŠ¶æ€æ˜¯å¦ä¸º PENDING
+        // ¼ì²é×´Ì¬ÊÇ·ñÎª PENDING
         if (!"PENDING".equals(violation.getStatus())) {
             result.put("success", false);
-            result.put("message", "è¯¥è¿è§„è®°å½•å·²å¤„ç†ï¼Œä¸èƒ½é‡å¤æ“ä½œ");
+            result.put("message", "¸ÃÎ¥¹æ¼ÇÂ¼ÒÑ´¦Àí£¬²»ÄÜÖØ¸´²Ù×÷");
             return result;
         }
 
@@ -370,24 +363,21 @@ public class ViolationRecordService {
         violationRecordRepository.save(violation);
         recalculateUserCreditScoreAndViolationCount(violation.getUserId());
 
-        // è®°å½•æ“ä½œæ—¥å¿—
-        logViolationOperation("REJECT_VIOLATION", violationId, violation.getUserId(),
-                "ç®¡ç†å‘˜æ‹’ç»è¿è§„ï¼Œç†ç”±ï¼š" + remark, adminId);
 
         result.put("success", true);
-        result.put("message", "è¿è§„å·²æ‹’ç»");
+        result.put("message", "Î¥¹æÒÑ¾Ü¾ø");
         result.put("violation", violation);
 
         return result;
     }
 
     /**
-     * ç®¡ç†å‘˜å–æ¶ˆå·²ç”Ÿæ•ˆçš„è¿è§„è®°å½•
+     * ¹ÜÀíÔ±È¡ÏûÒÑÉúĞ§µÄÎ¥¹æ¼ÇÂ¼
      *
-     * @param violationId è¿è§„è®°å½•ID
-     * @param adminId     ç®¡ç†å‘˜ID
-     * @param remark      å–æ¶ˆåŸå› 
-     * @return æ“ä½œç»“æœ
+     * @param violationId Î¥¹æ¼ÇÂ¼ID
+     * @param adminId     ¹ÜÀíÔ±ID
+     * @param remark      È¡ÏûÔ­Òò
+     * @return ²Ù×÷½á¹û
      */
     @Transactional
     public Map<String, Object> revokeViolation(Long violationId, Long adminId, String remark) {
@@ -396,14 +386,14 @@ public class ViolationRecordService {
         Optional<ViolationRecord> violationOpt = violationRecordRepository.findById(violationId);
         if (!violationOpt.isPresent()) {
             result.put("success", false);
-            result.put("message", "è¿è§„è®°å½•ä¸å­˜åœ¨");
+            result.put("message", "Î¥¹æ¼ÇÂ¼²»´æÔÚ");
             return result;
         }
 
         ViolationRecord violation = violationOpt.get();
         if (!"PROCESSED".equals(violation.getStatus())) {
             result.put("success", false);
-            result.put("message", "åªèƒ½å–æ¶ˆå·²ç”Ÿæ•ˆçš„è¿è§„è®°å½•");
+            result.put("message", "Ö»ÄÜÈ¡ÏûÒÑÉúĞ§µÄÎ¥¹æ¼ÇÂ¼");
             return result;
         }
 
@@ -414,19 +404,17 @@ public class ViolationRecordService {
 
         recalculateUserCreditScoreAndViolationCount(violation.getUserId());
 
-        logViolationOperation("REVOKE_VIOLATION", violationId, violation.getUserId(),
-                "ç®¡ç†å‘˜å–æ¶ˆå·²ç”Ÿæ•ˆè¿è§„ï¼Œç†ç”±ï¼š" + (remark != null ? remark : "æ— "), adminId);
 
         result.put("success", true);
-        result.put("message", "è¿è§„è®°å½•å·²å–æ¶ˆç”Ÿæ•ˆ");
+        result.put("message", "Î¥¹æ¼ÇÂ¼ÒÑÈ¡ÏûÉúĞ§");
         result.put("violation", violation);
 
         return result;
     }
 
     /**
-     * æ£€æŸ¥ç”¨æˆ·æ˜¯å¦éœ€è¦åŠ å…¥é»‘åå•
-     * è§¦å‘æ¡ä»¶ï¼šä¿¡èª‰åˆ†ä½äº60åˆ†æˆ–30å¤©å†…è¿è§„3æ¬¡ä»¥ä¸Š
+     * ¼ì²éÓÃ»§ÊÇ·ñĞèÒª¼ÓÈëºÚÃûµ¥
+     * ´¥·¢Ìõ¼ş£ºĞÅÓş·ÖµÍÓÚ60·Ö»ò30ÌìÄÚÎ¥¹æ3´ÎÒÔÉÏ
      */
     @Transactional
     public void checkAndAddToBlacklist(com.facility.booking.entity.User user, Long adminId) {
@@ -436,54 +424,44 @@ public class ViolationRecordService {
         com.facility.booking.entity.User latestUser = userRepository.findById(user.getId()).orElse(user);
         Integer creditScore = latestUser.getCreditScore() != null ? latestUser.getCreditScore() : 100;
 
-        // ä¿¡èª‰åˆ†ä½äº60åˆ†ï¼Œè‡ªåŠ¨æ‹‰é»‘
+        // ĞÅÓş·ÖµÍÓÚ60·Ö£¬×Ô¶¯À­ºÚ
         if (creditScore < 60) {
-            addToBlacklist(latestUser.getId(), "ä¿¡èª‰åˆ†ä½äº60åˆ†", 30, adminId);
+            addToBlacklist(latestUser.getId(), "ĞÅÓş·ÖµÍÓÚ60·Ö", 30, adminId);
             return;
         }
 
-        // 30å¤©å†…è¿è§„3æ¬¡ä»¥ä¸Šï¼Œè‡ªåŠ¨æ‹‰é»‘
+        // 30ÌìÄÚÎ¥¹æ3´ÎÒÔÉÏ£¬×Ô¶¯À­ºÚ
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
         Integer recentViolations = violationRecordRepository.countRecentProcessedViolations(
                 latestUser.getId(), "PROCESSED", thirtyDaysAgo);
         if (recentViolations != null && recentViolations >= 3) {
-            addToBlacklist(latestUser.getId(), "30å¤©å†…è¿è§„" + recentViolations + "æ¬¡", 7, adminId);
+            addToBlacklist(latestUser.getId(), "30ÌìÄÚÎ¥¹æ" + recentViolations + "´Î", 7, adminId);
         }
     }
 
     /**
-     * æ·»åŠ ç”¨æˆ·åˆ°é»‘åå•
+     * Ìí¼ÓÓÃ»§µ½ºÚÃûµ¥
      */
     private void addToBlacklist(Long userId, String reason, int days, Long adminId) {
         try {
             blacklistService.addToBlacklist(userId, reason, days, adminId);
-            System.out.println("ç”¨æˆ·" + userId + "å› " + reason + "è¢«è‡ªåŠ¨åŠ å…¥é»‘åå•");
+            System.out.println("ÓÃ»§" + userId + "Òò" + reason + "±»×Ô¶¯¼ÓÈëºÚÃûµ¥");
         } catch (Exception e) {
-            System.err.println("è‡ªåŠ¨åŠ å…¥é»‘åå•å¤±è´¥ï¼š" + e.getMessage());
+            System.err.println("×Ô¶¯¼ÓÈëºÚÃûµ¥Ê§°Ü£º" + e.getMessage());
         }
     }
 
     /**
-     * è®°å½•è¿è§„æ“ä½œæ—¥å¿—
+     * ¼ÇÂ¼Î¥¹æ²Ù×÷ÈÕÖ¾
      */
-    private void logViolationOperation(String operationType, Long violationId, Long userId, String detail, Long operatorId) {
-        try {
-            OperationLog log = new OperationLog();
-            log.setOperationType(operationType);
-            log.setTargetId(violationId);
-            log.setTargetType("VIOLATION");
-            log.setDetail(detail);
-            if (operatorId != null) {
-                log.setOperatorId(operatorId);
-            }
             operationLogRepository.save(log);
         } catch (Exception e) {
-            System.err.println("è®°å½•æ“ä½œæ—¥å¿—å¤±è´¥ï¼š" + e.getMessage());
+            System.err.println("¼ÇÂ¼²Ù×÷ÈÕÖ¾Ê§°Ü£º" + e.getMessage());
         }
     }
 
     /**
-     * æ ¹æ®IDè·å–è¿è§„è®°å½•è¯¦æƒ…
+     * ¸ù¾İID»ñÈ¡Î¥¹æ¼ÇÂ¼ÏêÇé
      */
     public Optional<ViolationRecord> getViolationById(Long id) {
         Optional<ViolationRecord> violationOpt = violationRecordRepository.findById(id);
@@ -500,7 +478,7 @@ public class ViolationRecordService {
     }
 
     /**
-     * æ›´æ–°è¿è§„è®°å½•çŠ¶æ€
+     * ¸üĞÂÎ¥¹æ¼ÇÂ¼×´Ì¬
      */
     @Transactional
     public boolean updateViolationStatus(Long id, String status, Long reportedBy) {
@@ -528,15 +506,15 @@ public class ViolationRecordService {
 
 
     /**
-     * è·å–ç”¨æˆ·æŸæ®µæ—¶é—´å†…çš„è¿è§„è®°å½•
+     * »ñÈ¡ÓÃ»§Ä³¶ÎÊ±¼äÄÚµÄÎ¥¹æ¼ÇÂ¼
      */
     public Page<ViolationRecord> getUserViolationsByTimeRange(Long userId, LocalDateTime startTime, LocalDateTime endTime, Pageable pageable) {
         Page<ViolationRecord> violations = violationRecordRepository.findByUserIdAndTimeRange(userId, startTime, endTime, pageable);
-        // è®¾ç½®ç”¨æˆ·åå’Œä¸ŠæŠ¥äººåç§°
+        // ÉèÖÃÓÃ»§ÃûºÍÉÏ±¨ÈËÃû³Æ
         violations.forEach(violation -> {
             userRepository.findById(violation.getUserId()).ifPresent(user ->
                     violation.setUserName(user.getName()));
-            // è®¾ç½®ä¸ŠæŠ¥äººåç§°
+            // ÉèÖÃÉÏ±¨ÈËÃû³Æ
             if (violation.getReportedBy() != null) {
                 userRepository.findById(violation.getReportedBy()).ifPresent(user ->
                         violation.setReporterName(user.getName()));
@@ -546,11 +524,11 @@ public class ViolationRecordService {
     }
 
     /**
-     * è·å–æ‰€æœ‰è¿è§„è®°å½•ï¼ˆç®¡ç†å‘˜ä½¿ç”¨ï¼‰
+     * »ñÈ¡ËùÓĞÎ¥¹æ¼ÇÂ¼£¨¹ÜÀíÔ±Ê¹ÓÃ£©
      */
     public Page<ViolationRecord> getAllViolations(Pageable pageable, String userName, String violationType, String status) {
         try {
-            // éªŒè¯æ•°æ®åº“è¿æ¥
+            // ÑéÖ¤Êı¾İ¿âÁ¬½Ó
             if (violationRecordRepository == null) {
                 throw new RuntimeException("ViolationRecordRepository is null - database connection issue");
             }
@@ -560,7 +538,7 @@ public class ViolationRecordService {
 
             System.out.println("Fetching violations with filters - userName: " + userName + ", violationType: " + violationType + ", status: " + status);
 
-            // æ ¹æ®ç­›é€‰æ¡ä»¶ä½¿ç”¨ä¸åŒçš„æŸ¥è¯¢æ–¹æ³•ï¼Œåœ¨æ•°æ®åº“å±‚é¢è¿›è¡Œç­›é€‰
+            // ¸ù¾İÉ¸Ñ¡Ìõ¼şÊ¹ÓÃ²»Í¬µÄ²éÑ¯·½·¨£¬ÔÚÊı¾İ¿â²ãÃæ½øĞĞÉ¸Ñ¡
             Page<ViolationRecord> violations;
 
             boolean hasUserName = userName != null && !userName.trim().isEmpty();
@@ -568,53 +546,53 @@ public class ViolationRecordService {
             boolean hasStatus = status != null && !status.trim().isEmpty();
 
             if (hasUserName && hasViolationType && hasStatus) {
-                // ä¸‰ä¸ªæ¡ä»¶éƒ½æœ‰
+                // Èı¸öÌõ¼ş¶¼ÓĞ
                 violations = violationRecordRepository.findByFilters(userName, violationType, status, pageable);
             } else if (hasUserName && hasViolationType) {
-                // ç”¨æˆ·å + è¿è§„ç±»å‹
+                // ÓÃ»§Ãû + Î¥¹æÀàĞÍ
                 violations = violationRecordRepository.findByUserNameAndViolationType(userName, violationType, pageable);
             } else if (hasUserName && hasStatus) {
-                // ç”¨æˆ·å + çŠ¶æ€
+                // ÓÃ»§Ãû + ×´Ì¬
                 violations = violationRecordRepository.findByUserNameAndStatus(userName, status, pageable);
             } else if (hasViolationType && hasStatus) {
-                // è¿è§„ç±»å‹ + çŠ¶æ€
+                // Î¥¹æÀàĞÍ + ×´Ì¬
                 violations = violationRecordRepository.findByViolationTypeAndStatus(violationType, status, pageable);
             } else if (hasUserName) {
-                // åªæœ‰ç”¨æˆ·å
+                // Ö»ÓĞÓÃ»§Ãû
                 violations = violationRecordRepository.findByUserNameContainingIgnoreCase(userName, pageable);
             } else if (hasViolationType) {
-                // åªæœ‰è¿è§„ç±»å‹
+                // Ö»ÓĞÎ¥¹æÀàĞÍ
                 violations = violationRecordRepository.findByViolationType(violationType, pageable);
             } else if (hasStatus) {
-                // åªæœ‰çŠ¶æ€
+                // Ö»ÓĞ×´Ì¬
                 violations = violationRecordRepository.findByStatus(status, pageable);
             } else {
-                // æ²¡æœ‰ç­›é€‰æ¡ä»¶
+                // Ã»ÓĞÉ¸Ñ¡Ìõ¼ş
                 violations = violationRecordRepository.findAllByOrderByReportedTimeDesc(pageable);
             }
 
-            // ä¸°å¯Œè¿è§„è®°å½•ä¿¡æ¯
+            // ·á¸»Î¥¹æ¼ÇÂ¼ĞÅÏ¢
             violations.forEach(violation -> {
                 try {
                     userRepository.findById(violation.getUserId()).ifPresent(user -> {
                         if (user.getName() != null) {
                             violation.setUserName(user.getName());
                         } else {
-                            violation.setUserName("æœªçŸ¥ç”¨æˆ·");
+                            violation.setUserName("Î´ÖªÓÃ»§");
                         }
                     });
-                    // è®¾ç½®ä¸ŠæŠ¥äººåç§°
+                    // ÉèÖÃÉÏ±¨ÈËÃû³Æ
                     if (violation.getReportedBy() != null) {
                         userRepository.findById(violation.getReportedBy()).ifPresent(user -> {
                             if (user.getName() != null) {
                                 violation.setReporterName(user.getName());
                             } else {
-                                violation.setReporterName("æœªçŸ¥ä¸ŠæŠ¥äºº");
+                                violation.setReporterName("Î´ÖªÉÏ±¨ÈË");
                             }
                         });
                     }
                 } catch (Exception e) {
-                    // è®°å½•æ—¥å¿—ä½†ä¸ä¸­æ–­æµç¨‹
+                    // ¼ÇÂ¼ÈÕÖ¾µ«²»ÖĞ¶ÏÁ÷³Ì
                     System.err.println("Error enriching violation record " + violation.getId() + ": " + e.getMessage());
                     e.printStackTrace();
                 }
@@ -623,12 +601,12 @@ public class ViolationRecordService {
             return violations;
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("è·å–æ‰€æœ‰è¿è§„è®°å½•å¤±è´¥: " + e.getMessage());
+            throw new RuntimeException("»ñÈ¡ËùÓĞÎ¥¹æ¼ÇÂ¼Ê§°Ü: " + e.getMessage());
         }
     }
 
     /**
-     * è·å–ç”¨æˆ·çš„å½“å‰ä¿¡ç”¨åˆ†
+     * »ñÈ¡ÓÃ»§µÄµ±Ç°ĞÅÓÃ·Ö
      */
     public Integer getUserCurrentCreditScore(Long userId) {
         recalculateUserCreditScoreAndViolationCount(userId);
@@ -636,7 +614,7 @@ public class ViolationRecordService {
     }
 
     /**
-     * è·å–ç”¨æˆ·çš„è¿è§„æ¬¡æ•°ï¼ˆæ‰€æœ‰çŠ¶æ€çš„è¿è§„è®°å½•æ€»æ•°ï¼‰
+     * »ñÈ¡ÓÃ»§µÄÎ¥¹æ´ÎÊı£¨ËùÓĞ×´Ì¬µÄÎ¥¹æ¼ÇÂ¼×ÜÊı£©
      */
     public Integer getUserViolationCount(Long userId) {
         recalculateUserCreditScoreAndViolationCount(userId);
@@ -645,7 +623,7 @@ public class ViolationRecordService {
     }
 
     /**
-     * è·å–ç”¨æˆ·çš„ç”Ÿæ•ˆä¸­è¿è§„æ•°ï¼ˆæ‰€æœ‰çŠ¶æ€çš„è¿è§„è®°å½•æ€»æ•°ï¼‰
+     * »ñÈ¡ÓÃ»§µÄÉúĞ§ÖĞÎ¥¹æÊı£¨ËùÓĞ×´Ì¬µÄÎ¥¹æ¼ÇÂ¼×ÜÊı£©
      */
     public Integer getUserActiveViolationCount(Long userId) {
         Integer count = violationRecordRepository.countProcessedViolationsByUserId(userId);
@@ -653,56 +631,56 @@ public class ViolationRecordService {
     }
 
     /**
-     * è·å–ç»´æŠ¤äººå‘˜ä¸ŠæŠ¥çš„è¿è§„è®°å½•
+     * »ñÈ¡Î¬»¤ÈËÔ±ÉÏ±¨µÄÎ¥¹æ¼ÇÂ¼
      */
     public Page<ViolationRecord> getMaintainerViolations(Pageable pageable, Long maintainerId, String userName, String violationType, String status) {
         try {
-            // å¦‚æœæŒ‡å®šäº†ç»´æŠ¤äººå‘˜IDï¼Œåˆ™åªè·å–è¯¥ç»´æŠ¤äººå‘˜ä¸ŠæŠ¥çš„è®°å½•
+            // Èç¹ûÖ¸¶¨ÁËÎ¬»¤ÈËÔ±ID£¬ÔòÖ»»ñÈ¡¸ÃÎ¬»¤ÈËÔ±ÉÏ±¨µÄ¼ÇÂ¼
             Page<ViolationRecord> violations;
             if (maintainerId != null) {
                 violations = violationRecordRepository.findByReportedByOrderByReportedTimeDesc(maintainerId, pageable);
             } else {
-                // è·å–æ‰€æœ‰ç»´æŠ¤äººå‘˜ä¸ŠæŠ¥çš„è®°å½•ï¼ˆå³reportedByä¸ä¸ºç©ºçš„è®°å½•ï¼‰
+                // »ñÈ¡ËùÓĞÎ¬»¤ÈËÔ±ÉÏ±¨µÄ¼ÇÂ¼£¨¼´reportedBy²»Îª¿ÕµÄ¼ÇÂ¼£©
                 violations = violationRecordRepository.findByReportedByIsNotNullOrderByReportedTimeDesc(pageable);
             }
 
-            // ä¸°å¯Œè¿è§„è®°å½•ä¿¡æ¯
+            // ·á¸»Î¥¹æ¼ÇÂ¼ĞÅÏ¢
             violations.forEach(violation -> {
                 try {
-                    // è®¾ç½®ç”¨æˆ·å
+                    // ÉèÖÃÓÃ»§Ãû
                     userRepository.findById(violation.getUserId()).ifPresent(user -> {
                         if (user.getName() != null) {
                             violation.setUserName(user.getName());
                         } else {
-                            violation.setUserName("æœªçŸ¥ç”¨æˆ·");
+                            violation.setUserName("Î´ÖªÓÃ»§");
                         }
                     });
 
-                    // è®¾ç½®ä¸ŠæŠ¥äººåç§°
+                    // ÉèÖÃÉÏ±¨ÈËÃû³Æ
                     if (violation.getReportedBy() != null) {
                         userRepository.findById(violation.getReportedBy()).ifPresent(user -> {
                             if (user.getName() != null) {
                                 violation.setReporterName(user.getName());
                             } else {
-                                violation.setReporterName("æœªçŸ¥ä¸ŠæŠ¥äºº");
+                                violation.setReporterName("Î´ÖªÉÏ±¨ÈË");
                             }
                         });
                     }
                 } catch (Exception e) {
-                    // è®°å½•æ—¥å¿—ä½†ä¸ä¸­æ–­æµç¨‹
+                    // ¼ÇÂ¼ÈÕÖ¾µ«²»ÖĞ¶ÏÁ÷³Ì
                     System.err.println("Error enriching violation record " + violation.getId() + ": " + e.getMessage());
                     e.printStackTrace();
                 }
             });
 
-            // å¦‚æœæœ‰è¿‡æ»¤æ¡ä»¶ï¼Œåœ¨å†…å­˜ä¸­è¿›è¡Œè¿‡æ»¤
+            // Èç¹ûÓĞ¹ıÂËÌõ¼ş£¬ÔÚÄÚ´æÖĞ½øĞĞ¹ıÂË
             if ((userName != null && !userName.trim().isEmpty()) ||
                     (violationType != null && !violationType.trim().isEmpty()) ||
                     (status != null && !status.trim().isEmpty())) {
 
                 List<ViolationRecord> filteredList = violations.getContent().stream()
                         .filter(violation -> {
-                            // ç”¨æˆ·åè¿‡æ»¤
+                            // ÓÃ»§Ãû¹ıÂË
                             if (userName != null && !userName.trim().isEmpty()) {
                                 if (violation.getUserName() == null ||
                                         !violation.getUserName().toLowerCase().contains(userName.toLowerCase())) {
@@ -710,14 +688,14 @@ public class ViolationRecordService {
                                 }
                             }
 
-                            // è¿è§„ç±»å‹è¿‡æ»¤
+                            // Î¥¹æÀàĞÍ¹ıÂË
                             if (violationType != null && !violationType.trim().isEmpty()) {
                                 if (!violationType.equals(violation.getViolationType())) {
                                     return false;
                                 }
                             }
 
-                            // çŠ¶æ€è¿‡æ»¤
+                            // ×´Ì¬¹ıÂË
                             if (status != null && !status.trim().isEmpty()) {
                                 if (!status.equals(violation.getStatus())) {
                                     return false;
@@ -728,7 +706,7 @@ public class ViolationRecordService {
                         })
                         .collect(Collectors.toList());
 
-                // åˆ›å»ºæ–°çš„Pageå¯¹è±¡
+                // ´´½¨ĞÂµÄPage¶ÔÏó
                 return new org.springframework.data.domain.PageImpl<>(
                         filteredList,
                         pageable,
@@ -739,13 +717,13 @@ public class ViolationRecordService {
             return violations;
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("è·å–ç»´æŠ¤äººå‘˜è¿è§„è®°å½•å¤±è´¥: " + e.getMessage());
+            throw new RuntimeException("»ñÈ¡Î¬»¤ÈËÔ±Î¥¹æ¼ÇÂ¼Ê§°Ü: " + e.getMessage());
         }
     }
 
     /**
-     * è·å–è¿è§„è®°å½•ç»Ÿè®¡æ•°æ®
-     * è¿”å›å®Œæ•´çš„ç»Ÿè®¡æ•°æ®ï¼Œä¸å—åˆ†é¡µå’Œç­›é€‰æ¡ä»¶å½±å“
+     * »ñÈ¡Î¥¹æ¼ÇÂ¼Í³¼ÆÊı¾İ
+     * ·µ»ØÍêÕûµÄÍ³¼ÆÊı¾İ£¬²»ÊÜ·ÖÒ³ºÍÉ¸Ñ¡Ìõ¼şÓ°Ïì
      */
     public Map<String, Object> getViolationStats() {
         Map<String, Object> stats = new HashMap<>();
@@ -761,9 +739,9 @@ public class ViolationRecordService {
 
             return stats;
         } catch (Exception e) {
-            System.err.println("è·å–è¿è§„è®°å½•ç»Ÿè®¡æ•°æ®å¤±è´¥: " + e.getMessage());
+            System.err.println("»ñÈ¡Î¥¹æ¼ÇÂ¼Í³¼ÆÊı¾İÊ§°Ü: " + e.getMessage());
             e.printStackTrace();
-            throw new RuntimeException("è·å–è¿è§„è®°å½•ç»Ÿè®¡æ•°æ®å¤±è´¥: " + e.getMessage());
+            throw new RuntimeException("»ñÈ¡Î¥¹æ¼ÇÂ¼Í³¼ÆÊı¾İÊ§°Ü: " + e.getMessage());
         }
     }
 }

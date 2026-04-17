@@ -1,5 +1,6 @@
 package com.facility.booking.controller;
 
+import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.Notice;
 import com.facility.booking.repository.NoticeRepository;
@@ -72,6 +73,7 @@ public class NoticeController {
      * @return 创建的通知公告信息
      */
     @PostMapping
+    @OperationLog(operationType = "PUBLISH_NOTICE", detail = "发布通知")
     public Result<Notice> create(@RequestBody Notice notice) {
         // 处理定时发布
         if ("SCHEDULED".equals(notice.getStatus()) && notice.getScheduledTime() != null) {
@@ -90,6 +92,7 @@ public class NoticeController {
      * @return 更新后的通知公告信息
      */
     @PutMapping("/{id}")
+    @OperationLog(operationType = "UPDATE_NOTICE", detail = "更新通知")
     public Result<Notice> update(@PathVariable Long id, @RequestBody Notice notice) {
         if (!noticeRepository.existsById(id)) {
             return Result.error("通知不存在");
@@ -111,6 +114,7 @@ public class NoticeController {
      * @return 删除结果
      */
     @DeleteMapping("/{id}")
+    @OperationLog(operationType = "DELETE_NOTICE", detail = "删除通知")
     public Result<Void> delete(@PathVariable Long id) {
         if (!noticeRepository.existsById(id)) {
             return Result.error("通知不存在");
@@ -124,6 +128,7 @@ public class NoticeController {
      * @return 发布结果
      */
     @PostMapping("/publish-scheduled")
+    @OperationLog(operationType = "PUBLISH_SCHEDULED_NOTICE", detail = "发布定时通知")
     public Result<Integer> publishScheduled() {
         int count = noticeRepository.publishScheduledNotices(LocalDateTime.now());
         return Result.success("发布" + count + "条定时通知", count);

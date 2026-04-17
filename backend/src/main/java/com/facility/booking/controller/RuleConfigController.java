@@ -1,5 +1,6 @@
 package com.facility.booking.controller;
 
+import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.FacilityCategory;
 import com.facility.booking.entity.RuleConfig;
@@ -106,6 +107,7 @@ public class RuleConfigController {
      * @return 创建或更新的规则配置
      */
     @PostMapping
+    @OperationLog(operationType = "UPDATE_RULE", detail = "创建或更新规则配置")
     public Result<RuleConfig> createOrUpdate(@RequestBody RuleConfig ruleConfig) {
         try {
             // 数据验证
@@ -185,6 +187,7 @@ public class RuleConfigController {
      * @return 删除结果
      */
     @DeleteMapping("/{id}")
+    @OperationLog(operationType = "DELETE_RULE", detail = "删除规则配置")
     public Result<Void> delete(@PathVariable Long id) {
         if (!ruleConfigRepository.existsById(id)) {
             return Result.error("规则配置不存在");

@@ -1,5 +1,6 @@
 package com.facility.booking.controller;
 
+import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.Feedback;
 import com.facility.booking.service.FeedbackService;
@@ -85,6 +86,7 @@ public class FeedbackController {
      * 管理员回复反馈
      */
     @PostMapping("/{id}/reply")
+    @OperationLog(operationType = "REPLY_FEEDBACK", detail = "回复反馈")
     public Result replyFeedback(@PathVariable Long id,
                                @RequestParam String reply,
                                @RequestParam Long adminId) {
@@ -160,6 +162,7 @@ public class FeedbackController {
      * 更新反馈状态
      */
     @PutMapping("/{id}/status")
+    @OperationLog(operationType = "UPDATE_FEEDBACK_STATUS", detail = "更新反馈状态")
     public Result updateFeedbackStatus(@PathVariable Long id, @RequestParam String status) {
         try {
             Optional<Feedback> feedbackOpt = feedbackService.getFeedbackById(id);
@@ -180,6 +183,7 @@ public class FeedbackController {
      * 删除反馈
      */
     @DeleteMapping("/{id}")
+    @OperationLog(operationType = "DELETE_FEEDBACK", detail = "删除反馈")
     public Result deleteFeedback(@PathVariable Long id) {
         try {
             Optional<Feedback> feedbackOpt = feedbackService.getFeedbackById(id);

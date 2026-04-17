@@ -1,5 +1,6 @@
 package com.facility.booking.controller;
 
+import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.ViolationRecord;
 import com.facility.booking.service.ViolationRecordService;
@@ -26,6 +27,7 @@ public class ViolationRecordController {
      * 记录违规
      */
     @PostMapping("/record")
+    @OperationLog(operationType = "CREATE_VIOLATION", detail = "创建违规记录")
     public Result recordViolation(@RequestBody ViolationRecord violationRecord) {
         try {
             System.out.println("Received violation record request: " + violationRecord);
@@ -224,6 +226,7 @@ public class ViolationRecordController {
      * 确认后扣除用户信誉分，增加违规次数
      */
     @PostMapping("/{id}/approve")
+    @OperationLog(operationType = "APPROVE_VIOLATION", detail = "确认违规记录")
     public Result<Map<String, Object>> approveViolation(@PathVariable Long id,
                                                         @RequestParam Long adminId,
                                                         @RequestParam(required = false) String remark) {
@@ -246,6 +249,7 @@ public class ViolationRecordController {
      * 拒绝后不扣除用户信誉分
      */
     @PostMapping("/{id}/reject")
+    @OperationLog(operationType = "REJECT_VIOLATION", detail = "驳回违规记录")
     public Result<Map<String, Object>> rejectViolation(@PathVariable Long id,
                                                        @RequestParam Long adminId,
                                                        @RequestParam(required = false) String remark) {
@@ -267,6 +271,7 @@ public class ViolationRecordController {
      * 管理员取消已生效违规记录
      */
     @PostMapping("/{id}/revoke")
+    @OperationLog(operationType = "REVOKE_VIOLATION", detail = "取消生效违规记录")
     public Result<Map<String, Object>> revokeViolation(@PathVariable Long id,
                                                        @RequestParam Long adminId,
                                                        @RequestParam(required = false) String remark) {

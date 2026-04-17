@@ -96,8 +96,13 @@
             <span class="time">{{ formatDateTime(row.createdTime) }}</span>
           </template>
         </el-table-column>
+        <el-table-column prop="updatedTime" label="更新时间" width="160" align="center">
+          <template #default="{ row }">
+            <span class="time">{{ formatDateTime(row.updatedTime) }}</span>
+          </template>
+        </el-table-column>
 
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button

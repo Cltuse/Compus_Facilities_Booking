@@ -1,5 +1,6 @@
 package com.facility.booking.controller;
 
+import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.Facility;
 import com.facility.booking.entity.Reservation;
@@ -200,6 +201,7 @@ public class FacilityController {
      * @return 创建的设备信息
      */
     @PostMapping
+    @OperationLog(operationType = "CREATE_FACILITY", detail = "创建设施")
     public Result<Facility> create(@RequestBody Facility facility) {
         if (facility.getImageUrl() == null || facility.getImageUrl().isEmpty()) {
             facility.setImageUrl("http://localhost:5681/files/facility/default-facility.svg");
@@ -215,6 +217,7 @@ public class FacilityController {
      * @return 创建的设备信息
      */
     @PostMapping(consumes = "multipart/form-data")
+    @OperationLog(operationType = "CREATE_FACILITY", detail = "创建设施")
     public Result<Facility> createWithImage(
             @RequestPart("facility") Facility facility,
             @RequestPart(value = "image", required = false) MultipartFile imageFile) {
@@ -245,6 +248,7 @@ public class FacilityController {
      * @return 更新后的设施信息
      */
     @PostMapping("/{id}/image")
+    @OperationLog(operationType = "UPLOAD_FACILITY_IMAGE", detail = "上传设施图片")
     public Result<Facility> uploadImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         Optional<Facility> facilityOpt = facilityRepository.findById(id);
         if (!facilityOpt.isPresent()) {
@@ -282,6 +286,7 @@ public class FacilityController {
      * @return 更新后的设施信息
      */
     @DeleteMapping("/{id}/image")
+    @OperationLog(operationType = "DELETE_FACILITY_IMAGE", detail = "删除设施图片")
     public Result<Facility> deleteImage(@PathVariable Long id) {
         Optional<Facility> facilityOpt = facilityRepository.findById(id);
         if (!facilityOpt.isPresent()) {
@@ -308,6 +313,7 @@ public class FacilityController {
      * @return 更新后的设备信息
      */
     @PutMapping("/{id}")
+    @OperationLog(operationType = "UPDATE_FACILITY", detail = "更新设施")
     public Result<Facility> update(@PathVariable Long id, @RequestBody Facility facility) {
         Optional<Facility> facilityOpt = facilityRepository.findById(id);
         if (!facilityOpt.isPresent()) {
@@ -355,6 +361,7 @@ public class FacilityController {
      * @return 更新后的设备信息
      */
     @PutMapping("/{id}/status")
+    @OperationLog(operationType = "UPDATE_FACILITY_STATUS", detail = "更新设施状态")
     public Result<Facility> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> requestBody) {
         Optional<Facility> facilityOpt = facilityRepository.findById(id);
         if (!facilityOpt.isPresent()) {
@@ -379,6 +386,7 @@ public class FacilityController {
      * @return 删除结果
      */
     @DeleteMapping("/{id}")
+    @OperationLog(operationType = "DELETE_FACILITY", detail = "删除设施")
     public Result<Void> delete(@PathVariable Long id) {
         Optional<Facility> facilityOpt = facilityRepository.findById(id);
         if (!facilityOpt.isPresent()) {

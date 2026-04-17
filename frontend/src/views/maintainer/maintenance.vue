@@ -383,7 +383,7 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="completeDialogVisible = false">取消</el-button>
-          <el-button type="success" @click="handleCompleteSubmit">确认完成</el-button>
+          <el-button type="success" @click="submitCompleteWithLocalTime">确认完成</el-button>
         </div>
       </template>
     </el-dialog>
@@ -438,6 +438,16 @@ const form = ref({
 const facilityOptions = ref([]);
 const route = useRoute();
 const router = useRouter();
+
+const formatLocalDateTime = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
 
 
 
@@ -620,37 +630,41 @@ const handleComplete = async (row) => {
 };
 
 const handleCompleteSubmit = async () => {
+  return submitCompleteWithLocalTime();
+};
+
+const submitCompleteWithLocalTime = async () => {
   if (!completeResult.value.trim()) {
-    ElMessage.error('请输入维护结果');
+    ElMessage.error('???????');
     return;
   }
-  
+
   try {
-    // 验证时间逻辑：只有当有开始时间时才需要验证结束时间
+    const currentEndTime = new Date();
+
     if (currentRow.value.startTime) {
-      const currentEndTime = new Date();
       const startTime = new Date(currentRow.value.startTime);
       if (currentEndTime < startTime) {
-        ElMessage.error('结束时间不能早于开始时间');
+        ElMessage.error('????????????');
         return;
       }
     }
-    
+
     const updateData = {
       ...currentRow.value,
       status: 'COMPLETED',
-      endTime: new Date().toISOString().slice(0, 19).replace('T', ' '), // 设置当前时间为结束时间
+      endTime: formatLocalDateTime(currentEndTime),
       result: completeResult.value.trim(),
       cost: completeCost.value
     };
-    
+
     await maintenanceAPI.complete(currentRow.value.id, updateData);
-    ElMessage.success('维护任务已完成');
+    ElMessage.success('???????');
     completeDialogVisible.value = false;
-    loadMaintenanceList(); // 刷新列表
+    loadMaintenanceList();
   } catch (error) {
-    console.error('完成维护任务失败:', error);
-    ElMessage.error('完成维护任务失败');
+    console.error('????????:', error);
+    ElMessage.error(error?.message || error?.response?.data?.message || '????????');
   }
 };
 

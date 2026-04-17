@@ -10,6 +10,7 @@ import com.facility.booking.repository.FacilityRepository;
 import com.facility.booking.repository.ReservationRepository;
 import com.facility.booking.repository.UserRecommendationRepository;
 import com.facility.booking.repository.UserSimilarityRepository;
+import com.facility.booking.util.PageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -238,7 +239,7 @@ public class RecommendService {
      * 获取用户的推荐列表
      */
     public List<UserRecommendation> getUserRecommendations(Long userId, int limit) {
-        return userRecommendationRepository.findTopRecommendations(userId, org.springframework.data.domain.PageRequest.of(0, limit));
+        return userRecommendationRepository.findTopRecommendations(userId, org.springframework.data.domain.Pageable.ofSize(PageUtils.normalizeSize(limit)));
     }
     
     /**

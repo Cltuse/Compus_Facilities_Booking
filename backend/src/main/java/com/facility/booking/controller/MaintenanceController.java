@@ -22,13 +22,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -260,8 +260,32 @@ public class MaintenanceController {
     }
 
     private void enrichMaintenances(List<Maintenance> maintenances) {
+        if (maintenances == null || maintenances.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Facility> facilitiesById = facilityRepository.findAllById(
+                        maintenances.stream()
+                                .map(Maintenance::getFacilityId)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet()))
+                .stream()
+                .collect(Collectors.toMap(Facility::getId, facility -> facility));
+
+        Map<Long, User> maintainersById = userRepository.findAllById(
+                        maintenances.stream()
+                                .map(Maintenance::getMaintainerId)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet()))
+                .stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+
         for (Maintenance maintenance : maintenances) {
-            enrichMaintenance(maintenance);
+            Facility facility = facilitiesById.get(maintenance.getFacilityId());
+            if (facility != null) {
+                maintenance.setFacilityName(facility.getName());
+            }
+            fillMaintainerName(maintenance, maintainersById);
         }
     }
 
@@ -281,6 +305,21 @@ public class MaintenanceController {
         Optional<User> maintainer = userRepository.findById(maintenance.getMaintainerId());
         if (maintainer.isPresent()) {
             User user = maintainer.get();
+            String maintainerName = user.getRealName() != null && !user.getRealName().trim().isEmpty()
+                    ? user.getRealName() : user.getUsername();
+            maintenance.setMaintainer(maintainerName);
+        }
+    }
+
+    private void fillMaintainerName(Maintenance maintenance, Map<Long, User> maintainersById) {
+        if (maintenance.getMaintainerId() == null) {
+            return;
+        }
+        if (maintenance.getMaintainer() != null && !maintenance.getMaintainer().trim().isEmpty()) {
+            return;
+        }
+        User user = maintainersById.get(maintenance.getMaintainerId());
+        if (user != null) {
             String maintainerName = user.getRealName() != null && !user.getRealName().trim().isEmpty()
                     ? user.getRealName() : user.getUsername();
             maintenance.setMaintainer(maintainerName);
@@ -313,9 +352,7 @@ public class MaintenanceController {
     @GetMapping("/stats/time-range")
     public Result<Map<String, Object>> getStatsByTimeRange(@RequestParam String range) {
         LocalDateTime startTime = getStartTimeByRange(range);
-        List<Maintenance> maintenances = maintenanceRepository.findAll().stream()
-                .filter(m -> m.getCreatedAt() != null && m.getCreatedAt().isAfter(startTime))
-                .collect(Collectors.toList());
+        List<Maintenance> maintenances = maintenanceRepository.findByCreatedAtAfter(startTime);
 
         Map<String, Object> result = new HashMap<>();
         result.put("total", maintenances.size());
@@ -331,32 +368,26 @@ public class MaintenanceController {
     @GetMapping("/stats/type-distribution")
     public Result<Map<String, Object>> getTypeDistribution(@RequestParam(required = false) String range) {
         LocalDateTime startTime = range != null ? getStartTimeByRange(range) : LocalDateTime.of(2000, 1, 1, 0, 0);
-        List<Maintenance> maintenances = maintenanceRepository.findAll().stream()
-                .filter(m -> m.getCreatedAt() != null && m.getCreatedAt().isAfter(startTime))
-                .collect(Collectors.toList());
 
-        Map<String, Integer> typeCount = new LinkedHashMap<>();
-        typeCount.put("ROUTINE", 0);
-        typeCount.put("REPAIR", 0);
-        typeCount.put("UPGRADE", 0);
-        typeCount.put("OTHER", 0);
+        Map<String, Long> typeCount = new LinkedHashMap<>();
+        typeCount.put("ROUTINE", 0L);
+        typeCount.put("REPAIR", 0L);
+        typeCount.put("UPGRADE", 0L);
+        typeCount.put("OTHER", 0L);
 
-        for (Maintenance m : maintenances) {
-            String type = m.getMaintenanceType();
-            if (type == null) {
-                typeCount.put("OTHER", typeCount.getOrDefault("OTHER", 0) + 1);
-            } else if (typeCount.containsKey(type)) {
-                typeCount.put(type, typeCount.get(type) + 1);
-            } else {
-                typeCount.put("OTHER", typeCount.getOrDefault("OTHER", 0) + 1);
+        for (MaintenanceRepository.TypeCountView row : maintenanceRepository.countByTypeAfter(startTime)) {
+            String type = row.getMaintenanceType();
+            if (!typeCount.containsKey(type)) {
+                type = "OTHER";
             }
+            typeCount.put(type, typeCount.getOrDefault(type, 0L) + row.getTotal());
         }
 
         List<Map<String, Object>> pieData = new ArrayList<>();
         String[] colors = {"#409eff", "#67c23a", "#e6a23c", "#909399"};
         String[] typeNames = {"日常保养", "故障维修", "设备升级", "其他"};
         int index = 0;
-        for (Map.Entry<String, Integer> entry : typeCount.entrySet()) {
+        for (Map.Entry<String, Long> entry : typeCount.entrySet()) {
             if (entry.getValue() > 0) {
                 Map<String, Object> item = new HashMap<>();
                 item.put("name", typeNames[index]);
@@ -380,25 +411,18 @@ public class MaintenanceController {
     @GetMapping("/stats/duration")
     public Result<Map<String, Object>> getDurationStats(@RequestParam(required = false) String range) {
         LocalDateTime startTime = range != null ? getStartTimeByRange(range) : LocalDateTime.of(2000, 1, 1, 0, 0);
-        List<Maintenance> completedMaintenances = maintenanceRepository.findAll().stream()
-                .filter(m -> m.getCreatedAt() != null && m.getCreatedAt().isAfter(startTime))
-                .filter(m -> "COMPLETED".equals(m.getStatus()))
-                .filter(m -> m.getStartTime() != null && m.getEndTime() != null)
-                .collect(Collectors.toList());
+        Map<String, Double> durationByType = new LinkedHashMap<>();
+        durationByType.put("ROUTINE", 0D);
+        durationByType.put("REPAIR", 0D);
+        durationByType.put("UPGRADE", 0D);
+        durationByType.put("OTHER", 0D);
 
-        Map<String, List<Long>> durationByType = new LinkedHashMap<>();
-        durationByType.put("ROUTINE", new ArrayList<>());
-        durationByType.put("REPAIR", new ArrayList<>());
-        durationByType.put("UPGRADE", new ArrayList<>());
-        durationByType.put("OTHER", new ArrayList<>());
-
-        for (Maintenance m : completedMaintenances) {
-            long hours = Duration.between(m.getStartTime(), m.getEndTime()).toHours();
-            String type = m.getMaintenanceType();
-            if (type == null || !durationByType.containsKey(type)) {
+        for (MaintenanceRepository.TypeDurationView row : maintenanceRepository.averageDurationByTypeAfter(startTime)) {
+            String type = row.getMaintenanceType();
+            if (!durationByType.containsKey(type)) {
                 type = "OTHER";
             }
-            durationByType.get(type).add(hours);
+            durationByType.put(type, row.getAvgDuration() == null ? 0D : row.getAvgDuration());
         }
 
         String[] typeNames = {"日常保养", "故障维修", "设备升级", "其他"};
@@ -406,13 +430,8 @@ public class MaintenanceController {
         List<Map<String, Object>> barData = new ArrayList<>();
 
         for (int i = 0; i < types.length; i++) {
-            List<Long> durations = durationByType.get(types[i]);
-            double avgDuration = 0;
-            if (!durations.isEmpty()) {
-                avgDuration = durations.stream().mapToLong(Long::longValue).average().orElse(0);
-                BigDecimal bd = BigDecimal.valueOf(avgDuration).setScale(1, RoundingMode.HALF_UP);
-                avgDuration = bd.doubleValue();
-            }
+            BigDecimal bd = BigDecimal.valueOf(durationByType.getOrDefault(types[i], 0D)).setScale(1, RoundingMode.HALF_UP);
+            double avgDuration = bd.doubleValue();
 
             Map<String, Object> item = new HashMap<>();
             item.put("type", typeNames[i]);
@@ -433,27 +452,14 @@ public class MaintenanceController {
     @GetMapping("/stats/facility-faults")
     public Result<Map<String, Object>> getFacilityFaultStats(@RequestParam(required = false) String range) {
         LocalDateTime startTime = range != null ? getStartTimeByRange(range) : LocalDateTime.of(2000, 1, 1, 0, 0);
-        List<Maintenance> maintenances = maintenanceRepository.findAll().stream()
-                .filter(m -> m.getCreatedAt() != null && m.getCreatedAt().isAfter(startTime))
-                .collect(Collectors.toList());
-
-        Map<Long, Integer> faultCountByFacility = new HashMap<>();
-        for (Maintenance m : maintenances) {
-            faultCountByFacility.merge(m.getFacilityId(), 1, Integer::sum);
-        }
-
         List<Map<String, Object>> topFaults = new ArrayList<>();
-        faultCountByFacility.entrySet().stream()
-                .sorted(Map.Entry.<Long, Integer>comparingByValue().reversed())
-                .limit(5)
-                .forEach(entry -> {
-                    Optional<Facility> facOpt = facilityRepository.findById(entry.getKey());
-                    Map<String, Object> item = new HashMap<>();
-                    item.put("facilityId", entry.getKey());
-                    item.put("faultCount", entry.getValue());
-                    item.put("facilityName", facOpt.isPresent() ? facOpt.get().getName() : "未知设施");
-                    topFaults.add(item);
-                });
+        for (MaintenanceRepository.FacilityFaultView row : maintenanceRepository.findTopFacilityFaultsAfter(startTime, 5)) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("facilityId", row.getFacilityId());
+            item.put("faultCount", row.getFaultCount());
+            item.put("facilityName", row.getFacilityName());
+            topFaults.add(item);
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("faultRanking", topFaults);
@@ -466,12 +472,10 @@ public class MaintenanceController {
      */
     @GetMapping("/stats/summary")
     public Result<Map<String, Object>> getSummaryStats() {
-        List<Maintenance> allMaintenances = maintenanceRepository.findAll();
-
-        int total = allMaintenances.size();
-        int pending = (int) allMaintenances.stream().filter(m -> "PENDING".equals(m.getStatus())).count();
-        int inProgress = (int) allMaintenances.stream().filter(m -> "IN_PROGRESS".equals(m.getStatus())).count();
-        int completed = (int) allMaintenances.stream().filter(m -> "COMPLETED".equals(m.getStatus())).count();
+        long total = maintenanceRepository.count();
+        long pending = maintenanceRepository.countByStatus("PENDING");
+        long inProgress = maintenanceRepository.countByStatus("IN_PROGRESS");
+        long completed = maintenanceRepository.countByStatus("COMPLETED");
 
         long totalFacilities = facilityRepository.count();
 
@@ -488,13 +492,8 @@ public class MaintenanceController {
     public void checkPendingMaintenances() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime fifteenMinutesLater = now.plusMinutes(15);
-
-        List<Maintenance> pendingMaintenances = maintenanceRepository.findAll().stream()
-                .filter(m -> "PENDING".equals(m.getStatus()))
-                .filter(m -> m.getStartTime() != null)
-                .filter(m -> m.getStartTime().isBefore(fifteenMinutesLater) || m.getStartTime().isEqual(fifteenMinutesLater))
-                .filter(m -> m.getStartTime().isAfter(now.minusMinutes(15)))
-                .collect(Collectors.toList());
+        List<Maintenance> pendingMaintenances = maintenanceRepository
+                .findByStatusAndStartTimeLessThanEqualAndStartTimeAfter("PENDING", fifteenMinutesLater, now.minusMinutes(15));
 
         for (Maintenance maintenance : pendingMaintenances) {
             maintenance.setStatus("IN_PROGRESS");

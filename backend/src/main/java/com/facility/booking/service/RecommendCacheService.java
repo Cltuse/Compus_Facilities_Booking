@@ -2,8 +2,8 @@ package com.facility.booking.service;
 
 import com.facility.booking.entity.UserRecommendation;
 import com.facility.booking.repository.UserRecommendationRepository;
+import com.facility.booking.util.PageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class RecommendCacheService {
@@ -53,7 +52,7 @@ public class RecommendCacheService {
      * 从缓存表读取推荐结果
      */
     public List<UserRecommendation> getCachedRecommendations(Long userId, int size) {
-        Pageable pageable = PageRequest.of(0, size);
+        Pageable pageable = Pageable.ofSize(PageUtils.normalizeSize(size));
         return userRecommendationRepository.findByUserIdOrderByScoreDesc(userId, pageable);
     }
     

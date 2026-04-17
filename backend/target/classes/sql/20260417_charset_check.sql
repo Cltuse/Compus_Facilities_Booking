@@ -35,4 +35,4 @@ WHERE SCHEMA_NAME = DATABASE();
 -- UPDATE operation_log
 -- SET detail = '完成维护'
 -- WHERE operation_type = 'COMPLETE_MAINTENANCE'
---   AND (detail LIKE '%�%' OR detail LIKE '%???%' OR detail REGEXP '[^ -~一-龥]');
+--   AND (detail LIKE '%???%' OR detail REGEXP '[^ -~一-龥]');

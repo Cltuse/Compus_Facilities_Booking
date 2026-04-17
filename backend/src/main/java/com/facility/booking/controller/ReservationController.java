@@ -1,4 +1,4 @@
-package com.facility.booking.controller;
+﻿package com.facility.booking.controller;
 
 import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
@@ -11,6 +11,7 @@ import com.facility.booking.repository.ReservationRepository;
 import com.facility.booking.repository.RuleConfigRepository;
 import com.facility.booking.entity.RuleConfig;
 import com.facility.booking.repository.UserRepository;
+import com.facility.booking.service.ReservationService;
 import com.facility.booking.service.ViolationRecordService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,9 @@ public class ReservationController {
 
     @Autowired
     private ViolationRecordService violationRecordService;
+
+    @Autowired
+    private ReservationService reservationService;
 
     /**
      * 获取所有预约记录
@@ -109,88 +113,25 @@ public class ReservationController {
     @PostMapping
     public Result<Reservation> create(@RequestBody Reservation reservation) {
         try {
-            // 1. 基本数据验证
-            if (reservation.getFacilityId() == null) {
-                return Result.error("设施ID不能为空");
+            String validationError = reservationService.validateReservationCreation(reservation);
+            if (validationError != null) {
+                return Result.error(validationError);
             }
-            if (reservation.getUserId() == null) {
-                return Result.error("用户ID不能为空");
-            }
-            if (reservation.getStartTime() == null) {
-                return Result.error("开始时间不能为空");
-            }
-            if (reservation.getEndTime() == null) {
-                return Result.error("结束时间不能为空");
-            }
-            
-            // 2. 检查设施是否存在（不再检查设施状态）
-            Optional<Facility> facilityOpt = facilityRepository.findById(reservation.getFacilityId());
-            if (!facilityOpt.isPresent()) {
-                return Result.error("设施不存在");
-            }
-            
-            Facility facility = facilityOpt.get();
-            
-            // 3. 检查用户是否存在
-            Optional<User> userOpt = userRepository.findById(reservation.getUserId());
-            if (!userOpt.isPresent()) {
-                return Result.error("用户不存在");
-            }
-            
-            // 4. 验证预约规则
-            Result<String> ruleValidationResult = validateReservationRules(reservation, facility);
-            if (!ruleValidationResult.isSuccess()) {
-                return Result.error(ruleValidationResult.getMessage());
-            }
-            
-            // 5. 检查时间有效性
-            if (reservation.getEndTime().isBefore(reservation.getStartTime())) {
-                return Result.error("结束时间不能早于开始时间");
-            }
-            
-            // 检查预约时间范围（不能预约过去的时间）
-            if (reservation.getStartTime().isBefore(LocalDateTime.now())) {
-                return Result.error("不能预约过去的时间");
-            }
-            
-            // 6. 检查时间冲突（使用悲观锁确保并发安全）
-            // 获取设施锁，防止并发冲突
-            Optional<Facility> lockedFacility = facilityRepository.findByIdWithLock(reservation.getFacilityId());
-            if (!lockedFacility.isPresent()) {
-                return Result.error("设施不存在或已被删除");
-            }
-            
-            // 检查同一设施在所选时间段内是否已有有效预约（APPROVED、PENDING、COMPLETED）
-            List<String> validStatuses = Arrays.asList("APPROVED", "PENDING", "COMPLETED");
-            List<Reservation> conflictingReservations = reservationRepository.findConflictingReservations(
-                reservation.getFacilityId(), 
-                reservation.getStartTime(), 
-                reservation.getEndTime(), 
-                validStatuses
-            );
-            
-            if (!conflictingReservations.isEmpty()) {
-                return Result.error("该时间段已被预约，请选择其他时间");
-            }
-            
-            // 7. 根据规则设置状态并保存
-            RuleConfig ruleConfig = getApplicableRuleConfig(facility);
-            String initialStatus = (ruleConfig != null && ruleConfig.getNeedApproval()) ? "PENDING" : "APPROVED";
-            reservation.setStatus(initialStatus);
-            reservation.setCheckinStatus("NOT_CHECKED");
-            
-            Reservation savedReservation = reservationRepository.save(reservation);
+
+            Reservation savedReservation = reservationService.createReservation(reservation);
             enrichReservation(savedReservation);
-            
-            String message = "预约成功";
-            if ("PENDING".equals(initialStatus)) {
-                message += "，请等待管理员审核";
+
+            String message = "Reservation created successfully";
+            if ("PENDING".equals(savedReservation.getStatus())) {
+                message += ", pending admin approval";
             }
-            
+
             return Result.success(message, savedReservation);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return Result.error(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.error("预约失败：" + e.getMessage());
+            return Result.error("Reservation creation failed: " + e.getMessage());
         }
     }
 
@@ -316,23 +257,21 @@ public class ReservationController {
     public Result<Reservation> approve(@PathVariable Long id, @RequestBody Reservation reservation) {
         Optional<Reservation> resOpt = reservationRepository.findById(id);
         if (!resOpt.isPresent()) {
-            return Result.error("预约不存在");
+            return Result.error("Reservation not found");
         }
 
         Reservation existingReservation = resOpt.get();
-        
-        // 检查状态流转是否合理
         if (!isValidStatusTransition(existingReservation.getStatus(), "APPROVED")) {
-            return Result.error("当前状态不允许审核通过操作");
+            return Result.error("Current status does not allow approval");
         }
-        
-        existingReservation.setStatus("APPROVED");
-        existingReservation.setAdminRemark(reservation.getAdminRemark());
 
-        Reservation savedReservation = reservationRepository.save(existingReservation);
-        
-        enrichReservation(savedReservation);
-        return Result.success("审核通过", savedReservation);
+        try {
+            Reservation savedReservation = reservationService.approveReservation(id, reservation.getAdminRemark());
+            enrichReservation(savedReservation);
+            return Result.success("Reservation approved", savedReservation);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     /**

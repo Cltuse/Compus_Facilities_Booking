@@ -4,6 +4,7 @@ import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.Notice;
 import com.facility.booking.repository.NoticeRepository;
+import com.facility.booking.util.PageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -34,7 +35,7 @@ public class NoticeController {
     public Result<Page<Notice>> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishTime"));
+        PageRequest pageRequest = PageRequest.of(Math.max(page, 0), PageUtils.normalizeSize(size), Sort.by(Sort.Direction.DESC, "publishTime"));
         Page<Notice> notices = noticeRepository.findAll(pageRequest);
         return Result.success(notices);
     }

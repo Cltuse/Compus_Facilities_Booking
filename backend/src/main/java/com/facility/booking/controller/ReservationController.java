@@ -740,33 +740,25 @@ public class ReservationController {
     @GetMapping("/stats/category")
     public Result<Map<String, Object>> getCategoryStats(@RequestParam(required = false) String range) {
         LocalDateTime startTime = range != null ? getStartTimeByRange(range) : LocalDateTime.of(2000, 1, 1, 0, 0);
-        List<Reservation> reservations = reservationRepository.findByCreatedAtAfter(startTime);
-        
-        Map<String, Integer> categoryCount = new LinkedHashMap<>();
-        for (Reservation r : reservations) {
-            Optional<Facility> facOpt = facilityRepository.findById(r.getFacilityId());
-            String category = "未分类";
-            if (facOpt.isPresent() && facOpt.get().getCategory() != null) {
-                category = facOpt.get().getCategory();
-            }
-            categoryCount.put(category, categoryCount.getOrDefault(category, 0) + 1);
-        }
+        List<ReservationRepository.CategoryCountView> categoryStats = reservationRepository.countCategoryStatsAfter(startTime);
         
         List<Map<String, Object>> pieData = new ArrayList<>();
         String[] colors = {"#409eff", "#67c23a", "#e6a23c", "#f56c6c", "#909399", "#c71585", "#00ced1", "#ff6347"};
         int colorIndex = 0;
-        for (Map.Entry<String, Integer> entry : categoryCount.entrySet()) {
+        long total = 0;
+        for (ReservationRepository.CategoryCountView entry : categoryStats) {
             Map<String, Object> item = new HashMap<>();
-            item.put("name", entry.getKey());
-            item.put("value", entry.getValue());
+            item.put("name", entry.getCategory());
+            item.put("value", entry.getTotal());
             item.put("itemStyle", Map.of("color", colors[colorIndex % colors.length]));
             pieData.add(item);
             colorIndex++;
+            total += entry.getTotal();
         }
         
         Map<String, Object> result = new HashMap<>();
         result.put("categoryData", pieData);
-        result.put("total", reservations.size());
+        result.put("total", total);
         
         return Result.success(result);
     }

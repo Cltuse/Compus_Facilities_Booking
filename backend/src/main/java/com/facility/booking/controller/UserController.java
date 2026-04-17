@@ -14,6 +14,7 @@ import com.facility.booking.security.CurrentUserService;
 import com.facility.booking.security.CustomUserPrincipal;
 import com.facility.booking.security.JwtTokenProvider;
 import com.facility.booking.service.ViolationRecordService;
+import com.facility.booking.util.PageUtils;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -89,7 +90,7 @@ public class UserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
-            PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+            PageRequest pageRequest = PageRequest.of(Math.max(page, 0), PageUtils.normalizeSize(size), Sort.by(Sort.Direction.DESC, "id"));
             Page<User> users = userRepository.findAll(pageRequest);
             return Result.success(users.map(this::toSafeUser));
         } catch (Exception e) {

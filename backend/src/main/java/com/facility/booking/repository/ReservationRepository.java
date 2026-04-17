@@ -11,15 +11,34 @@ import java.util.Optional;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
+    interface CategoryCountView {
+        String getCategory();
+        Long getTotal();
+    }
+
     List<Reservation> findByUserId(Long userId);
     List<Reservation> findByFacilityId(Long facilityId);
     List<Reservation> findByStatus(String status);
+    long countByStatus(String status);
+    long countByCheckinStatus(String checkinStatus);
+    long countByCreatedAtAfter(LocalDateTime startTime);
+    long countByCreatedAtAfterAndStatus(LocalDateTime startTime, String status);
 
     @Query("SELECT r FROM Reservation r WHERE r.createdAt >= :startTime")
     List<Reservation> findByCreatedAtAfter(@Param("startTime") LocalDateTime startTime);
 
     @Query("SELECT r FROM Reservation r WHERE r.createdAt >= :startTime AND r.facilityId IN :facilityIds")
     List<Reservation> findByCreatedAtAfterAndFacilityIdIn(@Param("startTime") LocalDateTime startTime, @Param("facilityIds") List<Long> facilityIds);
+
+    @Query(value = """
+            SELECT COALESCE(f.category, '未分类') AS category, COUNT(*) AS total
+            FROM reservation r
+            LEFT JOIN facility f ON f.id = r.facility_id
+            WHERE r.created_at >= :startTime
+            GROUP BY COALESCE(f.category, '未分类')
+            ORDER BY total DESC
+            """, nativeQuery = true)
+    List<CategoryCountView> countCategoryStatsAfter(@Param("startTime") LocalDateTime startTime);
 
     // 自定义查询方法用于搜索
     @Query("SELECT r FROM Reservation r WHERE " +

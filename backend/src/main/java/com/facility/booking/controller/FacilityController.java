@@ -7,6 +7,7 @@ import com.facility.booking.entity.Reservation;
 import com.facility.booking.repository.FacilityRepository;
 import com.facility.booking.repository.ReservationRepository;
 import com.facility.booking.service.FileUploadService;
+import com.facility.booking.util.PageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -147,7 +148,7 @@ public class FacilityController {
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
         Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Pageable pageable = PageUtils.of(page, size, Sort.by(direction, sortBy));
         Page<Facility> facilityPage = facilityRepository.findAll(pageable);
 
         Map<String, Object> response = new HashMap<>();
@@ -180,7 +181,7 @@ public class FacilityController {
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
         Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Pageable pageable = PageUtils.of(page, size, Sort.by(direction, sortBy));
         Page<Facility> facilityPage = facilityRepository.searchByKeyword(keyword, pageable);
 
         Map<String, Object> response = new HashMap<>();

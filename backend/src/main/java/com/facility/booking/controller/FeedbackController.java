@@ -5,6 +5,7 @@ import com.facility.booking.common.Result;
 import com.facility.booking.entity.Feedback;
 import com.facility.booking.security.CurrentUserService;
 import com.facility.booking.service.FeedbackService;
+import com.facility.booking.util.PageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,7 +45,7 @@ public class FeedbackController {
                                    @RequestParam(defaultValue = "0") int page,
                                    @RequestParam(defaultValue = "10") int size) {
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            Pageable pageable = PageUtils.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
             Page<Feedback> feedbacks = feedbackService.getUserFeedbacks(userId, pageable);
             return Result.success("获取反馈列表成功", feedbacks);
         } catch (Exception e) {
@@ -78,7 +79,7 @@ public class FeedbackController {
                                       @RequestParam(defaultValue = "0") int page,
                                       @RequestParam(defaultValue = "10") int size) {
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            Pageable pageable = PageUtils.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
             Page<Feedback> feedbacks = feedbackService.searchUserFeedbacks(userId, keyword, pageable);
             return Result.success("搜索反馈成功", feedbacks);
         } catch (Exception e) {
@@ -136,7 +137,7 @@ public class FeedbackController {
             System.out.println("Getting feedbacks with params: page=" + page + ", size=" + size + 
                               ", status=" + status + ", type=" + type + ", keyword=" + keyword);
                               
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            Pageable pageable = PageUtils.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
             Page<Feedback> feedbacks;
             
             // 根据参数组合查询

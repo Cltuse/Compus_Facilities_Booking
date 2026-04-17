@@ -4,6 +4,7 @@ import com.facility.booking.entity.*;
 import com.facility.booking.repository.*;
 import com.facility.booking.service.RuleConfigService;
 import com.facility.booking.common.Result;
+import com.facility.booking.util.PageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -65,7 +66,7 @@ public class UserClientController {
             return Result.error("用户不存在");
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
+        Pageable pageable = PageUtils.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
         Page<ViolationRecord> violationPage = violationRecordRepository.findByUserIdOrderByReportedTimeDesc(userId, pageable);
         
         // 丰富违规记录信息
@@ -131,7 +132,7 @@ public class UserClientController {
             return Result.error("用户不存在");
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageUtils.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Feedback> feedbackPage = feedbackRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
         
         // 丰富反馈信息

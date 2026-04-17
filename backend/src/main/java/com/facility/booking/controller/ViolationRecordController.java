@@ -5,6 +5,7 @@ import com.facility.booking.common.Result;
 import com.facility.booking.entity.ViolationRecord;
 import com.facility.booking.security.CurrentUserService;
 import com.facility.booking.service.ViolationRecordService;
+import com.facility.booking.util.PageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -54,7 +55,7 @@ public class ViolationRecordController {
                                     @RequestParam(defaultValue = "0") int page,
                                     @RequestParam(defaultValue = "10") int size) {
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
+            Pageable pageable = PageUtils.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
             Page<ViolationRecord> violations = violationRecordService.getUserViolations(userId, pageable);
             return Result.success("获取违规记录成功", violations);
         } catch (Exception e) {
@@ -164,7 +165,7 @@ public class ViolationRecordController {
                                               @RequestParam(defaultValue = "0") int page,
                                               @RequestParam(defaultValue = "10") int size) {
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
+            Pageable pageable = PageUtils.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
             Page<ViolationRecord> violations = violationRecordService.getUserViolationsByTimeRange(userId, startTime, endTime, pageable);
             return Result.success("获取时间段内违规记录成功", violations);
         } catch (Exception e) {
@@ -183,7 +184,7 @@ public class ViolationRecordController {
                                   @RequestParam(required = false) String status) {
         try {
             System.out.println("Getting all violations - page: " + page + ", size: " + size + ", userName: " + userName + ", violationType: " + violationType + ", status: " + status);
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
+            Pageable pageable = PageUtils.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
             Page<ViolationRecord> violations = violationRecordService.getAllViolations(pageable, userName, violationType, status);
             System.out.println("Successfully retrieved " + violations.getTotalElements() + " violations");
             return Result.success("获取所有违规记录成功", violations);
@@ -205,7 +206,7 @@ public class ViolationRecordController {
                                          @RequestParam(required = false) String violationType,
                                          @RequestParam(required = false) String status) {
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
+            Pageable pageable = PageUtils.of(page, size, Sort.by(Sort.Direction.DESC, "reportedTime"));
             Page<ViolationRecord> violations = violationRecordService.getMaintainerViolations(pageable, maintainerId, userName, violationType, status);
             return Result.success("获取维护人员违规记录成功", violations);
         } catch (Exception e) {

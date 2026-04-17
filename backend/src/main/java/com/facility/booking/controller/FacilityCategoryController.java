@@ -4,6 +4,7 @@ import com.facility.booking.annotation.OperationLog;
 import com.facility.booking.common.Result;
 import com.facility.booking.entity.FacilityCategory;
 import com.facility.booking.repository.FacilityCategoryRepository;
+import com.facility.booking.util.PageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -196,7 +197,7 @@ public class FacilityCategoryController {
             @RequestParam(defaultValue = "asc") String sortDir) {
 
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Pageable pageable = PageUtils.of(page, size, Sort.by(direction, sortBy));
         Page<FacilityCategory> categoryPage = facilityCategoryRepository.findAllByOrderBySortOrderAsc(pageable);
         return Result.success(categoryPage);
     }
@@ -214,14 +215,14 @@ public class FacilityCategoryController {
 
         if (keyword == null || keyword.trim().isEmpty()) {
             Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
-            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+            Pageable pageable = PageUtils.of(page, size, Sort.by(direction, sortBy));
             Page<FacilityCategory> categoryPage = facilityCategoryRepository.findAllByOrderBySortOrderAsc(pageable);
             return Result.success(categoryPage);
         }
 
         String trimmedKeyword = keyword.trim();
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Pageable pageable = PageUtils.of(page, size, Sort.by(direction, sortBy));
         Page<FacilityCategory> categoryPage = facilityCategoryRepository.findByKeywordContainingIgnoreCaseOrderBySortOrderAsc(trimmedKeyword, pageable);
         return Result.success(categoryPage);
     }
@@ -239,14 +240,14 @@ public class FacilityCategoryController {
 
         if (keyword == null || keyword.trim().isEmpty()) {
             Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
-            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+            Pageable pageable = PageUtils.of(page, size, Sort.by(direction, sortBy));
             Page<FacilityCategory> categoryPage = facilityCategoryRepository.findAllByOrderBySortOrderAsc(pageable);
             return Result.success(categoryPage);
         }
 
         String trimmedKeyword = keyword.trim();
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Pageable pageable = PageUtils.of(page, size, Sort.by(direction, sortBy));
         Page<FacilityCategory> categoryPage = facilityCategoryRepository.findByCategoryNameContainingIgnoreCaseOrderBySortOrderAsc(trimmedKeyword, pageable);
         return Result.success(categoryPage);
     }
@@ -263,7 +264,7 @@ public class FacilityCategoryController {
             @RequestParam(defaultValue = "asc") String sortDir) {
 
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Pageable pageable = PageUtils.of(page, size, Sort.by(direction, sortBy));
         Page<FacilityCategory> categoryPage = facilityCategoryRepository.findByStatusOrderBySortOrderAsc(status, pageable);
         return Result.success(categoryPage);
     }

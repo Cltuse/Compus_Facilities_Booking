@@ -5,6 +5,7 @@ import com.facility.booking.common.Result;
 import com.facility.booking.entity.*;
 import com.facility.booking.repository.*;
 import com.facility.booking.security.CurrentUserService;
+import com.facility.booking.util.PageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -146,7 +147,7 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageUtils.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Blacklist> blacklistPage;
         
         if (userName != null && !userName.trim().isEmpty()) {
@@ -297,7 +298,7 @@ public class AdminController {
         
         System.out.println("操作日志查询参数 - operatorId: " + operatorId + ", operationType: " + operationType + ", startTime: " + startTime + ", endTime: " + endTime + ", page: " + page + ", size: " + size);
         
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageUtils.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<com.facility.booking.entity.OperationLog> logPage;
         
         LocalDateTime start = null;
@@ -443,24 +444,23 @@ public class AdminController {
         try {
             // 获取各种状态的预约数量
             long totalReservations = reservationRepository.count();
-            long pendingReservations = reservationRepository.findByStatus("PENDING").size();
-            long approvedReservations = reservationRepository.findByStatus("APPROVED").size();
-            long completedReservations = reservationRepository.findByStatus("COMPLETED").size();
-            long rejectedReservations = reservationRepository.findByStatus("REJECTED").size();
-            long cancelledReservations = reservationRepository.findByStatus("CANCELLED").size();
+            long pendingReservations = reservationRepository.countByStatus("PENDING");
+            long approvedReservations = reservationRepository.countByStatus("APPROVED");
+            long completedReservations = reservationRepository.countByStatus("COMPLETED");
+            long rejectedReservations = reservationRepository.countByStatus("REJECTED");
+            long cancelledReservations = reservationRepository.countByStatus("CANCELLED");
             
             // 获取签到相关统计
-            long notCheckedReservations = reservationRepository.findByCheckinStatus("NOT_CHECKED").size();
-            long checkedInReservations = reservationRepository.findByCheckinStatus("CHECKED_IN").size();
-            long checkedOutReservations = reservationRepository.findByCheckinStatus("CHECKED_OUT").size();
-            long missedReservations = reservationRepository.findByCheckinStatus("MISSED").size();
+            long notCheckedReservations = reservationRepository.countByCheckinStatus("NOT_CHECKED");
+            long checkedInReservations = reservationRepository.countByCheckinStatus("CHECKED_IN");
+            long checkedOutReservations = reservationRepository.countByCheckinStatus("CHECKED_OUT");
+            long missedReservations = reservationRepository.countByCheckinStatus("MISSED");
             
             // 获取今日数据
             LocalDateTime todayStart = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
-            List<Reservation> todayReservations = reservationRepository.findByCreatedAtAfter(todayStart);
-            long todayTotal = todayReservations.size();
-            long todayPending = todayReservations.stream().filter(r -> "PENDING".equals(r.getStatus())).count();
-            long todayApproved = todayReservations.stream().filter(r -> "APPROVED".equals(r.getStatus())).count();
+            long todayTotal = reservationRepository.countByCreatedAtAfter(todayStart);
+            long todayPending = reservationRepository.countByCreatedAtAfterAndStatus(todayStart, "PENDING");
+            long todayApproved = reservationRepository.countByCreatedAtAfterAndStatus(todayStart, "APPROVED");
             
             Map<String, Object> stats = new HashMap<>();
             stats.put("totalReservations", totalReservations);

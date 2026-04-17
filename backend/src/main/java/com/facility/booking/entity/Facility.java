@@ -40,7 +40,7 @@ public class Facility {
     private BigDecimal price;
 
     @Column(length = 500)
-    private String imageUrl = "http://localhost:5681/files/facility/default-facility.svg";
+    private String imageUrl = "/files/facility/default-facility.svg";
 
     @Column(updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")

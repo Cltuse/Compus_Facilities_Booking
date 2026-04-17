@@ -204,7 +204,7 @@ public class FacilityController {
     @OperationLog(operationType = "CREATE_FACILITY", detail = "创建设施")
     public Result<Facility> create(@RequestBody Facility facility) {
         if (facility.getImageUrl() == null || facility.getImageUrl().isEmpty()) {
-            facility.setImageUrl("http://localhost:5681/files/facility/default-facility.svg");
+            facility.setImageUrl("/files/facility/default-facility.svg");
         }
         Facility savedfacility = facilityRepository.save(facility);
         return Result.success("创建成功", savedfacility);
@@ -231,7 +231,7 @@ public class FacilityController {
                 facility.setImageUrl(imageUrl);
             } else {
                 // 如果没有上传图片，设置默认图片路径
-                facility.setImageUrl("http://localhost:5681/files/facility/default-facility.svg");
+                facility.setImageUrl("/files/facility/default-facility.svg");
             }
             
             Facility savedfacility = facilityRepository.save(facility);

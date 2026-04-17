@@ -18,7 +18,7 @@ public class FileUploadService {
     @Value("${file.upload-dir:files}")
     private String uploadDir;
 
-    @Value("${file.base-url:http://localhost:5681/files}")
+    @Value("${file.base-url:/files}")
     private String baseFileUrl;
 
     /**

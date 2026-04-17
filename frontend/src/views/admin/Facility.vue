@@ -364,8 +364,6 @@ const currentFacility = ref(null);
 const selectedImage = ref(null);
 const uploading = ref(false);
 const uploadRef = ref(null);
-const baseUrl = ref('http://localhost:5681'); // 基础URL配置
-
 // 对话框图片上传相关
 const dialogUploadRef = ref(null);
 const fileInputRef = ref(null);

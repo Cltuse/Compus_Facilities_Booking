@@ -1,4 +1,4 @@
-package com.facility.booking.config;
+﻿package com.facility.booking.config;
 
 import com.facility.booking.common.Result;
 import com.facility.booking.security.JwtAuthenticationFilter;
@@ -48,9 +48,9 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) ->
-                                writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "未登录或登录已失效"))
+                                writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
-                                writeError(response, HttpServletResponse.SC_FORBIDDEN, "无权限访问该资源"))
+                                writeError(response, HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -68,3 +68,4 @@ public class SecurityConfig {
         response.getWriter().write(objectMapper.writeValueAsString(Result.error(status, message)));
     }
 }
+

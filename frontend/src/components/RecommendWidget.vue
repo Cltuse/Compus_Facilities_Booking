@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="recommend-widget">
     <!-- 推荐标题 -->
     <div class="widget-header">
@@ -50,7 +50,6 @@
           <div class="facility-info">
             <h4 class="facility-name">{{ item.facility.name }}</h4>
             <p class="facility-location">{{ item.facility.location }}</p>
-            <p class="facility-capacity">容纳: {{ item.facility.capacity }}人</p>
             <div class="recommend-reason">
               <el-icon><InfoFilled /></el-icon>
               <span>{{ getRecommendReason(item.reason) }}</span>
@@ -273,8 +272,7 @@ onMounted(() => {
   line-height: 1.2;
 }
 
-.facility-location,
-.facility-capacity {
+.facility-location {
   font-size: 12px;
   margin: 2px 0;
   color: #909399;

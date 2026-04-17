@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="facility-detail-page">
     <!-- 返回按钮 -->
     <div class="back-section">
@@ -484,11 +484,6 @@ const getStatusText = (status) => {
   return map[status] || status;
 };
 
-const parseEquipment = (equipmentStr) => {
-  if (!equipmentStr) return [];
-  return equipmentStr.split(/[,，、\n]/).filter(item => item.trim());
-};
-
 const goBack = () => {
   router.push('/user/facility');
 };
@@ -682,8 +677,7 @@ const handleSubmit = async () => {
   font-weight: 600;
 }
 
-.description-section,
-.equipment-section {
+.description-section {
   margin-bottom: 32px;
 }
 
@@ -706,23 +700,6 @@ const handleSubmit = async () => {
   border: 1px solid #e2e8f0;
 }
 
-.equipment-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.equipment-tag {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
-  font-size: 14px;
-}
-
-.equipment-tag .el-icon {
-  color: #67c23a;
-}
 
 .timeline-container {
   display: flex;

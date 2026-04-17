@@ -21,7 +21,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,11 +61,19 @@ public class UserController {
 
     @PostMapping("/login")
     public Result<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
-        if (userOpt.isEmpty() || !passwordEncoder.matches(request.getPassword(), userOpt.get().getPassword())) {
+        String username = request.getUsername() == null ? null : request.getUsername().trim();
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
             return Result.error("用户名或密码错误");
         }
-        return Result.success("登录成功", buildAuthResponse(userOpt.get()));
+
+        User user = userOpt.get();
+        if (!isPasswordValid(request.getPassword(), user)) {
+            return Result.error("用户名或密码错误");
+        }
+
+        upgradeLegacyPasswordIfNecessary(request.getPassword(), user);
+        return Result.success("登录成功", buildAuthResponse(user));
     }
 
     @PostMapping("/register")
@@ -203,10 +219,11 @@ public class UserController {
         }
 
         User existingUser = userOpt.get();
-        if (!passwordEncoder.matches(request.getCurrentPassword(), existingUser.getPassword())) {
+        if (!isPasswordValid(request.getCurrentPassword(), existingUser)) {
             return Result.error("当前密码错误");
         }
 
+        upgradeLegacyPasswordIfNecessary(request.getCurrentPassword(), existingUser);
         existingUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(existingUser);
         return Result.success("密码修改成功", null);
@@ -271,6 +288,32 @@ public class UserController {
     private String defaultIfBlank(String value, String defaultValue) {
         String normalized = blankToNull(value);
         return normalized == null ? defaultValue : normalized;
+    }
+
+    private boolean isPasswordValid(String rawPassword, User user) {
+        String storedPassword = user.getPassword();
+        if (rawPassword == null || storedPassword == null) {
+            return false;
+        }
+
+        if (isEncodedPassword(storedPassword)) {
+            return passwordEncoder.matches(rawPassword, storedPassword);
+        }
+
+        return storedPassword.equals(rawPassword);
+    }
+
+    private void upgradeLegacyPasswordIfNecessary(String rawPassword, User user) {
+        if (user.getPassword() == null || isEncodedPassword(user.getPassword())) {
+            return;
+        }
+
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        userRepository.save(user);
+    }
+
+    private boolean isEncodedPassword(String password) {
+        return password.startsWith("$2a$") || password.startsWith("$2b$") || password.startsWith("$2y$");
     }
 
     private AuthResponse buildAuthResponse(User user) {

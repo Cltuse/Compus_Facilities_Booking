@@ -1,4 +1,5 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "maven.executable.options": "-Dmaven.repo.local=D:\\DevelopmentTOOL\\apache-maven-3.9.2\\repo"
+    "maven.executable.options": "-Dmaven.repo.local=D:\\DevelopmentTOOL\\apache-maven-3.9.2\\repo",
+    "java.debug.settings.onBuildFailureProceed": true
 }

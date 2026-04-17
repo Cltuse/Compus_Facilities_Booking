@@ -25,10 +25,10 @@
       <div class="search-section">
         <el-form :inline="true" :model="searchForm" class="search-form">
           <div class="form-row">
-            <el-form-item label="鎿嶄綔浜?>
+            <el-form-item label="操作人">
               <el-select
                 v-model="searchForm.operatorId"
-                placeholder="閫夋嫨鎿嶄綔浜?
+                placeholder="选择操作人"
                 clearable
                 filterable
                 remote
@@ -53,11 +53,11 @@
               </el-select>
             </el-form-item>
             
-            <el-form-item label="寮�濮嬫椂闂?>
+            <el-form-item label="开始时间">
               <el-date-picker
                 v-model="searchForm.startTime"
                 type="datetime"
-                placeholder="閫夋嫨寮�濮嬫椂闂?
+                placeholder="选择开始时间"
                 format="YYYY-MM-DD HH:mm"
                 value-format="YYYY-MM-DDTHH:mm:ss"
                 style="width: 160px" />
@@ -88,7 +88,7 @@
         <el-button type="primary" @click="resetSearch">娓呴櫎鎼滅储鏉′欢</el-button>
       </el-empty>
       <el-table v-else :data="logData" class="operation-table" v-loading="loading" stripe>
-        <el-table-column prop="operatorName" label="鎿嶄綔浜? width="140" />
+        <el-table-column prop="operatorName" label="操作人" width="140" />
         <el-table-column prop="operationType" label="鎿嶄綔绫诲瀷" width="160">
           <template #default="scope">
             <el-tag :type="getOperationTypeType(scope.row.operationType)" size="small">
@@ -134,7 +134,7 @@
       width="600px"
       class="detail-dialog">
       <el-descriptions :column="1" border v-if="currentDetail">
-        <el-descriptions-item label="鎿嶄綔浜?>
+        <el-descriptions-item label="操作人">
           {{ currentDetail.operatorName || '绯荤粺' }}
         </el-descriptions-item>
         <el-descriptions-item label="鎿嶄綔绫诲瀷">
@@ -460,7 +460,7 @@ const searchOperators = async (query) => {
     const response = await userAPI.searchUsers(query);
     operatorOptions.value = response.data;
   } catch (error) {
-    ElMessage.error('鎼滅储鎿嶄綔浜哄け璐?);
+    ElMessage.error('搜索操作人失败');
   } finally {
     operatorLoading.value = false;
   }
@@ -934,3 +934,5 @@ onMounted(() => {
   }
 }
 </style>
+
+

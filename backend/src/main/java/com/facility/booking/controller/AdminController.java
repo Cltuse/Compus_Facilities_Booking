@@ -35,6 +35,9 @@ public class AdminController {
     private BlacklistRepository blacklistRepository;
 
     @Autowired
+    private OperationLogRepository operationLogRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -283,7 +286,7 @@ public class AdminController {
         System.out.println("操作日志查询参数 - operatorId: " + operatorId + ", operationType: " + operationType + ", startTime: " + startTime + ", endTime: " + endTime + ", page: " + page + ", size: " + size);
         
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<OperationLog> logPage;
+        Page<com.facility.booking.entity.OperationLog> logPage;
         
         LocalDateTime start = null;
         LocalDateTime end = null;
@@ -372,10 +375,10 @@ public class AdminController {
      * @return 日志详情
      */
     @GetMapping("/operation-logs/{id}")
-    public Result<OperationLog> getOperationLogById(@PathVariable Long id) {
-        Optional<OperationLog> logOpt = operationLogRepository.findById(id);
+    public Result<com.facility.booking.entity.OperationLog> getOperationLogById(@PathVariable Long id) {
+        Optional<com.facility.booking.entity.OperationLog> logOpt = operationLogRepository.findById(id);
         if (logOpt.isPresent()) {
-            OperationLog log = logOpt.get();
+            com.facility.booking.entity.OperationLog log = logOpt.get();
             if (log.getOperatorId() != null) {
                 Optional<User> operator = userRepository.findById(log.getOperatorId());
                 operator.ifPresent(value -> log.setOperatorName(value.getRealName()));

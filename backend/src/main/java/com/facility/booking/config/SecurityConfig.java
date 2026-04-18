@@ -1,4 +1,4 @@
-﻿package com.facility.booking.config;
+package com.facility.booking.config;
 
 import com.facility.booking.common.Result;
 import com.facility.booking.security.JwtAuthenticationFilter;

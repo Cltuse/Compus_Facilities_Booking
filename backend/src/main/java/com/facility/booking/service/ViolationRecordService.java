@@ -5,10 +5,12 @@ import com.facility.booking.entity.ViolationRecord;
 import com.facility.booking.repository.ReservationRepository;
 import com.facility.booking.repository.UserRepository;
 import com.facility.booking.repository.ViolationRecordRepository;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,7 +40,8 @@ public class ViolationRecordService {
     /**
      * 系统启动时执行一次违规检测
      */
-    @PostConstruct
+    @Async
+    @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
         System.out.println("系统启动，开始执行违规检测...");
         syncAllUserViolationStats();

@@ -14,9 +14,11 @@ import com.facility.booking.repository.UserRepository;
 import com.facility.booking.security.CurrentUserService;
 import com.facility.booking.service.ReservationService;
 import com.facility.booking.service.ViolationRecordService;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
@@ -903,7 +905,8 @@ public class ReservationController {
     /**
      * 系统启动时执行一次爽约检测
      */
-    @PostConstruct
+    @Async
+    @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
         System.out.println("系统启动，开始执行爽约检测...");
         autoMarkMissedReservations();

@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { apiBaseUrl } from '../config/env';
 
-const BASE_URL = '/api';
+const BASE_URL = apiBaseUrl;
 
 export const weatherAPI = {
     getWeather: (city = '北京') => {

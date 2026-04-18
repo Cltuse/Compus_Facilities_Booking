@@ -1,76 +1,70 @@
-# 微信云托管部署说明
+# 微信云托管前端部署说明
 
-## 1. 当前仓库的部署方式
+当前仓库已经调整为适合 `Vue + Nginx + 微信云托管` 的前端容器部署方式。
 
-本仓库已经调整为单容器部署：
+## 当前部署结构
 
-- `frontend` 先执行 `npm run build`
-- 构建产物会被复制到 Spring Boot 的 `static` 目录
-- `backend` 再打包成一个可运行的 Jar
-- 微信云托管只需要暴露一个端口即可访问前端页面和后端 API
+- 根目录 `Dockerfile`：用于构建 `frontend/` 并使用 `nginx:stable-alpine` 提供静态站点服务
+- `frontend/nginx/default.conf.template`：处理 Vue Router `history` 刷新，并将 `/api`、`/files` 代理到 Spring Boot 服务
+- `frontend/.env.production`：前端生产环境默认通过 `/api` 访问后端
 
-容器启动后：
+## 微信云托管创建前端服务
 
-- 前端页面：`/`
-- 后端接口：`/api/**`
-- 上传文件：`/files/**`
+在微信云托管控制台中创建一个新服务：
 
-## 2. 微信云托管控制台填写
+- 部署来源：Git 仓库
+- Dockerfile 路径：`Dockerfile`
+- 构建上下文：`/`
+- 服务端口：`80`
 
-在“部署发布”页面中：
+推荐配置的环境变量：
 
-- 选择方式：`绑定 GitHub 仓库`
-- 代码仓库：选择 `Cltuse/Compus_Facilities_Booking`
-- 分支：选择 `detached5`
-- 端口：填写 `80`
+- `BACKEND_UPSTREAM=https://你的-springboot-服务域名`
 
-如果高级设置中支持指定 Dockerfile 路径，填写：
+例如：
 
-- `Dockerfile`
+```text
+BACKEND_UPSTREAM=https://facility-backend-12345-1300000000.ap-shanghai.run.tcloudbase.com
+```
 
-如果支持指定构建上下文，填写：
+说明：
 
-- `/`
+- 前端页面访问 `/`
+- 前端接口访问 `/api/**`
+- 图片和上传文件访问 `/files/**`
+- Nginx 会把 `/api` 和 `/files` 自动转发到 `BACKEND_UPSTREAM`
 
-## 3. 必填环境变量
+## 本地联调
 
-至少配置以下环境变量：
+本地开发默认仍然使用 Vite 代理：
 
-- `SPRING_PROFILES_ACTIVE=prod`
-- `DB_URL=jdbc:mysql://<你的MySQL地址>:3306/campus_facility_booking?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai`
-- `DB_USERNAME=<数据库用户名>`
-- `DB_PASSWORD=<数据库密码>`
-- `JWT_SECRET=<改成你自己的高强度密钥>`
+- `/api` -> `http://localhost:5681`
+- `/files` -> `http://localhost:5681`
 
-建议同时配置：
+如果你想让前端直接请求某个独立后端地址，可以调整：
 
-- `APP_CORS_ALLOWED_ORIGIN_PATTERNS=*`
-- `FILE_UPLOAD_DIR=/app/files`
-- `SERVER_PORT=80`
+`frontend/.env.production`
 
-## 4. 数据库准备
+```text
+VITE_API_BASE_URL=/api
+```
 
-先创建数据库：
+例如改为：
 
-- 数据库名：`campus_facility_booking`
+```text
+VITE_API_BASE_URL=https://你的后端域名/api
+```
 
-再导入根目录下的备份文件：
+当你使用上面的直连方式时，建议同步确认后端返回的文件地址也能被前端域名正确访问；当前仓库默认推荐继续使用 Nginx 反向代理方式。
 
-- `campus_facility_booking-10-backup.sql`
+## Vue Router history
 
-生产环境建议确认数据库字符集为 `utf8mb4`。
+Nginx 已内置：
 
-## 5. 部署后的访问说明
+```nginx
+location / {
+    try_files $uri $uri/ /index.html;
+}
+```
 
-部署成功后：
-
-- 打开服务默认域名访问前端页面
-- 前端会通过同域名下的 `/api` 调用后端
-- 不再需要单独部署 Vite 开发服务器
-
-## 6. 当前限制
-
-- `files/` 目录会被打进镜像，适合携带初始图片资源
-- 运行期新上传的文件仍保存在容器内，重新部署后可能丢失
-
-如果后续你要长期在线使用，建议把上传文件迁移到对象存储，而不是继续放在容器本地目录。
+因此刷新 `/admin/dashboard`、`/user/facility/1` 这类路由时不会返回 404。

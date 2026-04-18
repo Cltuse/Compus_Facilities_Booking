@@ -1,5 +1,6 @@
 package com.facility.booking.entity;
 
+import com.facility.booking.util.StoredFileUrlUtils;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -41,6 +42,10 @@ public class Facility {
 
     @Column(length = 500)
     private String imageUrl = "/files/facility/default-facility.svg";
+
+    public String getImageUrl() {
+        return StoredFileUrlUtils.normalizeForClient(imageUrl);
+    }
 
     @Column(updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")

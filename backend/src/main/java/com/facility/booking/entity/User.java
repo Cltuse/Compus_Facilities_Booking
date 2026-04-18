@@ -1,5 +1,6 @@
 package com.facility.booking.entity;
 
+import com.facility.booking.util.StoredFileUrlUtils;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -38,6 +39,10 @@ public class User {
 
     @Column(length = 500)
     private String avatar;
+
+    public String getAvatar() {
+        return StoredFileUrlUtils.normalizeForClient(avatar);
+    }
 
     @Column(length = 20)
     private String status = "ACTIVE"; // ACTIVE, INACTIVE

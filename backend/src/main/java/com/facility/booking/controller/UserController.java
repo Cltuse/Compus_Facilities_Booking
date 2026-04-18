@@ -15,6 +15,7 @@ import com.facility.booking.security.CustomUserPrincipal;
 import com.facility.booking.security.JwtTokenProvider;
 import com.facility.booking.service.ViolationRecordService;
 import com.facility.booking.util.PageUtils;
+import com.facility.booking.util.StoredFileUrlUtils;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -144,7 +145,7 @@ public class UserController {
         user.setRole(request.getRole());
         user.setPhone(blankToNull(request.getPhone()));
         user.setEmail(blankToNull(request.getEmail()));
-        user.setAvatar(blankToNull(request.getAvatar()));
+        user.setAvatar(normalizeOptionalFileUrl(request.getAvatar()));
         user.setStatus(defaultIfBlank(request.getStatus(), "ACTIVE"));
 
         User savedUser = userRepository.save(user);
@@ -172,7 +173,7 @@ public class UserController {
         existingUser.setEmail(blankToNull(request.getEmail()));
         existingUser.setRole(request.getRole());
         existingUser.setStatus(defaultIfBlank(request.getStatus(), "ACTIVE"));
-        existingUser.setAvatar(blankToNull(request.getAvatar()));
+        existingUser.setAvatar(normalizeOptionalFileUrl(request.getAvatar()));
 
         User savedUser = userRepository.save(existingUser);
         return Result.success("更新成功", toSafeUser(savedUser));
@@ -201,7 +202,7 @@ public class UserController {
         existingUser.setRealName(request.getRealName().trim());
         existingUser.setPhone(blankToNull(request.getPhone()));
         existingUser.setEmail(blankToNull(request.getEmail()));
-        existingUser.setAvatar(blankToNull(request.getAvatar()));
+        existingUser.setAvatar(normalizeOptionalFileUrl(request.getAvatar()));
 
         User savedUser = userRepository.save(existingUser);
         return Result.success("更新成功", toSafeUser(savedUser));
@@ -288,6 +289,11 @@ public class UserController {
     private String defaultIfBlank(String value, String defaultValue) {
         String normalized = blankToNull(value);
         return normalized == null ? defaultValue : normalized;
+    }
+
+    private String normalizeOptionalFileUrl(String value) {
+        String normalized = blankToNull(value);
+        return normalized == null ? null : StoredFileUrlUtils.normalizeForClient(normalized);
     }
 
     private boolean isPasswordValid(String rawPassword, User user) {

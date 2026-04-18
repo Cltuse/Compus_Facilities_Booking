@@ -177,7 +177,7 @@ export const fileAPI = {
     uploadFacilityImage: (facilityId, file) => {
         const formData = new FormData();
         formData.append('file', file);
-        return request.post(`/file/upload/facility/${facilityId}`, formData, {
+        return request.post(`/facility/${facilityId}/image`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }

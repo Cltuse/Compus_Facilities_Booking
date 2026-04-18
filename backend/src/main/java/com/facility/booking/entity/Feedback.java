@@ -1,5 +1,6 @@
 package com.facility.booking.entity;
 
+import com.facility.booking.util.StoredFileUrlUtils;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -56,6 +57,10 @@ public class Feedback {
 
     @Transient
     private String userAvatar;
+
+    public String getUserAvatar() {
+        return StoredFileUrlUtils.normalizeForClient(userAvatar);
+    }
 
     @Transient
     private String replyByName;

@@ -21,12 +21,12 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV SERVER_PORT=80
+ENV SERVER_PORT=8080
 ENV FILE_UPLOAD_DIR=/app/files
 
 COPY --from=backend-build /workspace/backend/target/facility-management-1.0.0.jar ./app.jar
 COPY files/ ./files/
 
-EXPOSE 80
+EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -1,0 +1,10 @@
+.git
+.gitignore
+.idea
+.vscode
+uniapp
+backend/target
+frontend/node_modules
+frontend/dist
+campus_facility_booking-10-backup.sql
+taskkill.txt

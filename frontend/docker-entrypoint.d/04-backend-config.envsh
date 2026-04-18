@@ -1,0 +1,35 @@
+#!/bin/sh
+set -eu
+
+normalize_origin() {
+  printf '%s' "$1" | sed -E 's#^(https?://[^/]+).*$#\1#'
+}
+
+normalize_upstream() {
+  printf '%s' "$1" | sed -E 's#/$##' | sed -E 's#/api$##'
+}
+
+SOURCE_API_BASE_URL="${APP_API_BASE_URL:-${VITE_API_BASE_URL:-}}"
+SOURCE_API_BASE_URL="$(printf '%s' "$SOURCE_API_BASE_URL" | sed -E 's#/$##')"
+
+if [ -n "${BACKEND_UPSTREAM:-}" ]; then
+  BACKEND_UPSTREAM="$(normalize_upstream "$BACKEND_UPSTREAM")"
+fi
+
+case "$SOURCE_API_BASE_URL" in
+  http://*|https://*)
+    BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-$(normalize_origin "$SOURCE_API_BASE_URL")}"
+    APP_API_BASE_URL="/api"
+    ;;
+  "")
+    APP_API_BASE_URL="/api"
+    BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-http://127.0.0.1:65535}"
+    ;;
+  *)
+    APP_API_BASE_URL="$SOURCE_API_BASE_URL"
+    BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-http://127.0.0.1:65535}"
+    ;;
+esac
+
+export APP_API_BASE_URL
+export BACKEND_UPSTREAM

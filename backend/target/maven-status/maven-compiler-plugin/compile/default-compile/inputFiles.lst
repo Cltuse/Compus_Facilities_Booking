@@ -20,6 +20,7 @@ E:\Stdio\JetBrains\Intellij\Programs\Java\Thesis\Compus_Facilities_Booking\backe
 E:\Stdio\JetBrains\Intellij\Programs\Java\Thesis\Compus_Facilities_Booking\backend\src\main\java\com\facility\booking\util\PageUtils.java
 E:\Stdio\JetBrains\Intellij\Programs\Java\Thesis\Compus_Facilities_Booking\backend\src\main\java\com\facility\booking\repository\UserRecommendationRepository.java
 E:\Stdio\JetBrains\Intellij\Programs\Java\Thesis\Compus_Facilities_Booking\backend\src\main\java\com\facility\booking\repository\UserRepository.java
+E:\Stdio\JetBrains\Intellij\Programs\Java\Thesis\Compus_Facilities_Booking\backend\src\main\java\com\facility\booking\util\FileStoragePathUtils.java
 E:\Stdio\JetBrains\Intellij\Programs\Java\Thesis\Compus_Facilities_Booking\backend\src\main\java\com\facility\booking\service\IpLocationService.java
 E:\Stdio\JetBrains\Intellij\Programs\Java\Thesis\Compus_Facilities_Booking\backend\src\main\java\com\facility\booking\service\WeatherService.java
 E:\Stdio\JetBrains\Intellij\Programs\Java\Thesis\Compus_Facilities_Booking\backend\src\main\java\com\facility\booking\service\UserCFService.java

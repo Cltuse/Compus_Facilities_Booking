@@ -1,9 +1,12 @@
 package com.facility.booking.config;
 
+import com.facility.booking.util.FileStoragePathUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.nio.file.Path;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -13,10 +16,13 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 配置文件上传目录的静态资源映射
-        // 将 /files/** 映射到实际的文件系统路径，支持子目录
-        String basePath = System.getProperty("user.dir") + "/" + uploadDir + "/";
+        Path uploadRoot = FileStoragePathUtils.resolveUploadRoot(uploadDir);
+        String resourceLocation = uploadRoot.toUri().toString();
+        if (!resourceLocation.endsWith("/")) {
+            resourceLocation = resourceLocation + "/";
+        }
+
         registry.addResourceHandler("/files/**")
-                .addResourceLocations("file:" + basePath);
+                .addResourceLocations(resourceLocation);
     }
 }

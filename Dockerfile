@@ -1,19 +1,32 @@
-FROM node:18-alpine AS build
+FROM node:22-alpine AS frontend-build
+WORKDIR /workspace/frontend
 
-WORKDIR /app
-
-COPY frontend/package*.json ./
-RUN npm install
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
 
 COPY frontend/ ./
 RUN npm run build
 
 
-FROM nginx:stable-alpine
+FROM maven:3.9.9-eclipse-temurin-21 AS backend-build
+WORKDIR /workspace
 
-COPY frontend/nginx/default.conf.template /etc/nginx/templates/default.conf.template
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY backend/ ./backend/
+COPY --from=frontend-build /workspace/frontend/dist/ ./backend/src/main/resources/static/
 
-EXPOSE 80
+RUN mvn -f backend/pom.xml clean package -DskipTests
 
-CMD ["nginx", "-g", "daemon off;"]
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+ENV SPRING_PROFILES_ACTIVE=prod
+ENV SERVER_PORT=8080
+ENV FILE_UPLOAD_DIR=/app/files
+
+COPY --from=backend-build /workspace/backend/target/facility-management-1.0.0.jar ./app.jar
+COPY files/ ./files/
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

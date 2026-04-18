@@ -41,7 +41,6 @@ public class ViolationRecordService {
      * 系统启动时执行一次违规检测
      */
     @Async
-    @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
         System.out.println("系统启动，开始执行违规检测...");
         syncAllUserViolationStats();

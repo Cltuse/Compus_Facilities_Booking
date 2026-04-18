@@ -82,29 +82,10 @@ public class RecommendationScheduler {
     }
 
     /**
-     * 系统启动后立即执行一次推荐数据初始化
+     * 启动时一次性的推荐初始化已临时关闭，保留方法占位便于后续恢复。
      */
-    @Scheduled(fixedDelay = Long.MAX_VALUE) // 只执行一次
     public void initializeRecommendationData() {
-        try {
-            logger.info("系统启动，开始初始化推荐数据...");
-
-            // 更新热度评分
-            hotScoreService.calculateAllFacilityHotScores();
-            logger.info("设施热度评分初始化完成");
-
-            // 更新用户相似度
-            userCFService.computeUserSimilarities();
-            logger.info("用户相似度矩阵初始化完成");
-
-            // 生成推荐
-            recommendService.generateRecommendationsForAllUsers();
-            logger.info("用户推荐初始化完成");
-
-            logger.info("推荐数据初始化完成");
-        } catch (Exception e) {
-            logger.error("推荐数据初始化失败", e);
-        }
+        // Disabled on startup for deployment stability.
     }
 
     /**

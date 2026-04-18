@@ -10,12 +10,13 @@ public class SpaForwardController {
             "/",
             "/login",
             "/register",
+            "/admin",
             "/admin/{path:[^\\.]*}",
-            "/admin/**/{path:[^\\.]*}",
+            "/user",
             "/user/{path:[^\\.]*}",
-            "/user/**/{path:[^\\.]*}",
+            "/user/facility/{id:[^\\.]*}",
+            "/maintainer",
             "/maintainer/{path:[^\\.]*}",
-            "/maintainer/**/{path:[^\\.]*}"
     })
     public String forward() {
         return "forward:/index.html";

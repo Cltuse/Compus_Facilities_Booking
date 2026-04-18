@@ -1,0 +1,15 @@
+DB_URL jdbc:mysql://10.37.112.170:3306/campus_facility_booking?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+
+DB_NAME campus_facility_booking
+
+DB_PASSWORD  @abc123456
+
+SERVER_PORT 8080
+
+JWT_SECRET  CampusFacilitiesBookingJwtSecretKey_2026_Replace_With_Your_Own_Long_Secret
+
+SPRING_PROFILES_ACTIVE  prod
+
+DB_USERNAME  campus_app
+
+JPA_DDL_AUTO  update

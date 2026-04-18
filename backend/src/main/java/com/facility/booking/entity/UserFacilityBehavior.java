@@ -1,28 +1,34 @@
 package com.facility.booking.entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Table;
 import lombok.Data;
-import jakarta.persistence.*;
+import org.hibernate.annotations.Immutable;
+
 import java.time.LocalDateTime;
 
 /**
- * 用户设施行为视图实体类
- * 用于映射数据库视图，快速获取用户行为聚合数据
+ * 用户设施行为视图实体
  */
 @Data
 @Entity
+@Immutable
+@IdClass(UserFacilityBehaviorId.class)
 @Table(name = "user_facility_behavior")
 public class UserFacilityBehavior {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @Column(name = "user_id")
     private Long userId;
 
+    @Id
     @Column(name = "facility_id")
     private Long facilityId;
 
+    @Id
     @Column(name = "category_name")
     private String categoryName;
 
